@@ -319,7 +319,7 @@ func _process_land(delta: float) -> bool:
 	if flee_time > 0.0 and park.player != null:
 		flee_time -= delta
 		return _flee(delta)
-	if wild and park.player != null and park.mine == null and chase_cool <= 0.0 and not _player_rides_stronger():
+	if wild and park.player != null and park.away == null and chase_cool <= 0.0 and not _player_rides_stronger():
 		var distance: float = position.distance_to(park.player.position)
 		if (species.diet == "carn" and distance < 4.0 * T) or (angry_time > 0.0 and distance < 12.0 * T):
 			return _chase(delta)
@@ -413,8 +413,8 @@ func _player_rides_stronger() -> bool:
 
 # Walks right behind the player, through gates and fences, like a pet.
 func _follow(delta: float) -> bool:
-	# While the player is down a mine, it waits at the entrance.
-	if park.mine != null:
+	# While the player is away from the park (a mine, the village), it waits there.
+	if park.away != null:
 		return false
 	var to_player: Vector2 = following.position - position
 	cell = Vector2i((position / T).floor())

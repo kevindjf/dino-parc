@@ -1085,7 +1085,8 @@ static func bag_icon(id: String) -> Texture2D:
 		return null
 	if id.begins_with("dino:"):
 		return icon(id)
-	var item: Dictionary = Items.ITEMS[id]
+	# Not a bag item (like the hammer of the building mode): its drawing alone.
+	var item: Dictionary = Items.ITEMS.get(id, {"kind": ""})
 	if item.kind == "build":
 		return icon(item.place)
 	if id == "dart":
@@ -1178,3 +1179,123 @@ static func _dart() -> Texture2D:
 	p.limb(Vector2(15, 5), Vector2(21, 5), 0.6, 0.5, Color("909098"))
 	p.polygon(PackedVector2Array([Vector2(1, 1), Vector2(6, 5), Vector2(1, 9)]), Color("ab47bc"), true)
 	return p.finish()
+
+
+# --- The village ---------------------------------------------------------------
+
+const VILLAGE_WALLS := [Color("f4e4c4"), Color("e8d0b0"), Color("dfe8f0")]
+const VILLAGE_ROOFS := [Color("c0503a"), Color("4a78b8"), Color("6a9a40")]
+const MERCHANT := {"hair": Color("b0b0b8"), "skin": Color("f1c27d"), "shirt": Color("3a8a5a"), "pants": Color("5a4a3a"), "hat": Color("8a5a2a")}
+const RUIN_STONE := Color("a8a098")
+
+
+# A house of 4 x 3 cells with its door in the middle of the front: 64 x 60 pixels.
+static func village_house(variant: int) -> Texture2D:
+	return cached("village_house:%d" % variant, func() -> Texture2D:
+		var p := _painter(Vector2i(64, 60))
+		var roof: Color = VILLAGE_ROOFS[variant % VILLAGE_ROOFS.size()]
+		p.box(Rect2(44, 3, 6, 14), Color("a0645a"), true)
+		p.box(Rect2(4, 30, 56, 29), VILLAGE_WALLS[variant % VILLAGE_WALLS.size()], true)
+		p.polygon(PackedVector2Array([Vector2(0, 33), Vector2(10, 9), Vector2(54, 9), Vector2(64, 33)]), roof, true)
+		for y in [16, 23]:
+			p.flat(Rect2(8, y, 48, 1), roof.darkened(0.2))
+		for x in [9, 45]:
+			p.box(Rect2(x, 38, 10, 9), Color("a8d8f0"), true)
+			p.flat(Rect2(x + 5, 38, 1, 9), Color.WHITE)
+			p.flat(Rect2(x, 42, 10, 1), Color.WHITE)
+		p.box(Rect2(27, 42, 10, 17), WOOD.darkened(0.2), true)
+		p.dot(Vector2(34, 51), Color("f0c830"))
+		return p.finish())
+
+
+# The market stall of the village with the merchant behind the counter: 4 x 2 cells, 64 x 56 pixels.
+static func market_stall() -> Texture2D:
+	return cached("market_stall", func() -> Texture2D:
+		var p := _painter(Vector2i(64, 56))
+		p.box(Rect2(3, 10, 3, 30), WOOD, true)
+		p.box(Rect2(58, 10, 3, 30), WOOD, true)
+		p.image.blend_rect(person("down", 0, MERCHANT).get_image(), Rect2i(0, 0, 12, 16), Vector2i(26, 22))
+		p.box(Rect2(2, 35, 60, 20), WOOD, true)
+		p.flat(Rect2(2, 35, 60, 2), WOOD.lightened(0.3))
+		for x in range(6, 60, 12):
+			p.flat(Rect2(x, 40, 1, 14), WOOD.darkened(0.25))
+		p.ellipse(Vector2(10, 33), Vector2(3, 2.5), Color("d8243e"), true)
+		p.ellipse(Vector2(16, 33), Vector2(3, 2.5), Color("e86a2a"), true)
+		p.ellipse(Vector2(47, 32.5), Vector2(3, 3), Color("f4ecd8"), true)
+		p.dot(Vector2(47, 31), ORE_COLORS.gold[0], 2)
+		p.polygon(PackedVector2Array([Vector2(53, 35), Vector2(55, 29), Vector2(57, 35)]), ORE_COLORS.crystal[0], true)
+		p.box(Rect2(0, 4, 64, 10), Color.WHITE, true)
+		for x in range(0, 64, 8):
+			p.flat(Rect2(x, 4, 4, 10), Color("d84a3a"))
+		for x in range(4, 64, 8):
+			p.ellipse(Vector2(x, 14), Vector2(4, 2.5), Color("d84a3a") if (x / 8) % 2 == 0 else Color.WHITE)
+		return p.finish())
+
+
+# A wall of an abandoned house, standing on its cell: 16 x 28 pixels, broken at different heights.
+static func ruin_wall(variant: int) -> Texture2D:
+	return cached("ruin_wall:%d" % variant, func() -> Texture2D:
+		var p := _painter(Vector2i(16, 28))
+		var height: int = [20, 15, 24, 12][variant % 4]
+		p.box(Rect2(0, 27 - height, 16, height), RUIN_STONE, true)
+		for y in range(27 - height + 4, 27, 5):
+			p.flat(Rect2(1, y, 14, 1), RUIN_STONE.darkened(0.25))
+			p.flat(Rect2(4 + (y % 2) * 6, y - 4, 1, 4), RUIN_STONE.darkened(0.25))
+		p.dot(Vector2(3, 27 - height + 2), Color("6a9a40"), 2)
+		p.dot(Vector2(12, 24), Color("6a9a40"), 2)
+		return p.finish())
+
+
+# The broken plank floor inside an abandoned house.
+static func paint_planks(image: Image, at: Vector2i, seed: int) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
+	var base := Color("a07a4a")
+	image.fill_rect(Rect2i(at, Vector2i(T, T)), base)
+	for y in range(3, T, 4):
+		image.fill_rect(Rect2i(at + Vector2i(0, y), Vector2i(T, 1)), base.darkened(0.3))
+	if rng.randf() < 0.35:
+		image.fill_rect(Rect2i(at + Vector2i(rng.randi_range(1, 9), rng.randi_range(0, 2) * 4), Vector2i(5, 3)), Color("3a2a1a"))
+
+
+# A treasure chest, closed or opened: 16 x 16 pixels.
+static func chest(open: bool) -> Texture2D:
+	return cached("chest:%s" % open, func() -> Texture2D:
+		var p := _painter(Vector2i(16, 16))
+		var gold: Color = ORE_COLORS.gold[0]
+		if open:
+			p.box(Rect2(1, 0, 14, 5), WOOD.darkened(0.15), true)
+			p.box(Rect2(1, 6, 14, 9), WOOD, true)
+			p.flat(Rect2(2, 6, 12, 3), Color("3a2a1a"))
+		else:
+			p.box(Rect2(1, 6, 14, 9), WOOD, true)
+			p.box(Rect2(1, 3, 14, 5), WOOD.lightened(0.12), true)
+			p.dot(Vector2(8, 8), gold, 2)
+		for x in [3, 12]:
+			p.flat(Rect2(x, 3 if not open else 6, 1, 12 if not open else 9), gold)
+		return p.finish())
+
+
+# The well in the middle of the village square: 2 x 2 cells, 32 x 40 pixels.
+static func well() -> Texture2D:
+	return cached("well", func() -> Texture2D:
+		var p := _painter(Vector2i(32, 40))
+		p.box(Rect2(5, 9, 3, 20), WOOD, true)
+		p.box(Rect2(24, 9, 3, 20), WOOD, true)
+		p.polygon(PackedVector2Array([Vector2(1, 12), Vector2(16, 1), Vector2(31, 12)]), Color("c0503a"), true)
+		p.box(Rect2(3, 24, 26, 15), RUIN_STONE, true)
+		p.flat(Rect2(6, 24, 20, 3), Color("2a4a70"))
+		for x in range(5, 28, 6):
+			p.flat(Rect2(x, 30, 1, 9), RUIN_STONE.darkened(0.25))
+		p.box(Rect2(14, 15, 4, 5), Color("8a6a4a"), true)
+		return p.finish())
+
+
+# A wooden sign by the road: 16 x 22 pixels.
+static func signpost() -> Texture2D:
+	return cached("signpost", func() -> Texture2D:
+		var p := _painter(Vector2i(16, 22))
+		p.box(Rect2(7, 8, 2, 13), WOOD, true)
+		p.polygon(PackedVector2Array([Vector2(1, 3), Vector2(12, 3), Vector2(15, 6.5), Vector2(12, 10), Vector2(1, 10)]), WOOD.lightened(0.25), true)
+		p.flat(Rect2(3, 6, 8, 1), WOOD.darkened(0.3))
+		return p.finish())

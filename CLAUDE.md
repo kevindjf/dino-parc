@@ -6,6 +6,8 @@ Jeu Godot 4.7 fait par Kevin avec ses enfants. Le CLAUDE.md global (Flutter) ne 
 - Tout est dessiné par code (`scripts/art.gd`, `scripts/dino_art.gd`) : pas d'images importées.
 - Chaque monde a son dossier `user://worlds/<id>/` (voir `scripts/worlds.gd`). Un nouveau réglage
   de monde = une ligne dans `Worlds.SETTINGS`, lue avec `park.setting("clé")`.
+- La carte d'aventure grandit **par zones** (`scripts/village.gd`, `scripts/mine.gd`) : une zone est
+  construite quand on y entre et libérée quand on en sort ; `main.away` est la zone en cours.
 - Publication : `main` = travail, `release` = en ligne (GitHub Actions → GitHub Pages).
 - **Avant chaque publication sur `release`**, ajouter une entrée en haut de `scripts/news.gd`
   (version suivante, titre, une phrase courte par nouveauté avec une image) : c'est ce que

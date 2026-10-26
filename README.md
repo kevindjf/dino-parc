@@ -67,6 +67,22 @@ Chaque massif de montagnes a une **entrée de mine** creusée dans sa falaise su
 
 Une partie commencée sur l'ancienne petite carte est replacée telle quelle près de l'entrée, avec la nouvelle carte autour.
 
+## Aventure : le village et la boutique
+
+Sors du parc par le **portail, à gauche** (le panneau « ← Village ») : la route mène au village. On y va à pied, pas sur le dos d'un dinosaure.
+
+- La **boutique** est sur la place. Mets-toi devant le marchand et appuie sur Action.
+  - **Acheter** : capsules (même en or), flèches, bolas, fléchettes, selle, brosse, pioche en fer, buissons, mangeoire, barrières électriques, fer, cristal, or.
+  - **Vendre** : le bois, les pierres, les baies, les minerais et les fossiles qu'on a en trop.
+- Les **pièces** viennent des visiteurs du parc, de la vente à la boutique et des coffres.
+- Quatre **maisons abandonnées** cachent chacune un **coffre** : des pièces et un objet rare. Un coffre ne s'ouvre qu'une fois.
+- Les maisons des villageois sont fermées pour l'instant : elles serviront aux missions.
+- Pour rentrer, suis la route vers la droite (le panneau « Parc → »). Le parc continue de vivre pendant ce temps : les visiteurs paient leur billet.
+
+### Une carte en zones
+
+Le monde grandit **zone par zone**, comme les mines : le village est construit quand on y entre et oublié quand on en sort. Seule la zone où se trouve le joueur est en mémoire, donc le monde peut devenir très grand et tourner quand même sur une tablette. Chaque zone garde ce qui a changé (mines creusées, coffres ouverts) dans la sauvegarde.
+
 ## Aventure : le mode Construction
 
 Le bouton orange **Construire** (ou la touche B) met le jeu en mode Construction : le personnage attend, une grille apparaît sur le sol, le joystick déplace la caméra et la barre du bas montre ce qu'on peut poser (ce qu'il y a dans le sac).
@@ -165,6 +181,8 @@ Les règles sont celles de la version 3D (`~/dino-parc-3d`).
 |---|---|
 | Objets du sac, recettes, ce que donnent les arbres et rochers | `scripts/items.gd` |
 | Objectifs de l'aventure | `scripts/main.gd` (`ADVENTURE_GOALS`) |
+| Ce que vend et achète la boutique, et à quel prix | `scripts/market.gd` |
+| Plan du village, contenu des coffres | `scripts/village.gd` (`HOUSES`, `RUINS`, `CHESTS`…) |
 | Ce qui pousse dans chaque biome au début d'une aventure | `scripts/world_gen.gd` |
 | Couleurs proposées pour le personnage | `scripts/creator.gd` |
 | Prix, force, biome préféré, couleurs, taille d'un dinosaure | `scripts/catalog.gd` (`DINOS`) |

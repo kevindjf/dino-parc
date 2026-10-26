@@ -60,7 +60,7 @@ func _process(delta: float) -> void:
 		return
 	var input := Vector2.ZERO
 	var acting := false
-	if not park.hud.bag_open and not park.hud.dex.visible and not park.hud.pocket.visible:
+	if not park.hud.menu_open():
 		if _pressed([KEY_UP, KEY_Z, KEY_W]):
 			input.y -= 1.0
 		if _pressed([KEY_DOWN, KEY_S]):
@@ -102,7 +102,7 @@ func _process(delta: float) -> void:
 	_animate(delta, holding)
 
 	notify_timer -= delta
-	if notify_timer <= 0.0 and park.mine == null:
+	if notify_timer <= 0.0 and park.away == null:
 		notify_timer = 0.7
 		park.on_vehicle_moved(position)
 

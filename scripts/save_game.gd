@@ -48,6 +48,7 @@ static func save(park: Node2D) -> void:
 		var at: Vector2 = park.player_surface_position()
 		data.player = {"look": look, "x": at.x, "y": at.y, "inventory": park.inventory.to_dict()}
 		data.mines = park.mine_states
+		data.village = park.village_state
 	# Write to a temporary file first, keep the previous save as a backup, then swap:
 	# a crash in the middle of writing never loses the game.
 	var path := path_for(park.world_info.id)

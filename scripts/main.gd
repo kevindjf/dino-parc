@@ -24,6 +24,8 @@ const Combat := preload("res://scripts/combat.gd")
 const Builder := preload("res://scripts/builder.gd")
 const WorldGen := preload("res://scripts/world_gen.gd")
 const Mine := preload("res://scripts/mine.gd")
+const Village := preload("res://scripts/village.gd")
+const Market := preload("res://scripts/market.gd")
 
 const T := 16
 const GRID := Vector2i(128, 96)
@@ -126,15 +128,19 @@ var nature_timer := 0.0
 var save_timer := AUTOSAVE
 var clock := 0.0
 var caught := {}  # species id -> true: the Dinodex
-var mine: Node2D = null  # the mine the player is in, or null on the surface
+var away: Node2D = null  # the zone the player is in away from the park (a mine or the village), or null
+var surface_spot := Vector2.ZERO  # where the player comes back to the park
+var mine: Node2D = null  # the mine the player is in, or null
 var mine_states := {}  # entrance "x,y" -> {"seed", "dug"}, saved with the game
-var mine_exit := Vector2.ZERO
+var village: Node2D = null  # the village, while the player is in it
+var village_state := {}  # the chests already opened, saved with the game
 var world_bounds := Rect2()
 var combat: Node2D = null
 var builder: Node2D = null
 var hearts := MAX_HEARTS
 var safe_until := 0.0  # after a hit, a short time when nothing can hit us again
 var heal_timer := 0.0
+var gate_warned := 0.0
 
 
 func _ready() -> void:
@@ -214,6 +220,7 @@ func start_adventure(data: Dictionary) -> void:
 		inventory.from_dict(saved.get("inventory", {}))
 		start = Vector2(saved.get("x", start.x), saved.get("y", start.y)) + Vector2(offset * T)
 		mine_states = data.get("mines", {})
+		village_state = data.get("village", {})
 	natural_target = _count_nature()
 	caught = {}
 	for id in data.get("caught", []):
@@ -233,6 +240,12 @@ func start_adventure(data: Dictionary) -> void:
 	builder.setup(self)
 	hud.setup_builder(builder)
 	hud.set_hearts(hearts, MAX_HEARTS)
+	# A sign by the park gate shows the road to the village.
+	var sign := Art.sprite(Art.signpost())
+	sign.position = Vector2(-1.5 * T, ENTRANCE.y * T - 1)
+	sign.flip_h = true
+	world.add_child(sign)
+	WorldText.make(sign, Vector2(0, -24), "← Village", "bubble", Color("2a7a3a"))
 	camera.position = start
 	camera.zoom_index = 3
 	camera._apply_zoom()
@@ -1250,12 +1263,19 @@ func stop_driving() -> void:
 # --- Adventure: harvesting and building with your own hands ----------------------
 
 func _process_adventure(delta: float) -> void:
-	if mine != null:
-		_process_mine()
+	if away != null:
+		if mine != null:
+			_process_mine()
+		else:
+			_process_village()
 		save_timer -= delta
 		if save_timer <= 0.0:
 			save_timer = AUTOSAVE
 			save_game()
+		return
+	# The road out of the park gate leads to the village.
+	if player.position.x < -1.5 * T:
+		enter_village()
 		return
 	_update_gates(player.position)
 	# A tamed dinosaur that followed us into an enclosure stays there.
@@ -1300,6 +1320,9 @@ func player_action(cell: Vector2i) -> void:
 	if mine != null:
 		_mine_action(cell)
 		return
+	if village != null:
+		_village_action(cell)
+		return
 	if not in_grid(cell):
 		return
 	var entrance = occupied.get(cell)
@@ -1328,14 +1351,22 @@ func player_action(cell: Vector2i) -> void:
 # --- Adventure: mines ----------------------------------------------------------------
 
 func player_blocked(cell: Vector2i) -> bool:
-	if mine != null:
-		return mine.is_solid(cell)
+	if away != null:
+		return away.is_solid(cell)
+	# Out of the park gate, the road goes on to the village.
+	if cell.x < 0 and cell.x >= -BORDER and cell.y == ENTRANCE.y:
+		if player.mount != null:
+			if clock > gate_warned:
+				gate_warned = clock + 3.0
+				_float_text(player.position, "Descends de ton dinosaure pour aller au village", Color("ffab91"))
+			return true
+		return false
 	return is_blocked_for_vehicle("walk", cell)
 
 
-# Where the player is on the surface (the mine entrance while underground).
+# Where the player is in the park (where they will come back while away).
 func player_surface_position() -> Vector2:
-	return mine_exit if mine != null else player.position
+	return surface_spot if away != null else player.position
 
 
 func enter_mine(entrance: Dictionary) -> void:
@@ -1345,10 +1376,8 @@ func enter_mine(entrance: Dictionary) -> void:
 	var key := "%d,%d" % [entrance.origin.x, entrance.origin.y]
 	if not mine_states.has(key):
 		mine_states[key] = {"seed": randi() % 1000000, "dug": {}}
-	mine_exit = cell_center(entrance.origin + Vector2i.DOWN)
-	world.visible = false
-	ground.visible = false
-	floor_layer.visible = false
+	surface_spot = cell_center(entrance.origin + Vector2i.DOWN)
+	_leave_surface()
 	_open_mine(key, 1, true)
 	player.add_child(mine.make_light())
 	hud.flash("Tu descends dans la mine…\nCreuse les murs avec ta pioche !", 3.0)
@@ -1358,17 +1387,32 @@ func exit_mine() -> void:
 	for child in player.get_children():
 		if child is PointLight2D:
 			child.queue_free()
-	mine.remove_child(player)
-	world.add_child(player)
 	mine.queue_free()
 	mine = null
+	_back_to_surface()
+	hud.flash("De retour à la surface !", 1.5)
+
+
+# Hides the park while the player is in another zone (the park keeps living meanwhile).
+func _leave_surface() -> void:
+	ghost.visible = false
+	world.visible = false
+	ground.visible = false
+	floor_layer.visible = false
+
+
+func _back_to_surface() -> void:
+	away = null
+	player.get_parent().remove_child(player)
+	world.add_child(player)
 	world.visible = true
 	ground.visible = true
 	floor_layer.visible = true
-	player.position = mine_exit
+	player.position = surface_spot
+	player.velocity = Vector2.ZERO
 	camera.bounds = world_bounds
 	camera.position = player.position
-	hud.flash("De retour à la surface !", 1.5)
+	hud.refresh_build()
 
 
 # Builds a level of the mine and puts the player by the ladder it came from.
@@ -1377,6 +1421,7 @@ func _open_mine(key: String, level: int, from_above: bool) -> void:
 	if mine != null:
 		mine.queue_free()
 	mine = Mine.new()
+	away = mine
 	add_child(mine)
 	mine.setup(key, mine_states[key], level)
 	mine.add_child(player)
@@ -1390,6 +1435,7 @@ func _open_mine(key: String, level: int, from_above: bool) -> void:
 	player.velocity = Vector2.ZERO
 	camera.bounds = mine.bounds()
 	camera.position = player.position
+	hud.refresh_build()
 
 
 func _mine_action(cell: Vector2i) -> void:
@@ -1422,6 +1468,91 @@ func _process_mine() -> void:
 	var target: Vector2i = player.front()
 	var kind: String = mine.kind_at(target)
 	_show_ghost(target, Vector2i.ONE, Color.WHITE if kind != "floor" else Color("90a0b0"))
+
+
+# --- Adventure: the village and its shop ---------------------------------------------
+
+func enter_village() -> void:
+	surface_spot = cell_center(ENTRANCE)
+	_leave_surface()
+	village = Village.new()
+	away = village
+	add_child(village)
+	village.setup(village_state)
+	player.get_parent().remove_child(player)
+	village.add_child(player)
+	village.player = player
+	player.position = village.arrival()
+	player.velocity = Vector2.ZERO
+	player.facing = Vector2i.LEFT
+	camera.bounds = village.bounds()
+	camera.position = player.position
+	hud.refresh_build()
+	hud.flash("Bienvenue au village !\nVa voir la boutique sur la place.", 3.0)
+
+
+func exit_village() -> void:
+	village.queue_free()
+	village = null
+	_back_to_surface()
+	player.facing = Vector2i.RIGHT
+	hud.close_shop()
+	hud.flash("De retour au parc !", 1.5)
+
+
+func _process_village() -> void:
+	if village.is_exit(player.cell()):
+		exit_village()
+		return
+	village.show_shop_hint(village.near_shop(player.position) and not hud.shop.visible)
+	var target: Vector2i = player.front()
+	var kind: String = village.kind_at(target)
+	if kind in ["shop", "chest", "house"]:
+		_show_ghost(target, Vector2i.ONE, Color.WHITE)
+	else:
+		ghost.visible = false
+
+
+func _village_action(cell: Vector2i) -> void:
+	var at: Vector2 = village.cell_center(cell)
+	match village.kind_at(cell):
+		"shop":
+			hud.open_shop()
+		"house":
+			_float_text(at, "Toc toc ! Personne ne répond…", Color("fff59d"))
+		"chest":
+			var found: Dictionary = village.open_chest(cell)
+			if found.is_empty():
+				_float_text(at, "Le coffre est vide.", Color("c0c0c8"))
+				return
+			var gained := PackedStringArray()
+			for id in found:
+				if id == "coins":
+					money += found[id]
+					gained.append("+%d pièces" % found[id])
+				else:
+					inventory.add(id, found[id])
+					gained.append("+%d %s" % [found[id], Items.name_of(id)])
+			hud.flash("Un trésor !\n" + "  ".join(gained), 3.0)
+			save_game()
+
+
+# Buys a line of Market.BUY. Returns false when there are not enough coins.
+func buy(entry: Dictionary) -> bool:
+	if money < entry.price:
+		return false
+	money -= entry.price
+	inventory.add(entry.id, entry.count)
+	return true
+
+
+# Sells `amount` of a thing to the merchant and returns the coins earned.
+func sell(id: String, amount: int) -> int:
+	amount = mini(amount, inventory.count(id))
+	if amount <= 0 or not Market.SELL.has(id) or not inventory.remove(id, amount):
+		return 0
+	money += amount * Market.SELL[id]
+	return amount * Market.SELL[id]
 
 
 # --- Adventure: catching dinosaurs -----------------------------------------------

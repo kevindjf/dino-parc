@@ -8,6 +8,17 @@ extends RefCounted
 
 const ENTRIES := [
 	{
+		"version": 4,
+		"title": "Le village et sa boutique !",
+		"items": [
+			["dino:triceratops", "Sors du parc par le portail, à gauche : la route mène au village !"],
+			["capsule_gold", "À la boutique, tes pièces achètent des capsules, des flèches, une selle, de l'or…"],
+			["wood", "Tu as trop de bois ou de pierres ? Vends-les au marchand !"],
+			["fossil", "Les fossiles valent cher : 30 pièces chacun."],
+			["capsule_iron", "Quatre maisons abandonnées cachent un coffre au trésor. Trouve-les toutes !"],
+		],
+	},
+	{
 		"version": 3,
 		"title": "Construis avec ton doigt !",
 		"items": [

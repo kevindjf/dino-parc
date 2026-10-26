@@ -10,6 +10,7 @@ const Items := preload("res://scripts/items.gd")
 const Catalog := preload("res://scripts/catalog.gd")
 const TouchStick := preload("res://scripts/touch_stick.gd")
 const TouchButton := preload("res://scripts/touch_button.gd")
+const Market := preload("res://scripts/market.gd")
 
 var park: Node2D
 var inventory: RefCounted
@@ -42,6 +43,11 @@ var build_tools := {}  # tool id -> Button
 var pocket: PanelContainer  # "Mes dinos": the caught dinosaurs, waiting to be released
 var pocket_grid: GridContainer
 var dex_grid: GridContainer
+var shop: PanelContainer  # the shop of the village
+var shop_grid: GridContainer
+var shop_money: Label
+var shop_tabs := {}  # "buy" / "sell" -> Button
+var shop_selling := false
 var dex_title: Label
 
 
@@ -60,6 +66,7 @@ func setup(owner_park: Node2D, player_inventory: RefCounted, player_name: String
 	_build_bag()
 	_build_dex()
 	_build_pocket()
+	_build_shop()
 	_build_message()
 	inventory.changed.connect(_refresh)
 	_refresh()
@@ -281,6 +288,7 @@ func toggle_bag() -> void:
 	bag.visible = bag_open
 	dex.visible = false
 	pocket.visible = false
+	shop.visible = false
 	if bag_open:
 		_fill_bag()
 
@@ -345,8 +353,8 @@ func toggle_dex() -> void:
 
 func setup_builder(owner_builder: Node2D) -> void:
 	builder = owner_builder
-	builder.changed.connect(_refresh_build)
-	inventory.changed.connect(_refresh_build)
+	builder.changed.connect(refresh_build)
+	inventory.changed.connect(refresh_build)
 	build_button = TouchButton.new()
 	build_button.setup("Construire", 36.0, Color("e09030"))
 	build_button.set_icon(Art.resource("hammer"))
@@ -394,7 +402,7 @@ func setup_builder(owner_builder: Node2D) -> void:
 func toggle_build() -> void:
 	if builder.active:
 		builder.close()
-	elif park.mine == null and park.player.mount == null:
+	elif park.away == null and park.player.mount == null:
 		if bag_open:
 			toggle_bag()
 		dex.visible = false
@@ -402,7 +410,7 @@ func toggle_build() -> void:
 		builder.open()
 
 
-func _refresh_build() -> void:
+func refresh_build() -> void:
 	if builder == null:
 		return
 	var building: bool = builder.active
@@ -410,7 +418,7 @@ func _refresh_build() -> void:
 	hotbar_panel.visible = not building
 	action.visible = not building
 	bag_button.visible = not building
-	build_button.visible = not building and park.mine == null
+	build_button.visible = not building and park.away == null
 	if not building:
 		return
 	build_status.text = builder.status()
@@ -468,6 +476,7 @@ func _build_pocket() -> void:
 func toggle_pocket() -> void:
 	pocket.visible = not pocket.visible
 	dex.visible = false
+	shop.visible = false
 	if bag_open:
 		bag_open = false
 		bag.visible = false
@@ -519,9 +528,136 @@ func _unhandled_input(event: InputEvent) -> void:
 				toggle_dex()
 			elif pocket.visible:
 				toggle_pocket()
+			elif shop.visible:
+				close_shop()
 		_:
 			if event.keycode >= KEY_1 and event.keycode <= KEY_8:
 				inventory.select(event.keycode - KEY_1)
+
+
+# --- The shop of the village: buy with coins, sell what you have too much of ------------
+
+func _build_shop() -> void:
+	shop = PanelContainer.new()
+	shop.set_anchors_preset(Control.PRESET_CENTER)
+	shop.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	shop.grow_vertical = Control.GROW_DIRECTION_BOTH
+	shop.custom_minimum_size = Vector2(860, 520)
+	shop.visible = false
+	root.add_child(shop)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 10)
+	shop.add_child(column)
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 12)
+	column.add_child(header)
+	_label(header, "Boutique", 24)
+	var group := ButtonGroup.new()
+	for entry in [["buy", "Acheter"], ["sell", "Vendre"]]:
+		var tab := _button(header, entry[1], 120, func() -> void:
+			shop_selling = entry[0] == "sell"
+			_fill_shop())
+		tab.toggle_mode = true
+		tab.button_group = group
+		shop_tabs[entry[0]] = tab
+	shop_money = _label(header, "", 20)
+	shop_money.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shop_money.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	shop_money.add_theme_color_override("font_color", Color("a07000"))
+	_button(header, "Fermer", 110, close_shop)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	column.add_child(scroll)
+	shop_grid = GridContainer.new()
+	shop_grid.columns = 5
+	shop_grid.add_theme_constant_override("h_separation", 8)
+	shop_grid.add_theme_constant_override("v_separation", 8)
+	scroll.add_child(shop_grid)
+
+
+func open_shop() -> void:
+	if bag_open:
+		toggle_bag()
+	dex.visible = false
+	pocket.visible = false
+	shop_selling = false
+	shop.visible = true
+	_fill_shop()
+
+
+func close_shop() -> void:
+	shop.visible = false
+
+
+func _fill_shop() -> void:
+	shop_tabs.buy.button_pressed = not shop_selling
+	shop_tabs.sell.button_pressed = shop_selling
+	shop_money.text = "Tes pièces : %d" % park.money
+	for child in shop_grid.get_children():
+		child.queue_free()
+	if shop_selling:
+		var any := false
+		for id in Market.SELL:
+			if inventory.count(id) > 0:
+				any = true
+				_sell_card(id)
+		if not any:
+			_label(shop_grid, "Tu n'as rien à vendre.\nLe marchand achète le bois, les pierres, les baies,\nles minerais et les fossiles.", 16)
+		return
+	for entry in Market.BUY:
+		_buy_card(entry)
+
+
+# One thing for sale: its picture, its name, and a button with its price.
+func _buy_card(entry: Dictionary) -> void:
+	var card := _shop_card(entry.id, "%s%s" % [Items.name_of(entry.id), " ×%d" % entry.count if entry.count > 1 else ""])
+	var price := _button(card, "%d pièces" % entry.price, 150, func() -> void:
+		if park.buy(entry):
+			flash("Tu as acheté : %s !" % Items.name_of(entry.id), 1.5)
+		else:
+			flash("Pas assez de pièces !", 1.5)
+		_fill_shop())
+	price.custom_minimum_size.y = 48
+	if park.money < entry.price:
+		price.modulate = Color(1, 1, 1, 0.5)
+
+
+func _sell_card(id: String) -> void:
+	var count: int = inventory.count(id)
+	var each: int = Market.SELL[id]
+	var card := _shop_card(id, "%s ×%d" % [Items.name_of(id), count])
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	card.add_child(row)
+	_button(row, "1 → %d" % each, 73, func() -> void:
+		park.sell(id, 1)
+		_fill_shop())
+	_button(row, "Tout → %d" % (each * count), 73, func() -> void:
+		var earned: int = park.sell(id, count)
+		flash("+%d pièces" % earned, 1.2)
+		_fill_shop())
+	for button in row.get_children():
+		button.add_theme_font_size_override("font_size", 13)
+
+
+func _shop_card(id: String, text: String) -> VBoxContainer:
+	var card := VBoxContainer.new()
+	card.custom_minimum_size = Vector2(150, 0)
+	shop_grid.add_child(card)
+	var picture := TextureRect.new()
+	picture.texture = Art.bag_icon(id)
+	picture.custom_minimum_size = Vector2(150, 48)
+	picture.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	card.add_child(picture)
+	var name := _label(card, text, 14)
+	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return card
+
+
+# A window is open over the game: the character waits.
+func menu_open() -> bool:
+	return bag_open or dex.visible or pocket.visible or shop.visible
 
 
 # --- What the park expects from a HUD ----------------------------------------------
