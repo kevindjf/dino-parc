@@ -6,6 +6,8 @@ signal tool_selected(id: String)
 signal zoom_requested(direction: int)
 signal exit_vehicle
 signal menu_requested
+signal pen_toggled(on: bool)
+signal undo_requested
 
 const Catalog := preload("res://scripts/catalog.gd")
 const Art := preload("res://scripts/art.gd")
@@ -23,6 +25,7 @@ var item_row: HBoxContainer
 var message_tween: Tween
 var tool_group := ButtonGroup.new()
 var current_tool := "path"
+var pen_button: Button
 
 
 func _ready() -> void:
@@ -35,6 +38,7 @@ func _ready() -> void:
 	_build_top_bar(root)
 	_build_toolbar(root)
 	_build_info(root)
+	_build_drawing_tools(root)
 
 	message_panel = PanelContainer.new()
 	message_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
@@ -171,6 +175,30 @@ func _build_info(root: Control) -> void:
 	info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info_label.add_theme_font_size_override("font_size", 14)
 	panel.add_child(info_label)
+
+
+# The same helpers as the building mode of the adventure: whole enclosures, eraser, undo.
+func _build_drawing_tools(root: Control) -> void:
+	var panel := PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	panel.offset_right = -8
+	panel.offset_bottom = -140
+	root.add_child(panel)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	panel.add_child(row)
+	pen_button = _small_button(row, "Enclos")
+	pen_button.toggle_mode = true
+	pen_button.tooltip_text = "Avec une barrière : tire d'un coin à l'autre pour faire tout l'enclos, avec un portail"
+	pen_button.toggled.connect(func(on: bool) -> void: pen_toggled.emit(on))
+	var eraser := _small_button(row, "Gomme")
+	eraser.pressed.connect(func() -> void:
+		current_tool = "bulldozer"
+		tool_selected.emit("bulldozer"))
+	var undo := _small_button(row, "Annuler")
+	undo.pressed.connect(func() -> void: undo_requested.emit())
 
 
 func _show_category(index: int) -> void:

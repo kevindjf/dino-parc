@@ -110,6 +110,12 @@ var driving: Node2D = null
 var ghost: Node2D
 var ghost_rect := Rect2()
 var ghost_color := Color.TRANSPARENT
+var ghost_cells: Array[Dictionary] = []  # {cell, ok}: an enclosure being drawn in the sandbox
+# Sandbox drawing helpers: whole enclosures from corner to corner, and undo.
+var pen := false
+var pen_start := NONE
+var stroke_log: Array[Dictionary] = []  # {origin, id, cost}: what the current press has built
+var undo_log: Array = []  # the last strokes, newest last
 # Adventure mode.
 var player: Node2D = null
 var inventory: RefCounted = null
@@ -179,6 +185,8 @@ func start_creative(demo: bool) -> void:
 	hud.zoom_requested.connect(camera.zoom_step)
 	hud.exit_vehicle.connect(stop_driving)
 	hud.menu_requested.connect(back_to_menu)
+	hud.pen_toggled.connect(func(on: bool) -> void: pen = on)
+	hud.undo_requested.connect(_undo_stroke)
 	if demo:
 		_build_demo()
 		mode = "demo"
@@ -335,7 +343,7 @@ func _process(delta: float) -> void:
 		var cell := _mouse_cell()
 		if cell != hover:
 			hover = cell
-			if painting and _drag_allowed():
+			if painting and _drag_allowed() and not _pen_active():
 				_apply(cell)
 			_update_hover_info()
 		_update_ghost()
@@ -372,8 +380,22 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.button_index == MOUSE_BUTTON_LEFT or event.button_index == MOUSE_BUTTON_RIGHT:
 			painting = event.pressed
 			erasing = event.button_index == MOUSE_BUTTON_RIGHT or tool == "bulldozer"
+			if _pen_active():
+				# Enclosure: nothing is built before the finger or the button is released.
+				if event.pressed:
+					pen_start = _mouse_cell()
+				elif pen_start != NONE:
+					for step in _pen_plan(pen_start, _mouse_cell()):
+						if step.ok:
+							_build(step.id, step.cell)
+					pen_start = NONE
+					ghost_cells.clear()
+					_finish_stroke()
+				return
 			if event.pressed:
 				_apply(_mouse_cell())
+			else:
+				_finish_stroke()
 
 
 func _on_tool_selected(id: String) -> void:
@@ -425,6 +447,59 @@ func _build(id: String, cell: Vector2i) -> void:
 	if not _spend(item.cost):
 		return
 	_add_building(id, origin)
+	stroke_log.append({"origin": origin, "id": id, "cost": item.cost})
+	_refresh()
+
+
+# --- Sandbox: enclosures and undo ------------------------------------------------
+
+func _pen_active() -> bool:
+	return pen and Catalog.ITEMS.has(tool) and Catalog.ITEMS[tool].kind == "fence" and tool != "gate_wood" and not erasing
+
+
+# The fences of an enclosure from corner `a` to corner `b`, with a gate in the middle of the bottom.
+func _pen_plan(a: Vector2i, b: Vector2i) -> Array[Dictionary]:
+	var plan: Array[Dictionary] = []
+	var low := Vector2i(mini(a.x, b.x), mini(a.y, b.y))
+	var high := Vector2i(maxi(a.x, b.x), maxi(a.y, b.y))
+	var gate := Vector2i((low.x + high.x) / 2, high.y) if (high - low).x >= 2 and (high - low).y >= 2 else NONE
+	var left := money
+	for y in range(low.y, high.y + 1):
+		for x in range(low.x, high.x + 1):
+			if x != low.x and x != high.x and y != low.y and y != high.y:
+				continue
+			var cell := Vector2i(x, y)
+			var id := "gate_wood" if cell == gate else tool
+			var cost: int = Catalog.ITEMS[id].cost
+			var ok := in_grid(cell) and _is_free(cell, Vector2i.ONE) and left >= cost
+			if ok:
+				left -= cost
+			plan.append({"cell": cell, "id": id, "ok": ok})
+	return plan
+
+
+func _finish_stroke() -> void:
+	if not stroke_log.is_empty():
+		undo_log.append(stroke_log)
+		stroke_log = []
+		if undo_log.size() > 30:
+			undo_log.pop_front()
+
+
+# Takes back what the last stroke built, and gives all its coins back.
+func _undo_stroke() -> void:
+	if undo_log.is_empty():
+		hud.flash("Rien à annuler")
+		return
+	var stroke: Array = undo_log.pop_back()
+	var refund := 0
+	for entry in stroke:
+		var building = occupied.get(entry.origin)
+		if building != null and building.id == entry.id and building.origin == entry.origin:
+			_remove_building(building)
+			refund += entry.cost
+	money += refund
+	hud.flash("Annulé (+%d pièces)" % refund)
 	_refresh()
 
 
@@ -2001,6 +2076,14 @@ func _describe_cell(cell: Vector2i) -> String:
 
 func _update_ghost() -> void:
 	ghost.visible = false
+	if _pen_active() and pen_start != NONE and painting:
+		ghost_cells = _pen_plan(pen_start, hover)
+		ghost.visible = true
+		ghost.queue_redraw()
+		var count := ghost_cells.filter(func(step: Dictionary) -> bool: return step.ok).size()
+		hud.set_info("Enclos : %d barrières sur %d cases" % [count, ghost_cells.size()])
+		return
+	ghost_cells.clear()
 	if not in_grid(hover):
 		return
 	if tool == "bulldozer":
@@ -2046,6 +2129,13 @@ func _draw_ghost() -> void:
 			var inward: Vector2 = (r.get_center() - corner).sign()
 			ghost.draw_line(corner, corner + Vector2(inward.x * 5, 0), ghost_color, 1.5)
 			ghost.draw_line(corner, corner + Vector2(0, inward.y * 5), ghost_color, 1.5)
+		return
+	if not ghost_cells.is_empty():
+		for step in ghost_cells:
+			var rect := Rect2(Vector2(step.cell * T), Vector2(T, T))
+			var color := Color("66bb6a") if step.ok else Color("e53935")
+			ghost.draw_rect(rect, Color(color, 0.4))
+			ghost.draw_rect(rect, Color(color.darkened(0.3), 0.9), false, 1.0)
 		return
 	ghost.draw_rect(ghost_rect, Color(ghost_color, 0.35))
 	ghost.draw_rect(ghost_rect, Color(ghost_color.darkened(0.3), 0.9), false, 1.0)

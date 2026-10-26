@@ -16,6 +16,7 @@ const ENTRIES := [
 			["gate_wood", "« Enclos » : tire d'un coin à l'autre, et tout l'enclos se construit, avec son portail !"],
 			["bush", "La gomme déterre les buissons à baies. Replante-les près de chez toi !"],
 			["feeder_plants", "Les grands bâtiments ont un chantier : tape dessus pour aider à construire."],
+			["dino:triceratops", "En Bac à sable aussi : les boutons Enclos, Gomme et Annuler !"],
 		],
 	},
 	{

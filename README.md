@@ -134,7 +134,9 @@ Recettes : Hache (3 bois), Pioche (4 bois), Barrières en bambou (1 bois → 2),
 | Action | Souris / trackpad | Clavier |
 |---|---|---|
 | Construire | Clic gauche (glisser pour les chemins, barrières, biomes, montagnes) | |
-| Détruire | Clic droit ou Bulldozer | |
+| Détruire | Clic droit, bouton « Gomme » ou Bulldozer | |
+| Enclos entier | Bouton « Enclos », une barrière choisie : tirer d'un coin à l'autre (portail au milieu du bas) | |
+| Annuler le dernier tracé | Bouton « Annuler » (les pièces sont rendues) | |
 | Zoomer | Molette, pincement ou boutons « Zoom » | |
 | Se déplacer | Glisser à deux doigts, ou clic molette + glisser | Flèches ou Z Q S D |
 | Se promener, conduire (gardien, gyrosphère, jeep) | | Flèches ou Z Q S D, Échap pour arrêter |
