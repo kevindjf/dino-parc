@@ -8,6 +8,7 @@ signal chosen(info: Dictionary)  # the world to play (just created or picked in 
 const Hud := preload("res://scripts/hud.gd")
 const Art := preload("res://scripts/art.gd")
 const Worlds := preload("res://scripts/worlds.gd")
+const News := preload("res://scripts/news.gd")
 
 const MODE_TEXT := {
 	"adventure": "Explore, récolte et attrape des dinos",
@@ -15,12 +16,13 @@ const MODE_TEXT := {
 }
 const MODE_ICON := {"adventure": "dino:trex", "creative": "dino:triceratops"}
 
+var root: Control
 var page: VBoxContainer  # the part under the title, replaced when going from one screen to another
 
 
 func _ready() -> void:
 	layer = 3
-	var root := Control.new()
+	root = Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.theme = Hud.make_theme()
 	add_child(root)
@@ -54,6 +56,11 @@ func _ready() -> void:
 		_show_create()
 	else:
 		_show_list()
+	var version := _label(root, "Version %d" % News.version(), 14)
+	version.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 10)
+	var unseen := News.unseen()
+	if not unseen.is_empty():
+		_show_news(unseen)
 	_check_for_update()
 
 
@@ -106,8 +113,13 @@ func _show_list() -> void:
 		play.text = "  %s\n  %s · %s" % [info.name, Worlds.MODES[info.mode], Worlds.played_text(info)]
 		var remove := _button(row, "Supprimer", 16, func() -> void: _show_delete(info))
 		remove.custom_minimum_size = Vector2(110, 84)
-	var create := _button(page, "Créer un nouveau monde", 26, _show_create)
+	var buttons := HBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 8)
+	page.add_child(buttons)
+	var create := _button(buttons, "Créer un nouveau monde", 26, _show_create)
 	create.custom_minimum_size.y = 72
+	create.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_button(buttons, "Nouveautés", 20, func() -> void: _show_news(News.ENTRIES)).custom_minimum_size = Vector2(160, 72)
 
 
 # Name the world, choose its mode and its settings.
@@ -194,6 +206,53 @@ func _fill_settings(box: VBoxContainer, mode: String, settings: Dictionary) -> v
 					button.button_group = group
 					button.button_pressed = settings[setting.key] == option[0]
 					button.custom_minimum_size.y = 52
+
+
+# What's new, over the title screen: a big picture and a short sentence for each novelty.
+func _show_news(entries: Array) -> void:
+	var shade := ColorRect.new()
+	shade.color = Color(0.1, 0.2, 0.15, 0.6)
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.add_child(shade)
+	var panel := PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+	shade.add_child(panel)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 12)
+	panel.add_child(box)
+	var heading := _label(box, "Quoi de neuf ?", 34)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(720, 470)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	box.add_child(scroll)
+	var lines := VBoxContainer.new()
+	lines.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lines.add_theme_constant_override("separation", 10)
+	scroll.add_child(lines)
+	for entry in entries:
+		var title := _label(lines, "Version %d : %s" % [entry.version, entry.title], 26)
+		title.add_theme_color_override("font_color", Color("2860c0"))
+		for item in entry.items:
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 14)
+			lines.add_child(row)
+			var picture := TextureRect.new()
+			picture.texture = Art.bag_icon(item[0])
+			picture.custom_minimum_size = Vector2(64, 64)
+			picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			row.add_child(picture)
+			var text := _label(row, item[1], 22)
+			text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var close := _button(box, "Super !", 28, func() -> void:
+		News.mark_seen()
+		shade.queue_free())
+	close.custom_minimum_size.y = 72
 
 
 func _show_delete(info: Dictionary) -> void:

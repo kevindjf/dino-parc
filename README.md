@@ -149,6 +149,10 @@ l'écran titre affiche « Nouvelle version du jeu ! » et recharge le jeu (les m
 ### Publier une mise à jour
 
 - On travaille sur la branche `main` : pousser dessus ne change rien en ligne.
+- Avant de publier, ajouter les nouveautés en haut de `scripts/news.gd`, avec le numéro de version
+  suivant et des phrases courtes qu'un enfant comprend (une image par nouveauté). Elles s'affichent
+  une fois sur chaque appareil (« Quoi de neuf ? »), et le bouton « Nouveautés » les remontre toutes.
+  Le numéro de version est écrit en bas à droite de l'écran titre.
 - Pour publier : `git push origin main:release`. GitHub exporte la version web et la met en
   ligne en 2 à 3 minutes (onglet « Actions » du dépôt pour suivre).
 - Pour revenir en arrière : `git push --force origin <commit>:release`.
