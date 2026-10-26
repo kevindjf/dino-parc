@@ -72,13 +72,32 @@ Une partie commencée sur l'ancienne petite carte est replacée telle quelle pr�
 Des dinosaures sauvages vivent dans le parc, chacun dans son biome préféré : prairie, jungle, désert, marais ou neige. Les petits sont fréquents, les géants sont rares. Il y a deux façons de les attraper :
 
 - **Apprivoiser un herbivore.** Prendre des baies en main et lui en donner 3 (bouton Action devant lui). Il te suit alors partout, même à travers les barrières. Dès qu'il entre dans un enclos fermé, il y habite.
-- **Endormir puis mettre en cage**, pour tous les dinosaures, et la seule façon pour les carnivores. Lancer une fléchette (bouton Action, il s'endort 25 secondes), puis prendre une cage et le toucher : il va dans le sac. On le relâche en visant une case libre dans un enclos.
+- **Le combat, puis la capsule**, pour tous les dinosaures. Personne n'est blessé : chaque tir fatigue le dinosaure, et une fois épuisé il s'endort. On lance alors une capsule dessus : il va dans le sac, et on le relâche en visant une case libre dans un enclos.
 
-Les carnivores sauvages foncent sur toi s'ils te voient de près. S'ils t'attrapent, tu te réveilles à l'entrée du parc, sans rien perdre. Fermer une barrière autour d'un dinosaure sauvage marche aussi !
+**Le combat se joue de loin, en direct.** Avec une arme en main, une cible apparaît sur le dinosaure sauvage le plus proche devant toi, avec sa barre d'énergie. Le bouton Action tire (garder appuyé pour tirer en continu) :
+
+| Arme | Effet | Munitions |
+|---|---|---|
+| Lance-pierre | fatigue un peu | les pierres du sac |
+| Arc | fatigue plus, de plus loin | les flèches |
+| Fléchettes endormantes | fatiguent beaucoup | elles-mêmes |
+| Bolas | bloquent le dinosaure 4 secondes | elles-mêmes |
+
+Les petits herbivores s'enfuient quand on les touche ; les carnivores et les gros herbivores (force 3 et plus) foncent sur toi. S'ils te touchent, tu perds un **cœur** (en haut de l'écran, il y en a 5, ils reviennent tout seuls). Sans cœur, tu te réveilles à l'entrée du parc, sans rien perdre. Si on le laisse tranquille 8 secondes, un dinosaure reprend des forces.
+
+**Les capsules** se lancent de loin. Avec une capsule en main, une pastille de couleur sur la cible dit les chances : **verte** ça marche presque à coup sûr (dinosaure épuisé), **orange** peut-être, **rouge** presque jamais. La capsule tremble trois fois : elle tient, ou le dinosaure s'échappe (réveillé, un peu reposé, et la capsule est perdue). Chaque capsule a sa taille :
+
+- **Capsule en cuivre** : jusqu'à la force 3 (Tricératops, Diplodocus, Vélociraptor…) ;
+- **Capsule en fer** : jusqu'à la force 4 (Brachiosaure, Carnotaure, Yutyrannus) ;
+- **Capsule en or** : tous, même le T-Rex et le Spinosaure.
+
+La **cage** marche encore pour les petits dinosaures (force 1 et 2) : on la pose à la main sur un dinosaure endormi.
+
+Les carnivores sauvages foncent sur toi s'ils te voient de près. Fermer une barrière autour d'un dinosaure sauvage marche aussi !
 
 ## Aventure : l'amitié et la monture
 
-Chaque dinosaure du parc a de l'**amitié pour toi, de 0 à 5 cœurs**. Elle démarre à 1 cœur pour un dinosaure apprivoisé, à 0 pour un dinosaure attrapé en cage.
+Chaque dinosaure du parc a de l'**amitié pour toi, de 0 à 5 cœurs**. Elle démarre à 1 cœur pour un dinosaure apprivoisé, à 0 pour un dinosaure attrapé en cage ou en capsule.
 
 - **Le brosser** (brosse en main, Action devant lui) : tous les dinosaures aiment ça.
 - **Lui donner des baies à la main**, pour les herbivores.
@@ -89,7 +108,7 @@ Chaque dinosaure du parc a de l'**amitié pour toi, de 0 à 5 cœurs**. Elle dé
 
 Le **Dinodex** (bouton en haut) montre les 21 espèces : les ombres noires sont celles qu'il reste à attraper. Les volants et les reptiles marins arriveront plus tard.
 
-Recettes : Hache (3 bois), Pioche (4 bois), Barrières en bambou (1 bois → 2), en bois (2 bois → 2), en pierre (2 pierres → 2), Portail (3 bois), Chemin (1 pierre → 4), Mangeoire (4 bois + 3 baies), Fléchettes (1 bois + 1 pierre → 3), Cage (4 bois + 2 pierres), Brosse (2 bois + 1 baie), Selle (4 bois + 2 pierres + 2 baies). On les modifie dans `scripts/items.gd`.
+Recettes : Hache (3 bois), Pioche (4 bois), Barrières en bambou (1 bois → 2), en bois (2 bois → 2), en pierre (2 pierres → 2), Portail (3 bois), Chemin (1 pierre → 4), Mangeoire (4 bois + 3 baies), Lance-pierre (3 bois), Arc (5 bois), Flèches (1 bois + 1 pierre → 5), Fléchettes endormantes (1 bois + 2 baies → 3), Bolas (2 pierres + 1 bois → 2), Cage (4 bois + 2 pierres), Capsules en cuivre (2 cuivre + 1 pierre → 2), en fer (2 fer + 1 cuivre → 2), en or (1 or + 1 fer + 1 cristal), Brosse (2 bois + 1 baie), Selle (4 bois + 2 pierres + 2 baies). On les modifie dans `scripts/items.gd`.
 
 ## Bac à sable : les commandes
 

@@ -23,6 +23,7 @@ var swing := 0.0
 var last_cell := Vector2i.ZERO
 var notify_timer := 0.0
 var mount: Node2D = null
+var blink_time := 0.0
 
 
 func setup(owner_park: Node2D, player_look: Dictionary, at: Vector2) -> void:
@@ -36,6 +37,11 @@ func setup(owner_park: Node2D, player_look: Dictionary, at: Vector2) -> void:
 	tool_sprite.scale = Vector2(0.75, 0.75)
 	tool_sprite.visible = false
 	add_child(tool_sprite)
+
+
+# Blinks for a while after being bumped by a dinosaur.
+func blink(duration: float) -> void:
+	blink_time = duration
 
 
 func cell() -> Vector2i:
@@ -159,8 +165,10 @@ func _animate(delta: float, holding: String) -> void:
 	var frame := int(travelled / 5.0) % 2 if velocity.length() > 4.0 else 0
 	sprite.texture = Art.person(direction, frame, look)
 
+	blink_time = maxf(blink_time - delta, 0.0)
+	sprite.visible = blink_time <= 0.0 or int(blink_time * 12.0) % 2 == 0
 	swing = maxf(swing - delta, 0.0)
-	var is_tool: bool = Items.kind_of(holding) == "tool"
+	var is_tool: bool = Items.kind_of(holding) in ["tool", "weapon"]
 	tool_sprite.visible = is_tool and facing != Vector2i.UP
 	if is_tool:
 		tool_sprite.texture = Art.resource(holding)

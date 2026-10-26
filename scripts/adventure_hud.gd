@@ -18,6 +18,7 @@ var stick: Control
 var action: Control
 var name_label: Label
 var money_label: Label
+var hearts_row: HBoxContainer
 var visitors_label: Label
 var goal_label: Label
 var slots: Array[Button] = []
@@ -67,6 +68,9 @@ func _build_top(player_name: String) -> void:
 	top.add_child(row)
 	name_label = _label(row, player_name, 20)
 	name_label.add_theme_color_override("font_color", Color("2860c0"))
+	hearts_row = HBoxContainer.new()
+	hearts_row.add_theme_constant_override("separation", 2)
+	row.add_child(hearts_row)
 	money_label = _label(row, "", 18)
 	visitors_label = _label(row, "", 14)
 	goal_label = _label(row, "", 15)
@@ -206,6 +210,8 @@ func _refresh() -> void:
 			slot.text = ""
 		elif Items.kind_of(id) == "tool":
 			slot.text = ""
+		elif Items.kind_of(id) == "weapon":
+			slot.text = "×%d" % inventory.count(Items.WEAPONS[id].ammo)
 		else:
 			slot.text = "×%d" % inventory.count(id)
 		slot.modulate.a = 0.45 if id != "" and inventory.count(id) == 0 else 1.0
@@ -360,6 +366,21 @@ func flash(text: String, duration := 1.5) -> void:
 func update_stats(money: int, on_site: int, total: int, _attraction: int) -> void:
 	money_label.text = "Pièces : %d" % money
 	visitors_label.text = "Visiteurs : %d\n(total %d)" % [on_site, total]
+
+
+# The player's hearts: full ones, then empty ones.
+func set_hearts(full: int, total: int) -> void:
+	if hearts_row.get_child_count() != total:
+		for child in hearts_row.get_children():
+			child.queue_free()
+		for i in total:
+			var heart := TextureRect.new()
+			heart.custom_minimum_size = Vector2(24, 24)
+			heart.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			heart.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			hearts_row.add_child(heart)
+	for i in total:
+		hearts_row.get_child(i).texture = Art.heart(i < full)
 
 
 func set_goal(text: String) -> void:

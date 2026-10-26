@@ -30,7 +30,7 @@ func add(id: String, amount := 1) -> void:
 	var is_new := count(id) == 0 and not id in hotbar
 	counts[id] = count(id) + amount
 	# New things go straight to a free slot of the tool bar, so they are ready to use.
-	if is_new and Items.kind_of(id) != "resource":
+	if is_new and not Items.kind_of(id) in ["resource", "ammo"]:
 		var free := hotbar.find("")
 		if free >= 0:
 			hotbar[free] = id

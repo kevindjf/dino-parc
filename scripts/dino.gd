@@ -51,6 +51,19 @@ var trust := 0
 var following: Node2D = null
 var chase_cool := 3.0
 
+# Fights with wild dinosaurs: nobody gets hurt. Shots take energy away; out of energy, the
+# dinosaur falls asleep and can be caught. How it reacts to a shot depends on its temper:
+# carnivores and big herbivores charge back, small herbivores run away.
+const TIRED_SLEEP := 20.0
+const REST_DELAY := 8.0  # seconds without being shot before energy comes back
+var energy := 0.0
+var last_hit := -100.0
+var angry_time := 0.0
+var flee_time := 0.0
+var stun_time := 0.0
+var flash_time := 0.0
+var captured := false  # being sucked into a capsule
+
 # Friendship with the park's dinosaurs (0 to 100, 20 per heart): brushing and feeding by hand
 # make it grow. With five hearts and a saddle, a big enough dinosaur can be ridden.
 const HEART := 20
@@ -81,6 +94,7 @@ func setup(owner_park: Node2D, id: String, start: Vector2i, building) -> void:
 	home_cell = start
 	home_building = building
 	hunger = randf_range(70.0, 100.0)
+	energy = max_energy()
 	next_roar = randf_range(5.0, 15.0)
 	escape_timer = randf_range(20.0, 40.0)
 	offset = Vector2(randf_range(-4, 4), randf_range(-4, 4))
@@ -118,6 +132,37 @@ func setup(owner_park: Node2D, id: String, start: Vector2i, building) -> void:
 	mood_text = WorldText.make(self, Vector2(0, -top - 2), "", "bubble")
 	roar_text = WorldText.make(self, Vector2(0, -top - 16), species.sound, "shout")
 	roar_text.set_shown(false)
+
+
+func max_energy() -> float:
+	return 20.0 + 20.0 * species.strength
+
+
+# "fierce" charges back, "shy" runs away.
+func temper() -> String:
+	return "fierce" if species.diet == "carn" or species.strength >= 3 else "shy"
+
+
+func hurt(amount: float, stun: float) -> void:
+	if state == "sleep" or captured:
+		return
+	last_hit = time
+	flash_time = 0.15
+	energy = maxf(energy - amount, 0.0)
+	stun_time = maxf(stun_time, stun)
+	following = null
+	if energy <= 0.0:
+		stun_time = 0.0
+		angry_time = 0.0
+		flee_time = 0.0
+		sleep(TIRED_SLEEP)
+		return
+	if temper() == "fierce":
+		angry_time = 10.0
+		chase_cool = 0.0
+	else:
+		flee_time = 4.0
+	roar()
 
 
 func hearts() -> int:
@@ -187,6 +232,9 @@ func set_mood(text: String, color: Color) -> void:
 	elif state == "sleep":
 		text = "Zzz"
 		color = Color("3070b0")
+	elif stun_time > 0.0:
+		text = "Coincé !"
+		color = Color("8d6e63")
 	elif following != null:
 		text = "Je te suis !"
 		color = Color("c0306a")
@@ -207,6 +255,15 @@ func _process(delta: float) -> void:
 		roar()
 		next_roar = randf_range(6.0, 12.0) if escaped else randf_range(10.0, 25.0)
 	roar_text.set_shown(roar_time > 0.0)
+	if captured:
+		return
+	if habitat == "land":
+		flash_time = maxf(flash_time - delta, 0.0)
+		sprite.modulate = Color(3, 3, 3) if flash_time > 0.0 else Color.WHITE
+	if wild and state != "sleep" and time - last_hit > REST_DELAY:
+		energy = minf(energy + max_energy() * 0.05 * delta, max_energy())
+	if wild:
+		set_mood("", Color.WHITE)
 
 	var moving := false
 	match habitat:
@@ -239,7 +296,12 @@ func _animate(delta: float, moving: bool) -> void:
 func _process_land(delta: float) -> bool:
 	if state == "sleep":
 		sleep_time -= delta
-		if sleep_time <= 0.0:
+		if sleep_time <= 0.0 and wild:
+			# A wild dinosaur wakes up rested, where it fell asleep.
+			state = "idle"
+			wait = 1.0
+			energy = max_energy()
+		elif sleep_time <= 0.0:
 			if park.return_dino(self):
 				state = "idle"
 				wait = 1.0
@@ -247,12 +309,19 @@ func _process_land(delta: float) -> bool:
 				sleep_time = 5.0
 		return false
 
+	if stun_time > 0.0:
+		stun_time -= delta
+		return false
 	if following != null:
 		return _follow(delta)
 	chase_cool -= delta
-	if wild and species.diet == "carn" and park.player != null and park.mine == null and chase_cool <= 0.0 and not _player_rides_stronger():
+	angry_time -= delta
+	if flee_time > 0.0 and park.player != null:
+		flee_time -= delta
+		return _flee(delta)
+	if wild and park.player != null and park.mine == null and chase_cool <= 0.0 and not _player_rides_stronger():
 		var distance: float = position.distance_to(park.player.position)
-		if distance < 4.0 * T:
+		if (species.diet == "carn" and distance < 4.0 * T) or (angry_time > 0.0 and distance < 12.0 * T):
 			return _chase(delta)
 	escape_timer -= delta
 	match state:
@@ -364,9 +433,9 @@ func _chase(delta: float) -> bool:
 	state = "idle"
 	var to_player: Vector2 = park.player.position - position
 	if to_player.length() < 10.0:
-		chase_cool = 8.0
+		chase_cool = 2.5
 		roar()
-		park.player_scared(self)
+		park.player_hit(self)
 		return false
 	var step := to_player.normalized() * maxf(species.speed * T * 1.5, 40.0) * delta
 	var next_cell := Vector2i(((position + step) / T).floor())
@@ -377,6 +446,25 @@ func _chase(delta: float) -> bool:
 	sprite.flip_h = step.x < 0.0
 	if roar_time <= 0.0 and randf() < delta:
 		roar()
+	return true
+
+
+# Runs away from the player, a bit faster than walking.
+func _flee(delta: float) -> bool:
+	route.clear()
+	state = "idle"
+	var away: Vector2 = (position - park.player.position).normalized()
+	var step := away * maxf(species.speed * T * 1.8, 40.0) * delta
+	var next_cell := Vector2i(((position + step) / T).floor())
+	if next_cell != cell and not park.is_walkable_for_dino(next_cell, region):
+		# Cornered: try sideways.
+		step = step.rotated(PI / 2.0)
+		next_cell = Vector2i(((position + step) / T).floor())
+		if next_cell != cell and not park.is_walkable_for_dino(next_cell, region):
+			return false
+	position += step
+	cell = next_cell
+	sprite.flip_h = step.x < 0.0
 	return true
 
 

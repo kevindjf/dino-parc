@@ -20,6 +20,7 @@ const Title := preload("res://scripts/title.gd")
 const Creator := preload("res://scripts/creator.gd")
 const SaveGame := preload("res://scripts/save_game.gd")
 const Worlds := preload("res://scripts/worlds.gd")
+const Combat := preload("res://scripts/combat.gd")
 const WorldGen := preload("res://scripts/world_gen.gd")
 const Mine := preload("res://scripts/mine.gd")
 
@@ -42,7 +43,8 @@ const BORDER := 3  # rows of forest drawn around the park
 const BERRY_REGROW := 25.0
 const AUTOSAVE := 20.0
 const WILD_TARGET := 30  # wild dinosaurs roaming the adventure land
-const DART_RANGE := 4.5 * 16
+const MAX_HEARTS := 5
+const HEAL_EVERY := 6.0  # seconds to get a heart back, once nobody has hit us for a while
 
 const ADVENTURE_GOALS := [
 	{"id": "wood", "text": "Frappe un arbre pour récolter 5 bois (bouton Action ou Espace)"},
@@ -55,8 +57,8 @@ const ADVENTURE_GOALS := [
 	{"id": "path", "text": "Fais un chemin depuis l'entrée jusqu'à ton enclos"},
 	{"id": "tame", "text": "Trouve un dinosaure herbivore sauvage et donne-lui 3 baies pour l'apprivoiser"},
 	{"id": "adopt", "text": "Emmène-le dans ton enclos : passe le portail, il te suit !"},
-	{"id": "cage", "text": "Fabrique des fléchettes et une cage, endors un dinosaure et mets-le en cage"},
-	{"id": "release", "text": "Relâche ton dinosaure en cage dans un enclos"},
+	{"id": "cage", "text": "Fabrique un lance-pierre et une cage. Fatigue un petit dinosaure de loin, puis mets-le en cage"},
+	{"id": "release", "text": "Relâche le dinosaure attrapé dans un enclos"},
 	{"id": "brush", "text": "Fabrique une brosse et brosse un dinosaure de ton parc"},
 	{"id": "friend", "text": "Gagne les 5 cœurs d'amitié d'un dinosaure (brosse-le, donne-lui à manger)"},
 	{"id": "ride", "text": "Pose-lui une selle et monte sur son dos !"},
@@ -121,6 +123,10 @@ var mine: Node2D = null  # the mine the player is in, or null on the surface
 var mine_states := {}  # entrance "x,y" -> {"seed", "dug"}, saved with the game
 var mine_exit := Vector2.ZERO
 var world_bounds := Rect2()
+var combat: Node2D = null
+var hearts := MAX_HEARTS
+var safe_until := 0.0  # after a hit, a short time when nothing can hit us again
+var heal_timer := 0.0
 
 
 func _ready() -> void:
@@ -209,6 +215,10 @@ func start_adventure(data: Dictionary) -> void:
 	player = Player.new()
 	world.add_child(player)
 	player.setup(self, Creator.colors_of(look), start)
+	combat = Combat.new()
+	add_child(combat)
+	combat.setup(self)
+	hud.set_hearts(hearts, MAX_HEARTS)
 	camera.position = start
 	camera.zoom_index = 3
 	camera._apply_zoom()
@@ -679,7 +689,8 @@ func return_dino(dino: Node2D) -> bool:
 
 
 func on_dino_escaped(dino: Node2D) -> void:
-	hud.flash("Alerte ! %s s'est échappé !\nUtilise la fléchette (onglet Outils)." % dino.species.name, 3.5)
+	var how := "ton lance-pierre ou tes fléchettes" if mode == "adventure" else "la fléchette (onglet Outils)"
+	hud.flash("Alerte ! %s s'est échappé !\nEndors-le avec %s." % [dino.species.name, how], 3.5)
 
 
 func find_feeder(dino: Node2D):
@@ -1173,10 +1184,18 @@ func _process_adventure(delta: float) -> void:
 			if region >= 0 and regions[region].enclosed:
 				dino.region = region
 				adopt(dino)
-	# The cell in front of the character is highlighted.
+	if hearts < MAX_HEARTS:
+		heal_timer -= delta
+		if heal_timer <= 0.0:
+			heal_timer = HEAL_EVERY
+			hearts += 1
+			hud.set_hearts(hearts, MAX_HEARTS)
+	# The cell in front of the character is highlighted (not when aiming at dinosaurs).
 	var target: Vector2i = player.front()
 	var holding: String = inventory.current()
-	if in_grid(target):
+	if Items.WEAPONS.has(holding):
+		ghost.visible = false
+	elif in_grid(target):
 		var ok := true
 		if Items.kind_of(holding) == "build" or Items.kind_of(holding) == "dino":
 			ok = _can_place(target, holding)
@@ -1211,8 +1230,8 @@ func player_action(cell: Vector2i) -> void:
 	if kind == "dino":
 		_release(holding, cell)
 		return
-	if holding == "dart":
-		_throw_dart()
+	if Items.WEAPONS.has(holding):
+		combat.fire()
 		return
 	var dino := _dino_near(cell_center(cell), 14.0)
 	if dino != null:
@@ -1328,20 +1347,20 @@ func _process_mine() -> void:
 
 func _touch_dino(dino: Node2D, holding: String) -> void:
 	var at: Vector2 = dino.position + Vector2(0, -12)
-	if holding == "cage":
+	if holding == "cage" and dino.wild:
+		if dino.species.strength > Items.CAGE_STRENGTH:
+			_float_text(at, "Trop gros pour la cage ! Il faut une capsule.", Color("ffab91"))
+			return
 		if dino.state != "sleep":
-			_float_text(at, "Endors-le d'abord avec une fléchette !", Color("ffab91"))
+			_float_text(at, "Fatigue-le d'abord avec ton lance-pierre !", Color("ffab91"))
 			return
 		inventory.remove("cage")
-		inventory.add("dino:" + dino.species_id)
-		_mark_caught(dino.species_id)
 		_float_text(at, "%s est dans la cage !" % dino.species.name, Color("fff59d"))
-		hud.flash("Tu as attrapé : %s !\nRelâche-le dans un enclos." % dino.species.name, 3.0)
-		_remove_dino(dino)
+		catch_dino(dino)
 		return
 	if holding == "berries" and dino.wild:
 		if dino.species.diet != "herb":
-			_float_text(at, "Il ne mange pas de baies ! Endors-le avec une fléchette.", Color("ffab91"))
+			_float_text(at, "Il ne mange pas de baies ! Fatigue-le, puis lance une capsule.", Color("ffab91"))
 			return
 		if dino.following != null:
 			return
@@ -1356,7 +1375,8 @@ func _touch_dino(dino: Node2D, holding: String) -> void:
 		_update_attraction()
 		return
 	if dino.wild:
-		var hint := "Donne-lui des baies !" if dino.species.diet == "herb" else "Attention, il mord ! Endors-le avec une fléchette."
+		var hint := "Donne-lui des baies, ou fatigue-le et lance une capsule !" if dino.species.diet == "herb" \
+			else "Attention, il mord ! Fatigue-le de loin, puis lance une capsule."
 		_float_text(at, hint, Color("e0e0e0"))
 		return
 	if dino.state == "sleep":
@@ -1448,41 +1468,13 @@ func player_dismount() -> void:
 		hud.flash("%s te suit. Ramène-le dans un enclos !" % dino.species.name, 2.5)
 
 
-func _throw_dart() -> void:
-	if inventory.count("dart") <= 0:
-		_float_text(player.position, "Plus de fléchettes !", Color("ffab91"))
-		return
-	# The nearest awake dinosaur in front of the character.
-	var aim := Vector2(player.facing)
-	var target: Node2D = null
-	var best := DART_RANGE
-	for dino in dinos:
-		if dino.habitat != "land" or dino.state == "sleep":
-			continue
-		var to_dino: Vector2 = dino.position - player.position
-		var d := to_dino.length()
-		if d < best and (d < 12.0 or to_dino.normalized().dot(aim) > 0.6):
-			target = dino
-			best = d
-	inventory.remove("dart")
-	var dart := Art.sprite(Art.icon("dart"), Vector2(20, 20))
-	dart.scale = Vector2.ONE * 0.4
-	dart.z_index = 2
-	dart.position = player.position + Vector2(0, -8)
-	world.add_child(dart)
-	var goal: Vector2 = target.position + Vector2(0, -8) if target else player.position + aim * DART_RANGE
-	dart.rotation = (goal - dart.position).angle()
-	var tween := dart.create_tween()
-	tween.tween_property(dart, "position", goal, 0.25)
-	tween.tween_callback(dart.queue_free)
-	if target:
-		tween.tween_callback(func() -> void:
-			if is_instance_valid(target):
-				target.sleep(25.0 if target.wild else 6.0)
-				target.following = null
-				_float_text(target.position, "Zzz…", Color("b3e5fc")))
-	else:
-		_float_text(player.position, "Raté !", Color("e0e0e0"))
+# A wild dinosaur caught in a cage or a capsule goes in the bag.
+func catch_dino(dino: Node2D) -> void:
+	inventory.add("dino:" + dino.species_id)
+	_mark_caught(dino.species_id)
+	hud.flash("Tu as attrapé : %s !\nIl est dans ton sac. Relâche-le dans un enclos." % dino.species.name, 3.0)
+	_remove_dino(dino)
+	_check_goal()
 
 
 func _release(item: String, cell: Vector2i) -> void:
@@ -1521,6 +1513,26 @@ func _mark_caught(species_id: String) -> void:
 	if not caught.has(species_id):
 		caught[species_id] = true
 		_float_text(player.position + Vector2(0, -20), "Nouveau dans le Dinodex !", Color("80d8ff"))
+
+
+# A wild dinosaur bumped into us: we lose a heart and are pushed back.
+func player_hit(dino: Node2D) -> void:
+	if clock < safe_until or player.mount != null:
+		return
+	hearts -= 1
+	safe_until = clock + 1.5
+	heal_timer = HEAL_EVERY * 2.0
+	player.velocity = (player.position - dino.position).normalized() * 260.0
+	player.blink(1.5)
+	_float_text(player.position, "Aïe !", Color("ff8a80"))
+	if hearts <= 0:
+		hearts = MAX_HEARTS
+		player_scared(dino)
+	hud.set_hearts(hearts, MAX_HEARTS)
+
+
+func float_text(at: Vector2, text: String, color: Color) -> void:
+	_float_text(at, text, color)
 
 
 func player_scared(dino: Node2D) -> void:

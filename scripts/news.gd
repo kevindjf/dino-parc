@@ -8,6 +8,17 @@ extends RefCounted
 
 const ENTRIES := [
 	{
+		"version": 2,
+		"title": "Le combat et les capsules !",
+		"items": [
+			["slingshot", "Fabrique un lance-pierre ou un arc et vise les dinos sauvages de loin."],
+			["arrow", "Chaque tir fatigue le dino. Quand il est épuisé, il s'endort. Personne n'est blessé !"],
+			["capsule_copper", "Lance une capsule sur un dino épuisé pour l'attraper. Il va dans ton sac !"],
+			["capsule_gold", "Pastille verte : ça va marcher. Rouge : il va s'échapper ! Pour le T-Rex, il faut une capsule en or."],
+			["bolas", "Les bolas bloquent un dino qui fonce sur toi. Attention à tes cœurs !"],
+		],
+	},
+	{
 		"version": 1,
 		"title": "Les mondes !",
 		"items": [

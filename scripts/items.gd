@@ -3,7 +3,8 @@ extends RefCounted
 const Catalog := preload("res://scripts/catalog.gd")
 
 # Everything you can carry in your bag, what you can make with it, and what nature gives you.
-# kind: resource, food, tool, or build (a build item places Catalog.ITEMS[place] in the park).
+# kind: resource, food, tool, weapon, ammo, catch, or build (a build item places
+# Catalog.ITEMS[place] in the park).
 
 const ITEMS := {
 	"wood": {"name": "Bois", "kind": "resource"},
@@ -27,12 +28,36 @@ const ITEMS := {
 	"fence_electric": {"name": "Barrière électrique", "kind": "build", "place": "fence_electric"},
 	"bridge": {"name": "Pont", "kind": "build", "place": "bridge"},
 	"feeder_plants": {"name": "Mangeoire à plantes", "kind": "build", "place": "feeder_plants"},
-	"dart": {"name": "Fléchettes", "kind": "catch"},
+	"slingshot": {"name": "Lance-pierre", "kind": "weapon"},
+	"bow": {"name": "Arc", "kind": "weapon"},
+	"arrow": {"name": "Flèches", "kind": "ammo"},
+	"dart": {"name": "Fléchettes endormantes", "kind": "catch"},
+	"bolas": {"name": "Bolas", "kind": "catch"},
 	"cage": {"name": "Cage", "kind": "catch"},
+	"capsule_copper": {"name": "Capsule en cuivre", "kind": "catch"},
+	"capsule_iron": {"name": "Capsule en fer", "kind": "catch"},
+	"capsule_gold": {"name": "Capsule en or", "kind": "catch"},
 	"brush": {"name": "Brosse", "kind": "tool"},
 	"saddle": {"name": "Selle", "kind": "catch"},
 }
 # A caught dinosaur travels in the bag as "dino:<species>" (kind "dino").
+
+# What can be shot or thrown at a wild dinosaur, from afar. Nobody gets hurt: a dinosaur hit
+# loses energy, and once out of energy it falls asleep, ready to be caught.
+#   ammo: what each shot uses up (itself for things thrown by hand)
+#   tire: energy taken, stun: seconds it cannot move, range: in cells, every: seconds between shots
+#   flight: how it flies (straight, arc or spin), capture: biggest strength a capsule can hold
+const WEAPONS := {
+	"slingshot": {"ammo": "stone", "tire": 8, "range": 6.0, "every": 0.45, "flight": "arc", "speed": 220.0},
+	"bow": {"ammo": "arrow", "tire": 16, "range": 8.0, "every": 0.6, "flight": "straight", "speed": 300.0},
+	"dart": {"ammo": "dart", "tire": 30, "range": 6.0, "every": 0.8, "flight": "straight", "speed": 260.0},
+	"bolas": {"ammo": "bolas", "tire": 4, "stun": 4.0, "range": 5.0, "every": 0.8, "flight": "spin", "speed": 180.0},
+	"capsule_copper": {"ammo": "capsule_copper", "capture": 3, "range": 5.0, "every": 1.0, "flight": "arc", "speed": 170.0},
+	"capsule_iron": {"ammo": "capsule_iron", "capture": 4, "range": 5.0, "every": 1.0, "flight": "arc", "speed": 170.0},
+	"capsule_gold": {"ammo": "capsule_gold", "capture": 5, "range": 5.0, "every": 1.0, "flight": "arc", "speed": 170.0},
+}
+# The cage is put by hand on a sleeping dinosaur, and only small ones fit in.
+const CAGE_STRENGTH := 2
 
 const RECIPES := [
 	{"make": "axe", "count": 1, "needs": {"wood": 3}},
@@ -46,8 +71,15 @@ const RECIPES := [
 	{"make": "bridge", "count": 2, "needs": {"wood": 3}},
 	{"make": "path", "count": 4, "needs": {"stone": 1}},
 	{"make": "feeder_plants", "count": 1, "needs": {"wood": 4, "berries": 3}},
-	{"make": "dart", "count": 3, "needs": {"wood": 1, "stone": 1}},
+	{"make": "slingshot", "count": 1, "needs": {"wood": 3}},
+	{"make": "bow", "count": 1, "needs": {"wood": 5}},
+	{"make": "arrow", "count": 5, "needs": {"wood": 1, "stone": 1}},
+	{"make": "dart", "count": 3, "needs": {"wood": 1, "berries": 2}},
+	{"make": "bolas", "count": 2, "needs": {"stone": 2, "wood": 1}},
 	{"make": "cage", "count": 1, "needs": {"wood": 4, "stone": 2}},
+	{"make": "capsule_copper", "count": 2, "needs": {"copper": 2, "stone": 1}},
+	{"make": "capsule_iron", "count": 2, "needs": {"iron": 2, "copper": 1}},
+	{"make": "capsule_gold", "count": 1, "needs": {"gold": 1, "iron": 1, "crystal": 1}},
 	{"make": "brush", "count": 1, "needs": {"wood": 2, "berries": 1}},
 	{"make": "saddle", "count": 1, "needs": {"wood": 4, "stone": 2, "berries": 2}},
 ]
@@ -67,7 +99,7 @@ const HARVEST := {
 
 static func name_of(id: String) -> String:
 	if id.begins_with("dino:"):
-		return "Cage : " + Catalog.DINOS[id.substr(5)].name
+		return "Capturé : " + Catalog.DINOS[id.substr(5)].name
 	return ITEMS[id].name if ITEMS.has(id) else "Mains"
 
 

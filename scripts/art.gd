@@ -1006,7 +1006,73 @@ static func resource(id: String) -> Texture2D:
 				p.limb(Vector2(4, 15), Vector2(10, 3), 1.2, 1.2, WOOD, true)
 				p.limb(Vector2(3, 4), Vector2(10, 1.5), 1.6, 1.4, Color("b0b4bc"), true)
 				p.limb(Vector2(10, 1.5), Vector2(15, 7), 1.4, 0.6, Color("b0b4bc"), true)
+			"slingshot":
+				p.limb(Vector2(8, 15), Vector2(8, 9), 1.3, 1.3, WOOD, true)
+				p.limb(Vector2(8, 9), Vector2(3, 2), 1.2, 1.0, WOOD, true)
+				p.limb(Vector2(8, 9), Vector2(13, 2), 1.2, 1.0, WOOD, true)
+				p.line(Vector2(3, 2), Vector2(8, 6), Color("d84a3a"))
+				p.line(Vector2(13, 2), Vector2(8, 6), Color("d84a3a"))
+				p.dot(Vector2(8, 6), Color("7a5030"), 2)
+			"bow":
+				for i in 8:
+					var a := -1.25 + 2.5 * i / 7.0
+					var b := -1.25 + 2.5 * (i + 1) / 7.0
+					p.limb(Vector2(4 + 9 * cos(a), 8 + 7 * sin(a)), Vector2(4 + 9 * cos(b), 8 + 7 * sin(b)), 1.1, 1.1, WOOD, true)
+				p.line(Vector2(7, 1), Vector2(7, 15), Color("f0e8d0"))
+			"arrow":
+				p.limb(Vector2(2, 14), Vector2(12, 4), 0.7, 0.7, Color("c09060"), true)
+				p.polygon(PackedVector2Array([Vector2(15, 1), Vector2(10, 3), Vector2(13, 6)]), Color("b0b4bc"), true)
+				p.polygon(PackedVector2Array([Vector2(1, 15), Vector2(1, 11), Vector2(4, 13), Vector2(5, 15)]), Color("e8e0f0"), true)
+			"bolas":
+				p.line(Vector2(8, 8), Vector2(3, 4), Color("a07848"))
+				p.line(Vector2(8, 8), Vector2(13, 5), Color("a07848"))
+				p.line(Vector2(8, 8), Vector2(8, 14), Color("a07848"))
+				for spot in [Vector2(3, 4), Vector2(13, 5), Vector2(8, 13)]:
+					p.ellipse(spot, Vector2(2.6, 2.6), Color("9a9aa2"), true)
+					p.dot(spot + Vector2(-1, -1), Color("d0d0d8"))
+			"capsule_copper", "capsule_iron", "capsule_gold":
+				var metal: Array = ORE_COLORS[id.substr(8)]
+				p.ellipse(Vector2(8, 8.5), Vector2(6.5, 6.5), Color("f4ecd8"), true)
+				p.ellipse(Vector2(8, 6), Vector2(6.3, 4.2), metal[0])
+				p.dot(Vector2(5, 4), metal[1], 2)
+				p.flat(Rect2(2, 8, 13, 1), Color("4a3a2a"))
+				p.ellipse(Vector2(8, 8.5), Vector2(2.3, 2.3), Color("f09818"), true)
+				p.dot(Vector2(7.5, 8), Color("ffd070"))
 		return p.finish())
+
+
+# A heart of the player's life bar, full or empty.
+static func heart(full: bool) -> Texture2D:
+	return cached("heart:%s" % full, func() -> Texture2D:
+		var p := _painter(Vector2i(11, 10))
+		var color := Color("e53950") if full else Color("d8d0d8")
+		p.ellipse(Vector2(3, 3.5), Vector2(2.6, 2.6), color, true)
+		p.ellipse(Vector2(8, 3.5), Vector2(2.6, 2.6), color, true)
+		p.polygon(PackedVector2Array([Vector2(0.6, 4.5), Vector2(10.4, 4.5), Vector2(5.5, 9.5)]), color, true)
+		if full:
+			p.dot(Vector2(2.5, 2.5), Color("ffb0c0"))
+		return p.finish())
+
+
+# What flies through the air when shooting: a pebble, an arrow, a dart, bolas or a capsule.
+static func projectile(weapon: String) -> Texture2D:
+	return cached("projectile:" + weapon, func() -> Texture2D:
+		match weapon:
+			"slingshot":
+				var p := _painter(Vector2i(6, 6))
+				p.ellipse(Vector2(3, 3), Vector2(2.2, 2.2), Color("9a9aa2"), true)
+				return p.finish()
+			"bow":
+				var p := _painter(Vector2i(16, 6))
+				p.limb(Vector2(2, 3), Vector2(12, 3), 0.6, 0.6, Color("c09060"), true)
+				p.polygon(PackedVector2Array([Vector2(15, 3), Vector2(11, 0.5), Vector2(11, 5.5)]), Color("b0b4bc"), true)
+				p.polygon(PackedVector2Array([Vector2(0, 0.5), Vector2(4, 3), Vector2(0, 5.5)]), Color("e8e0f0"), true)
+				return p.finish()
+			"dart":
+				return _dart()
+		var image: Image = resource(weapon).get_image()
+		image.resize(10, 10, Image.INTERPOLATE_NEAREST)
+		return ImageTexture.create_from_image(image))
 
 
 # The icon of anything that can be in the bag.
