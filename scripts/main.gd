@@ -55,8 +55,8 @@ const ADVENTURE_GOALS := [
 	{"id": "pen", "text": "Fabrique des barrières et ferme un enclos (garde Action appuyé en marchant)"},
 	{"id": "feeder", "text": "Fabrique un portail pour entrer dans ton enclos, puis pose une mangeoire dedans"},
 	{"id": "path", "text": "Fais un chemin depuis l'entrée jusqu'à ton enclos"},
-	{"id": "tame", "text": "Trouve un dinosaure herbivore sauvage, vise-le avec des baies en main et lance-lui 3 baies"},
-	{"id": "adopt", "text": "Emmène-le dans ton enclos : passe le portail, il te suit !"},
+	{"id": "tame", "text": "Trouve un dinosaure herbivore sauvage et lance-lui 3 baies : il ira dans « Mes dinos »"},
+	{"id": "adopt", "text": "Ouvre « Mes dinos », touche « Relâcher » et pose ton dinosaure dans ton enclos"},
 	{"id": "cage", "text": "Fabrique un lance-pierre et une cage. Fatigue un petit dinosaure de loin, puis mets-le en cage"},
 	{"id": "release", "text": "Relâche le dinosaure attrapé dans un enclos"},
 	{"id": "brush", "text": "Fabrique une brosse et brosse un dinosaure de ton parc"},
@@ -1419,12 +1419,19 @@ func feed_berries(dino: Node2D) -> void:
 		_gain_friendship(dino, 20)
 		return
 	dino.trust += 1
-	if dino.trust >= dino.TRUST_NEEDED:
-		dino.following = player
-		_mark_caught(dino.species_id)
-		hud.flash("%s te suit !\nEmmène-le dans un enclos." % dino.species.name, 3.0)
 	dino.set_mood("", Color.WHITE)
-	_update_attraction()
+	if dino.trust < dino.TRUST_NEEDED:
+		return
+	# Tamed: it jumps to us and into "Mes dinos", no capsule needed.
+	dino.captured = true
+	dino.mood_text.visible = false
+	var tween := dino.create_tween().set_parallel()
+	tween.tween_property(dino, "position", player.position, 0.45)
+	tween.tween_property(dino.sprite, "scale", Vector2(0.05, 0.05), 0.45)
+	tween.tween_property(dino.shadow, "scale", Vector2(0.05, 0.05), 0.45)
+	tween.chain().tween_callback(func() -> void:
+		_float_text(player.position, "Ami !", Color("ff80ab"))
+		catch_dino(dino))
 
 
 func _gain_friendship(dino: Node2D, amount: int) -> void:
@@ -1475,7 +1482,7 @@ func player_dismount() -> void:
 func catch_dino(dino: Node2D) -> void:
 	inventory.add("dino:" + dino.species_id)
 	_mark_caught(dino.species_id)
-	hud.flash("Tu as attrapé : %s !\nIl est dans ton sac. Relâche-le dans un enclos." % dino.species.name, 3.0)
+	hud.flash("%s est dans « Mes dinos » !\nRelâche-le dans un enclos quand tu veux." % dino.species.name, 3.0)
 	_remove_dino(dino)
 	_check_goal()
 

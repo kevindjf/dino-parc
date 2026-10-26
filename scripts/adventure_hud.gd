@@ -31,6 +31,8 @@ var message_tween: Tween
 var bag_open := false
 var riding := false
 var dex: PanelContainer
+var pocket: PanelContainer  # "Mes dinos": the caught dinosaurs, waiting to be released
+var pocket_grid: GridContainer
 var dex_grid: GridContainer
 var dex_title: Label
 
@@ -49,6 +51,7 @@ func setup(owner_park: Node2D, player_inventory: RefCounted, player_name: String
 	_build_hotbar()
 	_build_bag()
 	_build_dex()
+	_build_pocket()
 	_build_message()
 	inventory.changed.connect(_refresh)
 	_refresh()
@@ -78,6 +81,7 @@ func _build_top(player_name: String) -> void:
 	goal_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	goal_label.add_theme_color_override("font_color", Color("b03018"))
 	_button(row, "Sac", 80, toggle_bag)
+	_button(row, "Mes dinos", 110, toggle_pocket)
 	_button(row, "Dinodex", 100, toggle_dex)
 	_button(row, "Menu", 80, park.back_to_menu)
 	_button(row, "Zoom −", 80, func() -> void: park.camera.zoom_step(-1))
@@ -225,7 +229,7 @@ func _refresh() -> void:
 func _fill_bag() -> void:
 	for child in bag_grid.get_children():
 		child.queue_free()
-	var ids: Array = inventory.counts.keys()
+	var ids: Array = inventory.counts.keys().filter(func(id: String) -> bool: return Items.kind_of(id) != "dino")
 	if ids.is_empty():
 		_label(bag_grid, "Ton sac est vide.\nFrappe un arbre pour avoir du bois !", 15)
 	for id in ids:
@@ -267,6 +271,7 @@ func toggle_bag() -> void:
 	bag_open = not bag_open
 	bag.visible = bag_open
 	dex.visible = false
+	pocket.visible = false
 	if bag_open:
 		_fill_bag()
 
@@ -297,6 +302,7 @@ func _build_dex() -> void:
 
 func toggle_dex() -> void:
 	dex.visible = not dex.visible
+	pocket.visible = false
 	if bag_open:
 		bag_open = false
 		bag.visible = false
@@ -326,6 +332,68 @@ func toggle_dex() -> void:
 		hint.add_theme_color_override("font_color", Color("708090"))
 
 
+func _build_pocket() -> void:
+	pocket = PanelContainer.new()
+	pocket.set_anchors_preset(Control.PRESET_CENTER)
+	pocket.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	pocket.grow_vertical = Control.GROW_DIRECTION_BOTH
+	pocket.custom_minimum_size = Vector2(760, 0)
+	pocket.visible = false
+	root.add_child(pocket)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 10)
+	pocket.add_child(column)
+	var header := HBoxContainer.new()
+	column.add_child(header)
+	var title := _label(header, "Mes dinos", 24)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_button(header, "Fermer", 110, toggle_pocket)
+	var hint := _label(column, "Les dinos que tu as attrapés t'attendent ici. Touche « Relâcher », puis vise une case libre dans un enclos et appuie sur Action.", 14)
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.add_theme_color_override("font_color", Color("607080"))
+	pocket_grid = GridContainer.new()
+	pocket_grid.columns = 5
+	pocket_grid.add_theme_constant_override("h_separation", 10)
+	pocket_grid.add_theme_constant_override("v_separation", 10)
+	column.add_child(pocket_grid)
+
+
+func toggle_pocket() -> void:
+	pocket.visible = not pocket.visible
+	dex.visible = false
+	if bag_open:
+		bag_open = false
+		bag.visible = false
+	if pocket.visible:
+		_fill_pocket()
+
+
+func _fill_pocket() -> void:
+	for child in pocket_grid.get_children():
+		child.queue_free()
+	var dinos: Dictionary = inventory.dinos()
+	if dinos.is_empty():
+		_label(pocket_grid, "Tu n'as pas encore de dino.\nLance 3 baies à un herbivore, ou attrape un dino avec une capsule !", 16)
+		return
+	for id in dinos:
+		var cell := VBoxContainer.new()
+		cell.custom_minimum_size = Vector2(136, 0)
+		pocket_grid.add_child(cell)
+		var picture := TextureRect.new()
+		picture.texture = Art.icon("dino:" + id)
+		picture.custom_minimum_size = Vector2(120, 80)
+		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		cell.add_child(picture)
+		var name := _label(cell, "%s%s" % [Catalog.DINOS[id].name, " ×%d" % dinos[id] if dinos[id] > 1 else ""], 14)
+		name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var release := _button(cell, "Relâcher", 136, func() -> void:
+			inventory.hold("dino:" + id)
+			toggle_pocket()
+			flash("%s est dans ta main !\nVise une case libre dans un enclos et appuie sur Action." % Catalog.DINOS[id].name, 3.0))
+		release.custom_minimum_size.y = 48
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
@@ -337,6 +405,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				toggle_bag()
 			elif dex.visible:
 				toggle_dex()
+			elif pocket.visible:
+				toggle_pocket()
 		_:
 			if event.keycode >= KEY_1 and event.keycode <= KEY_8:
 				inventory.select(event.keycode - KEY_1)

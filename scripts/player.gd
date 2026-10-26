@@ -55,7 +55,7 @@ func front() -> Vector2i:
 func _process(delta: float) -> void:
 	var input := Vector2.ZERO
 	var acting := false
-	if not park.hud.bag_open and not park.hud.dex.visible:
+	if not park.hud.bag_open and not park.hud.dex.visible and not park.hud.pocket.visible:
 		if _pressed([KEY_UP, KEY_Z, KEY_W]):
 			input.y -= 1.0
 		if _pressed([KEY_DOWN, KEY_S]):

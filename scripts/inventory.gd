@@ -11,6 +11,7 @@ const SLOTS := 8
 var counts := {}
 var hotbar: Array[String] = []
 var selected := 0
+var held_before := ""  # what was in the slot before a dinosaur was taken out of "Mes dinos"
 
 
 func _init() -> void:
@@ -30,7 +31,8 @@ func add(id: String, amount := 1) -> void:
 	var is_new := count(id) == 0 and not id in hotbar
 	counts[id] = count(id) + amount
 	# New things go straight to a free slot of the tool bar, so they are ready to use.
-	if is_new and not Items.kind_of(id) in ["resource", "ammo"]:
+	# (Caught dinosaurs wait in "Mes dinos" instead.)
+	if is_new and not Items.kind_of(id) in ["resource", "ammo", "dino"]:
 		var free := hotbar.find("")
 		if free >= 0:
 			hotbar[free] = id
@@ -43,9 +45,10 @@ func remove(id: String, amount := 1) -> bool:
 	counts[id] = count(id) - amount
 	if counts[id] == 0:
 		counts.erase(id)
-		# An empty cage leaves the tool bar.
+		# Once the last one is released, the slot gets back what it held before.
 		if Items.kind_of(id) == "dino" and id in hotbar:
-			hotbar[hotbar.find(id)] = ""
+			hotbar[hotbar.find(id)] = held_before if held_before == "" or count(held_before) > 0 else ""
+			held_before = ""
 	changed.emit()
 	return true
 
@@ -78,6 +81,27 @@ func assign(id: String) -> void:
 		hotbar[previous] = hotbar[selected]
 	hotbar[selected] = id
 	changed.emit()
+
+
+# Takes a dinosaur out of "Mes dinos" and puts it in hand, to release it.
+func hold(id: String) -> void:
+	var current := hotbar[selected]
+	if Items.kind_of(current) != "dino":
+		held_before = current
+	var previous := hotbar.find(id)
+	if previous >= 0 and previous != selected:
+		hotbar[previous] = ""
+	hotbar[selected] = id
+	changed.emit()
+
+
+# The caught dinosaurs, species id -> how many.
+func dinos() -> Dictionary:
+	var found := {}
+	for id in counts:
+		if id.begins_with("dino:"):
+			found[id.substr(5)] = counts[id]
+	return found
 
 
 func to_dict() -> Dictionary:

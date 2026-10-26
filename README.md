@@ -71,8 +71,10 @@ Une partie commencée sur l'ancienne petite carte est replacée telle quelle pr�
 
 Des dinosaures sauvages vivent dans le parc, chacun dans son biome préféré : prairie, jungle, désert, marais ou neige. Les petits sont fréquents, les géants sont rares. Il y a deux façons de les attraper :
 
-- **Apprivoiser un herbivore.** Prendre des baies en main : une cible rose se place sur l'herbivore le plus proche devant toi (jusqu'à 5 cases). Le bouton Action lui lance des baies ; au bout de 3, il est apprivoisé. Il te suit alors partout, même à travers les barrières. Dès qu'il entre dans un enclos fermé, il y habite.
-- **Le combat, puis la capsule**, pour tous les dinosaures. Personne n'est blessé : chaque tir fatigue le dinosaure, et une fois épuisé il s'endort. On lance alors une capsule dessus : il va dans le sac, et on le relâche en visant une case libre dans un enclos.
+- **Apprivoiser un herbivore.** Prendre des baies en main : une cible rose se place sur l'herbivore le plus proche devant toi (jusqu'à 5 cases). Le bouton Action lui lance des baies ; au bout de 3, il est apprivoisé et saute tout seul dans **« Mes dinos »**, sans capsule. Il te suit alors partout, même à travers les barrières. Dès qu'il entre dans un enclos fermé, il y habite.
+- **Le combat, puis la capsule**, pour tous les dinosaures. Personne n'est blessé : chaque tir fatigue le dinosaure, et une fois épuisé il s'endort. On lance alors une capsule dessus : il va dans « Mes dinos ».
+
+**« Mes dinos »** (bouton en haut) garde tous les dinosaures attrapés, à part du sac à objets. On touche « Relâcher » : le dinosaure passe dans la main, on vise une case libre dans un enclos et on appuie sur Action. Une fois relâché, la case de la barre d'outils retrouve l'objet qu'elle avait avant.
 
 **Le combat se joue de loin, en direct.** Avec une arme en main, une cible apparaît sur le dinosaure sauvage le plus proche devant toi, avec sa barre d'énergie. On peut aussi **toucher un dinosaure** sur l'écran (ou cliquer dessus sur ordinateur) : le personnage se tourne vers lui et tire, et il reste la cible tant qu'il est à portée. Le bouton Action tire (garder appuyé pour tirer en continu) :
 
@@ -99,7 +101,7 @@ Les carnivores sauvages foncent sur toi s'ils te voient de près. Fermer une bar
 
 Les baies se lancent aussi aux herbivores du parc pour gagner leur amitié.
 
-Chaque dinosaure du parc a de l'**amitié pour toi, de 0 à 5 cœurs**. Elle démarre à 1 cœur pour un dinosaure apprivoisé, à 0 pour un dinosaure attrapé en cage ou en capsule.
+Chaque dinosaure du parc a de l'**amitié pour toi, de 0 à 5 cœurs**. Elle démarre à 0 cœur.
 
 - **Le brosser** (brosse en main, Action devant lui) : tous les dinosaures aiment ça.
 - **Lui donner des baies à la main**, pour les herbivores.
