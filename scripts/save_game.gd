@@ -1,20 +1,21 @@
 extends RefCounted
 
-# Saves and loads a park as a JSON file in the game's user folder (one file per mode).
+# Saves and loads a park as a JSON file in the folder of its world (see worlds.gd).
 
+const Worlds := preload("res://scripts/worlds.gd")
 const VERSION := 1
 
 
-static func path_for(mode: String) -> String:
-	return "user://%s.json" % mode
+static func path_for(world_id: String) -> String:
+	return Worlds.folder(world_id) + "/save.json"
 
 
-static func backup_for(mode: String) -> String:
-	return "user://%s.bak.json" % mode
+static func backup_for(world_id: String) -> String:
+	return Worlds.folder(world_id) + "/save.bak.json"
 
 
-static func exists(mode: String) -> bool:
-	return FileAccess.file_exists(path_for(mode)) or FileAccess.file_exists(backup_for(mode))
+static func exists(world_id: String) -> bool:
+	return FileAccess.file_exists(path_for(world_id)) or FileAccess.file_exists(backup_for(world_id))
 
 
 static func save(park: Node2D) -> void:
@@ -49,21 +50,22 @@ static func save(park: Node2D) -> void:
 		data.mines = park.mine_states
 	# Write to a temporary file first, keep the previous save as a backup, then swap:
 	# a crash in the middle of writing never loses the game.
-	var path := path_for(park.mode)
+	var path := path_for(park.world_info.id)
 	var file := FileAccess.open(path + ".tmp", FileAccess.WRITE)
 	if file == null:
 		return
 	file.store_string(JSON.stringify(data))
 	file.close()
-	var dir := DirAccess.open("user://")
+	var dir := DirAccess.open(Worlds.folder(park.world_info.id))
 	if FileAccess.file_exists(path):
-		dir.rename(path.get_file(), backup_for(park.mode).get_file())
+		dir.rename(path.get_file(), backup_for(park.world_info.id).get_file())
 	dir.rename((path + ".tmp").get_file(), path.get_file())
+	Worlds.touch(park.world_info)
 
 
 # Reads the save, or the backup if the save is missing or damaged.
-static func load_data(mode: String) -> Dictionary:
-	for path in [path_for(mode), backup_for(mode)]:
+static func load_data(world_id: String) -> Dictionary:
+	for path in [path_for(world_id), backup_for(world_id)]:
 		var file := FileAccess.open(path, FileAccess.READ)
 		if file == null:
 			continue

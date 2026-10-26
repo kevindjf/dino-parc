@@ -19,6 +19,7 @@ const AdventureHud := preload("res://scripts/adventure_hud.gd")
 const Title := preload("res://scripts/title.gd")
 const Creator := preload("res://scripts/creator.gd")
 const SaveGame := preload("res://scripts/save_game.gd")
+const Worlds := preload("res://scripts/worlds.gd")
 const WorldGen := preload("res://scripts/world_gen.gd")
 const Mine := preload("res://scripts/mine.gd")
 
@@ -78,6 +79,7 @@ const GOALS := [
 ]
 
 var mode := ""  # "", then "creative" or "adventure"
+var world_info := {}  # the world being played: id, name, mode, settings (see worlds.gd)
 var money := 8000
 var total_visitors := 0
 var attraction := 0
@@ -136,24 +138,29 @@ func _ready() -> void:
 	if "--demo" in OS.get_cmdline_user_args():
 		start_creative(true)
 		return
+	Worlds.migrate_old_saves()
 	var title := Title.new()
-	title.has_save = SaveGame.exists("adventure")
-	title.chosen.connect(_on_title_choice)
+	title.chosen.connect(_on_world_chosen)
 	add_child(title)
 
 
-func _on_title_choice(choice: String) -> void:
-	match choice:
-		"creative":
-			start_creative(false)
-		"continue":
-			start_adventure(SaveGame.load_data("adventure"))
-		"new":
-			var creator := Creator.new()
-			creator.done.connect(func(new_look: Dictionary) -> void:
-				look = new_look
-				start_adventure({}))
-			add_child(creator)
+func _on_world_chosen(info: Dictionary) -> void:
+	world_info = info
+	if info.mode == "creative":
+		start_creative(false)
+	elif SaveGame.exists(info.id):
+		start_adventure(SaveGame.load_data(info.id))
+	else:
+		var creator := Creator.new()
+		creator.done.connect(func(new_look: Dictionary) -> void:
+			look = new_look
+			start_adventure({}))
+		add_child(creator)
+
+
+# A setting of the world being played (see Worlds.SETTINGS).
+func setting(key: String) -> Variant:
+	return Worlds.setting(world_info, key)
 
 
 func start_creative(demo: bool) -> void:
@@ -167,8 +174,8 @@ func start_creative(demo: bool) -> void:
 	if demo:
 		_build_demo()
 		mode = "demo"
-	elif SaveGame.exists("creative"):
-		_load_park(SaveGame.load_data("creative"))
+	elif SaveGame.exists(world_info.id):
+		_load_park(SaveGame.load_data(world_info.id))
 	_refresh()
 	_on_tool_selected("path")
 	hud.flash("Molette : zoomer   Flèches ou ZQSD : se déplacer", 4.0)
@@ -219,7 +226,7 @@ func back_to_menu() -> void:
 
 
 func save_game() -> void:
-	if mode == "creative" or mode == "adventure":
+	if (mode == "creative" or mode == "adventure") and world_info.has("id"):
 		SaveGame.save(self)
 
 

@@ -10,12 +10,16 @@ Le parc de dinosaures en 2D, vu de dessus, en pixel art façon console portable 
 
 ## Deux façons de jouer
 
-L'écran titre propose :
+L'écran titre affiche **Mes mondes**, comme dans Minecraft : on reprend un monde en le touchant, on le supprime (avec confirmation), ou on **crée un nouveau monde**. Un monde a un nom et un mode de jeu :
 
-- **Nouvelle aventure** (ou **Continuer l'aventure**). On crée son personnage (prénom, peau, coiffure, couleurs), puis on le dirige dans un parc sauvage. On frappe les arbres pour avoir du bois, on casse les rochers avec la pioche pour avoir de la pierre et on cueille des baies. Ensuite on fabrique ses outils et ses barrières dans le sac, et on les pose soi-même. Des objectifs guident les premiers pas.
-- **Mode créatif** : on construit librement à la souris avec des pièces, comme avant.
+- **Aventure** : on crée son personnage (prénom, peau, coiffure, couleurs), puis on le dirige dans un parc sauvage. On frappe les arbres pour avoir du bois, on casse les rochers avec la pioche pour avoir de la pierre et on cueille des baies. Ensuite on fabrique ses outils et ses barrières dans le sac, et on les pose soi-même. Des objectifs guident les premiers pas.
+- **Bac à sable** : on construit librement son parc avec des pièces (l'ancien « mode créatif »).
 
-La partie se sauvegarde toute seule (toutes les 20 secondes et en quittant), et le bouton « Menu » sauvegarde avant de revenir à l'écran titre. Il y a une sauvegarde par mode.
+Chaque monde a sa propre sauvegarde, qui se fait toute seule (toutes les 20 secondes, en quittant et quand le jeu passe en arrière-plan). Le bouton « Menu » sauvegarde avant de revenir à l'écran titre. Les parties faites avant l'arrivée des mondes ont été reprises automatiquement comme deux mondes.
+
+### Réglages d'un monde (pour plus tard)
+
+Un monde peut avoir des réglages choisis à sa création (dinos agressifs, nuit, pièces à volonté…). Pour en ajouter un, il suffit d'une ligne dans `Worlds.SETTINGS` (`scripts/worlds.gd`) : l'écran de création affiche alors un interrupteur (oui/non) ou une rangée de choix pour les modes concernés, le réglage est sauvegardé avec le monde, et le jeu le lit avec `park.setting("clé")`. Les mondes déjà créés prennent la valeur par défaut.
 
 ## Aventure : les commandes (pensées pour la tablette)
 
@@ -87,7 +91,7 @@ Le **Dinodex** (bouton en haut) montre les 21 espèces : les ombres noires sont 
 
 Recettes : Hache (3 bois), Pioche (4 bois), Barrières en bambou (1 bois → 2), en bois (2 bois → 2), en pierre (2 pierres → 2), Portail (3 bois), Chemin (1 pierre → 4), Mangeoire (4 bois + 3 baies), Fléchettes (1 bois + 1 pierre → 3), Cage (4 bois + 2 pierres), Brosse (2 bois + 1 baie), Selle (4 bois + 2 pierres + 2 baies). On les modifie dans `scripts/items.gd`.
 
-## Mode créatif : les commandes
+## Bac à sable : les commandes
 
 | Action | Souris / trackpad | Clavier |
 |---|---|---|
@@ -138,7 +142,9 @@ Les règles sont celles de la version 3D (`~/dino-parc-3d`).
 
 Le jeu est publié sur GitHub Pages. Sur la tablette, ouvrir l'adresse du jeu dans Chrome,
 puis menu ⋮ → « Ajouter à l'écran d'accueil » : il s'ouvre ensuite en plein écran comme une appli.
-Les sauvegardes restent dans le navigateur de la tablette.
+Les mondes et leurs sauvegardes restent dans le navigateur de la tablette.
+Quand une nouvelle version est publiée, elle s'installe toute seule : à la prochaine ouverture,
+l'écran titre affiche « Nouvelle version du jeu ! » et recharge le jeu (les mondes sont gardés).
 
 ### Publier une mise à jour
 
