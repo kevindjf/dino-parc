@@ -53,6 +53,11 @@ func front() -> Vector2i:
 
 
 func _process(delta: float) -> void:
+	# In the building mode, the character waits while the joystick moves the camera.
+	if park.builder != null and park.builder.active:
+		velocity = Vector2.ZERO
+		_animate(delta, park.inventory.current())
+		return
 	var input := Vector2.ZERO
 	var acting := false
 	if not park.hud.bag_open and not park.hud.dex.visible and not park.hud.pocket.visible:

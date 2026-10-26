@@ -8,6 +8,17 @@ extends RefCounted
 
 const ENTRIES := [
 	{
+		"version": 3,
+		"title": "Construis avec ton doigt !",
+		"items": [
+			["hammer", "Touche le bouton orange « Construire » : tu poses tout avec ton doigt."],
+			["fence_wood", "Dessine tes barrières et tes chemins au doigt. Vert : ça marche. Rouge : pas possible."],
+			["gate_wood", "« Enclos » : tire d'un coin à l'autre, et tout l'enclos se construit, avec son portail !"],
+			["bush", "La gomme déterre les buissons à baies. Replante-les près de chez toi !"],
+			["feeder_plants", "Les grands bâtiments ont un chantier : tape dessus pour aider à construire."],
+		],
+	},
+	{
 		"version": 2,
 		"title": "Le combat et les capsules !",
 		"items": [

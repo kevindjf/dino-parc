@@ -20,6 +20,7 @@ const ITEMS := {
 	"pickaxe": {"name": "Pioche", "kind": "tool"},
 	"pickaxe_iron": {"name": "Pioche en fer", "kind": "tool"},
 	"sapling": {"name": "Pousse d'arbre", "kind": "build", "place": "tree"},
+	"bush": {"name": "Buisson à baies", "kind": "build", "place": "bush"},
 	"path": {"name": "Chemin", "kind": "build", "place": "path"},
 	"fence_bamboo": {"name": "Barrière en bambou", "kind": "build", "place": "fence_bamboo"},
 	"fence_wood": {"name": "Barrière en bois", "kind": "build", "place": "fence_wood"},

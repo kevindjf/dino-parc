@@ -31,6 +31,14 @@ var message_tween: Tween
 var bag_open := false
 var riding := false
 var dex: PanelContainer
+var hotbar_panel: PanelContainer
+var bag_button: Control
+var build_button: Control
+var builder: Node2D
+var build_panel: PanelContainer
+var build_status: Label
+var build_items: HBoxContainer
+var build_tools := {}  # tool id -> Button
 var pocket: PanelContainer  # "Mes dinos": the caught dinosaurs, waiting to be released
 var pocket_grid: GridContainer
 var dex_grid: GridContainer
@@ -105,7 +113,7 @@ func _build_controls() -> void:
 	action.offset_bottom = -28
 	root.add_child(action)
 
-	var bag_button := TouchButton.new()
+	bag_button = TouchButton.new()
 	bag_button.setup("Sac", 36.0, Color("4a7ad8"))
 	bag_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	bag_button.grow_horizontal = Control.GROW_DIRECTION_BEGIN
@@ -123,6 +131,7 @@ func _build_hotbar() -> void:
 	panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	panel.offset_bottom = -10
 	root.add_child(panel)
+	hotbar_panel = panel
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 	panel.add_child(row)
@@ -332,6 +341,104 @@ func toggle_dex() -> void:
 		hint.add_theme_color_override("font_color", Color("708090"))
 
 
+# --- The building mode ------------------------------------------------------------
+
+func setup_builder(owner_builder: Node2D) -> void:
+	builder = owner_builder
+	builder.changed.connect(_refresh_build)
+	inventory.changed.connect(_refresh_build)
+	build_button = TouchButton.new()
+	build_button.setup("Construire", 36.0, Color("e09030"))
+	build_button.set_icon(Art.resource("hammer"))
+	build_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	build_button.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	build_button.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	build_button.offset_right = -60
+	build_button.offset_bottom = -190
+	build_button.pressed.connect(toggle_build)
+	root.add_child(build_button)
+
+	build_panel = PanelContainer.new()
+	build_panel.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	build_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	build_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	build_panel.offset_bottom = -10
+	build_panel.visible = false
+	root.add_child(build_panel)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 6)
+	build_panel.add_child(column)
+	build_status = _label(column, "", 16)
+	build_status.custom_minimum_size.x = 760
+	build_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	build_items = HBoxContainer.new()
+	build_items.add_theme_constant_override("separation", 6)
+	column.add_child(build_items)
+	var tools := HBoxContainer.new()
+	tools.add_theme_constant_override("separation", 6)
+	column.add_child(tools)
+	var group := ButtonGroup.new()
+	for entry in [["draw", "Tracer"], ["pen", "Enclos"], ["erase", "Gomme"]]:
+		var button := _button(tools, entry[1], 120, builder.set_tool.bind(entry[0]))
+		button.toggle_mode = true
+		button.button_group = group
+		button.custom_minimum_size.y = 52
+		build_tools[entry[0]] = button
+	_button(tools, "Annuler", 120, builder.undo).custom_minimum_size.y = 52
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tools.add_child(spacer)
+	_button(tools, "Terminé", 140, toggle_build).custom_minimum_size.y = 52
+
+
+func toggle_build() -> void:
+	if builder.active:
+		builder.close()
+	elif park.mine == null and park.player.mount == null:
+		if bag_open:
+			toggle_bag()
+		dex.visible = false
+		pocket.visible = false
+		builder.open()
+
+
+func _refresh_build() -> void:
+	if builder == null:
+		return
+	var building: bool = builder.active
+	build_panel.visible = building
+	hotbar_panel.visible = not building
+	action.visible = not building
+	bag_button.visible = not building
+	build_button.visible = not building and park.mine == null
+	if not building:
+		return
+	build_status.text = builder.status()
+	for child in build_items.get_children():
+		child.queue_free()
+	var group := ButtonGroup.new()
+	for id in builder.buildable():
+		var button := Button.new()
+		button.toggle_mode = true
+		button.button_group = group
+		button.button_pressed = id == builder.item
+		button.focus_mode = Control.FOCUS_NONE
+		button.custom_minimum_size = Vector2(66, 72)
+		button.icon = Art.bag_icon(id)
+		button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		button.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+		button.text = "×%d" % inventory.count(id)
+		button.add_theme_font_size_override("font_size", 13)
+		button.tooltip_text = Items.name_of(id)
+		button.pressed.connect(builder.choose.bind(id))
+		build_items.add_child(button)
+	if builder.buildable().is_empty():
+		_label(build_items, "Rien à poser : fabrique des barrières, un chemin ou une mangeoire dans le Sac.", 14)
+	for id in build_tools:
+		build_tools[id].button_pressed = id == builder.tool
+	build_tools["pen"].disabled = not builder._is_fence(builder.item)
+
+
 func _build_pocket() -> void:
 	pocket = PanelContainer.new()
 	pocket.set_anchors_preset(Control.PRESET_CENTER)
@@ -400,8 +507,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	match event.keycode:
 		KEY_I, KEY_TAB:
 			toggle_bag()
+		KEY_B:
+			if builder != null:
+				toggle_build()
 		KEY_ESCAPE:
-			if bag_open:
+			if builder != null and builder.active:
+				toggle_build()
+			elif bag_open:
 				toggle_bag()
 			elif dex.visible:
 				toggle_dex()

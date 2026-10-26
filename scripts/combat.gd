@@ -27,7 +27,7 @@ func setup(owner_park: Node2D) -> void:
 func _process(delta: float) -> void:
 	time += delta
 	var holding: String = park.inventory.current()
-	var usable: bool = park.mine == null and park.player.mount == null
+	var usable: bool = park.mine == null and park.player.mount == null and not park.builder.active
 	weapon = holding if usable and Items.WEAPONS.has(holding) else ""
 	if chosen != null and not (weapon != "" and is_instance_valid(chosen) and _can_aim(chosen) and _in_reach(chosen, 1.25)):
 		chosen = null

@@ -21,6 +21,7 @@ const Creator := preload("res://scripts/creator.gd")
 const SaveGame := preload("res://scripts/save_game.gd")
 const Worlds := preload("res://scripts/worlds.gd")
 const Combat := preload("res://scripts/combat.gd")
+const Builder := preload("res://scripts/builder.gd")
 const WorldGen := preload("res://scripts/world_gen.gd")
 const Mine := preload("res://scripts/mine.gd")
 
@@ -124,6 +125,7 @@ var mine_states := {}  # entrance "x,y" -> {"seed", "dug"}, saved with the game
 var mine_exit := Vector2.ZERO
 var world_bounds := Rect2()
 var combat: Node2D = null
+var builder: Node2D = null
 var hearts := MAX_HEARTS
 var safe_until := 0.0  # after a hit, a short time when nothing can hit us again
 var heal_timer := 0.0
@@ -218,6 +220,10 @@ func start_adventure(data: Dictionary) -> void:
 	combat = Combat.new()
 	add_child(combat)
 	combat.setup(self)
+	builder = Builder.new()
+	add_child(builder)
+	builder.setup(self)
+	hud.setup_builder(builder)
 	hud.set_hearts(hearts, MAX_HEARTS)
 	camera.position = start
 	camera.zoom_index = 3
@@ -697,7 +703,7 @@ func find_feeder(dino: Node2D):
 	var best = null
 	var best_distance := 1e9
 	for building in buildings:
-		if building.kind != "feeder" or building.stock <= 0:
+		if building.kind != "feeder" or building.stock <= 0 or building.get("build_left", 0.0) > 0.0:
 			continue
 		if Catalog.ITEMS[building.id].diet != dino.species.diet:
 			continue
@@ -1193,7 +1199,7 @@ func _process_adventure(delta: float) -> void:
 	# The cell in front of the character is highlighted (not when aiming at dinosaurs).
 	var target: Vector2i = player.front()
 	var holding: String = inventory.current()
-	if Items.WEAPONS.has(holding):
+	if Items.WEAPONS.has(holding) or builder.active:
 		ghost.visible = false
 	elif in_grid(target):
 		var ok := true
@@ -1618,6 +1624,64 @@ func _can_place(cell: Vector2i, item := "") -> bool:
 	if is_water(cell) != (item == "bridge"):
 		return false
 	return _dino_near(cell_center(cell), 10.0) == null
+
+
+# --- Adventure: the building mode (see builder.gd) ------------------------------------
+
+# Why this bag item cannot be laid on this cell, or "" if it can.
+func build_refused(cell: Vector2i, id: String) -> String:
+	if not in_grid(cell):
+		return "Hors de la carte"
+	var building = occupied.get(cell)
+	if building != null:
+		match building.id:
+			"tree", "pine", "palm", "cactus":
+				return "Il y a un arbre : coupe-le avec la hache"
+			"rock":
+				return "Il y a un rocher : casse-le avec la pioche"
+			"bush":
+				return "Il y a un buisson : déterre-le avec la gomme"
+		return "Il y a déjà quelque chose ici"
+	if is_water(cell) != (id == "bridge"):
+		return "Pas sur l'eau !" if is_water(cell) else "Le pont se pose sur l'eau"
+	if cell == player.cell():
+		return "Ton personnage est là"
+	if _dino_near(cell_center(cell), 10.0) != null:
+		return "Un dinosaure est là"
+	return ""
+
+
+func build_at(cell: Vector2i, id: String) -> Dictionary:
+	inventory.remove(id)
+	return _add_building(Items.ITEMS[id].place, cell)
+
+
+# Undoes a placement: the thing goes back into the bag.
+func take_back_at(cell: Vector2i, id: String) -> void:
+	var building = occupied.get(cell)
+	if building != null and building.id == Items.ITEMS[id].place:
+		inventory.add(id)
+		_remove_building(building)
+
+
+# The eraser: what was built goes back into the bag, a berry bush is dug up to be planted elsewhere.
+func erase_at(cell: Vector2i) -> void:
+	var building = occupied.get(cell)
+	if building == null:
+		return
+	var item := Items.item_for_building(building.id)
+	inventory.add(item)
+	_float_text(cell_center(cell), "+1 %s" % Items.name_of(item), Color("fff59d"))
+	_remove_building(building)
+
+
+func refresh_after_building() -> void:
+	_refresh()
+	_check_goal()
+
+
+func shake(node: Node2D) -> void:
+	_shake(node)
 
 
 func place_item(id: String, cell: Vector2i) -> void:

@@ -67,6 +67,21 @@ Chaque massif de montagnes a une **entrée de mine** creusée dans sa falaise su
 
 Une partie commencée sur l'ancienne petite carte est replacée telle quelle près de l'entrée, avec la nouvelle carte autour.
 
+## Aventure : le mode Construction
+
+Le bouton orange **Construire** (ou la touche B) met le jeu en mode Construction : le personnage attend, une grille apparaît sur le sol, le joystick déplace la caméra et la barre du bas montre ce qu'on peut poser (ce qu'il y a dans le sac).
+
+- **Tracer** : toucher le sol pose un objet ; avec des barrières, un chemin ou un pont, on dessine la ligne au doigt (ou à la souris), les angles se font tout seuls.
+- **Enclos** : avec des barrières, on tire d'un coin à l'autre et tout le tour est posé, avec un portail au milieu du bas si on en a un dans le sac.
+- **Gomme** : ce qu'on a construit retourne dans le sac. Les **buissons à baies** se déterrent et se replantent ailleurs. Les arbres et les rochers, eux, se coupent à la hache et se cassent à la pioche.
+- **Annuler** reprend le dernier tracé, objets rendus.
+
+Pendant qu'on dessine, les cases sont **vertes** si ça marche et **rouges** sinon, avec la raison en haut de la barre (« Il y a un arbre », « Pas sur l'eau ! », « Il en manque »…), et le compteur : « 23 × Barrière en bois (tu en as 30) ». Rien n'est posé avant de lever le doigt.
+
+Les **gros bâtiments** (pour l'instant la mangeoire) ne sont pas prêts tout de suite : un échafaudage monte pendant 15 secondes, et **chaque tape dessus** fait gagner du temps. Une mangeoire en chantier ne nourrit pas encore les dinosaures. Plus tard, des employés du parc pourront construire à notre place.
+
+L'ancienne façon marche toujours : objet en main, Action pose devant le personnage, et garder Action en marchant pose une barrière à chaque pas.
+
 ## Aventure : attraper les dinosaures
 
 Des dinosaures sauvages vivent dans le parc, chacun dans son biome préféré : prairie, jungle, désert, marais ou neige. Les petits sont fréquents, les géants sont rares. Il y a deux façons de les attraper :

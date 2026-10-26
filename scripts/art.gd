@@ -1006,6 +1006,10 @@ static func resource(id: String) -> Texture2D:
 				p.limb(Vector2(4, 15), Vector2(10, 3), 1.2, 1.2, WOOD, true)
 				p.limb(Vector2(3, 4), Vector2(10, 1.5), 1.6, 1.4, Color("b0b4bc"), true)
 				p.limb(Vector2(10, 1.5), Vector2(15, 7), 1.4, 0.6, Color("b0b4bc"), true)
+			"hammer":
+				p.limb(Vector2(4, 15), Vector2(10, 5), 1.3, 1.3, WOOD, true)
+				p.limb(Vector2(5, 3), Vector2(14, 7), 2.4, 2.4, Color("b0b4bc"), true)
+				p.dot(Vector2(7, 3), Color("e0e4ec"), 2)
 			"slingshot":
 				p.limb(Vector2(8, 15), Vector2(8, 9), 1.3, 1.3, WOOD, true)
 				p.limb(Vector2(8, 9), Vector2(3, 2), 1.2, 1.0, WOOD, true)
