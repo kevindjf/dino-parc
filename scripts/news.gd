@@ -16,6 +16,7 @@ const ENTRIES := [
 			["capsule_copper", "Lance une capsule sur un dino épuisé pour l'attraper. Il va dans ton sac !"],
 			["capsule_gold", "Pastille verte : ça va marcher. Rouge : il va s'échapper ! Pour le T-Rex, il faut une capsule en or."],
 			["bolas", "Les bolas bloquent un dino qui fonce sur toi. Attention à tes cœurs !"],
+			["berries", "Plus besoin d'être collé au dino : vise-le et lance-lui des baies de loin !"],
 		],
 	},
 	{

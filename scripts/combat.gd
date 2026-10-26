@@ -1,6 +1,6 @@
 extends Node2D
 
-# Shooting and catching in the adventure. Picks the wild dinosaur being aimed at (the nearest
+# Shooting, catching and feeding in the adventure. Picks the wild dinosaur being aimed at (the nearest
 # one in front of the player), shows a target over it with its energy bar, and, with a capsule
 # in hand, a coloured dot telling the chance of catching it: green, orange or red.
 # Pebbles, arrows, darts, bolas and capsules fly through the air and always reach their target.
@@ -36,6 +36,10 @@ static func is_capsule(id: String) -> bool:
 	return Items.WEAPONS.has(id) and Items.WEAPONS[id].has("capture")
 
 
+static func is_food(id: String) -> bool:
+	return Items.WEAPONS.has(id) and Items.WEAPONS[id].has("feed")
+
+
 # From 0 to 1: a tired or sleeping dinosaur is easy to catch, a capsule too small almost never holds.
 static func catch_chance(dino: Node2D, capsule: String) -> float:
 	var weak: float = 1.0 if dino.state == "sleep" else 1.0 - dino.energy / dino.max_energy()
@@ -58,15 +62,20 @@ func _find_target() -> Node2D:
 	var aim := Vector2(player.facing)
 	var reach: float = Items.WEAPONS[weapon].range * T
 	var capsule := is_capsule(weapon)
+	var food := is_food(weapon)
 	var best: Node2D = null
 	var best_score := INF
 	for dino in park.dinos:
 		if dino.habitat != "land" or dino.captured or dino.ridden or dino.following != null:
 			continue
+		if food:
+			# Berries go to any herbivore, wild or of the park, that is awake.
+			if dino.species.diet != "herb" or dino.state == "sleep":
+				continue
 		# Capsules are for wild dinosaurs; an escaped one of the park can be put to sleep.
-		if not (dino.wild or (dino.escaped and not capsule)):
+		elif not (dino.wild or (dino.escaped and not capsule)):
 			continue
-		if dino.state == "sleep" and not capsule:
+		elif dino.state == "sleep" and not capsule:
 			continue
 		var to_dino: Vector2 = dino.position - player.position
 		var distance := to_dino.length()
@@ -88,10 +97,13 @@ func fire() -> void:
 	var stats: Dictionary = Items.WEAPONS[weapon]
 	var player: Node2D = park.player
 	# Nothing is wasted shooting at nothing (children keep the button pressed).
-	if target == null:
+	if target == null or (is_food(weapon) and park.berries_refused(target) != ""):
 		if time > hint_at:
 			hint_at = time + 2.0
-			park.float_text(player.position, "Tourne-toi vers un dinosaure sauvage !", Color("e0e0e0"))
+			var hint := "Tourne-toi vers un dinosaure herbivore !" if is_food(weapon) else "Tourne-toi vers un dinosaure sauvage !"
+			if target != null:
+				hint = park.berries_refused(target)
+			park.float_text(player.position, hint, Color("e0e0e0"))
 		return
 	if park.inventory.count(stats.ammo) <= 0:
 		park.float_text(player.position, "Plus de %s !" % Items.name_of(stats.ammo).to_lower(), Color("ffab91"))
@@ -144,6 +156,10 @@ func _land(kind: String, shot: Node2D) -> void:
 		return
 	if is_capsule(kind):
 		_catch(kind, shot)
+		return
+	if is_food(kind):
+		park.float_text(shot.position, "Miam !", Color("ff80ab"))
+		park.feed_berries(shot)
 		return
 	var stats: Dictionary = Items.WEAPONS[kind]
 	if not shot.wild:
@@ -225,7 +241,9 @@ func _draw() -> void:
 	var center := _aim_point(target)
 	var half := Vector2(maxf(size.x * 0.45, 10.0), maxf(height * 0.6, 10.0))
 	var color := Color("ff5a4a")
-	if is_capsule(weapon):
+	if is_food(weapon):
+		color = Color("ff80ab")
+	elif is_capsule(weapon):
 		color = chance_color(catch_chance(target, weapon))
 	# Corners of a frame around the dinosaur, gently pulsing.
 	half *= 1.0 + 0.06 * sin(time * 6.0)
@@ -234,7 +252,7 @@ func _draw() -> void:
 		var p: Vector2 = center + half * corner
 		draw_line(p, p - Vector2(corner.x * arm, 0), color, 1.5)
 		draw_line(p, p - Vector2(0, corner.y * arm), color, 1.5)
-	if target.wild:
+	if target.wild and not is_food(weapon):
 		_energy_bar(target)
 	if is_capsule(weapon):
 		var dot := center + Vector2(half.x + 7.0, -half.y)

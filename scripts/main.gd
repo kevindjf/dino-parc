@@ -55,7 +55,7 @@ const ADVENTURE_GOALS := [
 	{"id": "pen", "text": "Fabrique des barrières et ferme un enclos (garde Action appuyé en marchant)"},
 	{"id": "feeder", "text": "Fabrique un portail pour entrer dans ton enclos, puis pose une mangeoire dedans"},
 	{"id": "path", "text": "Fais un chemin depuis l'entrée jusqu'à ton enclos"},
-	{"id": "tame", "text": "Trouve un dinosaure herbivore sauvage et donne-lui 3 baies pour l'apprivoiser"},
+	{"id": "tame", "text": "Trouve un dinosaure herbivore sauvage, vise-le avec des baies en main et lance-lui 3 baies"},
 	{"id": "adopt", "text": "Emmène-le dans ton enclos : passe le portail, il te suit !"},
 	{"id": "cage", "text": "Fabrique un lance-pierre et une cage. Fatigue un petit dinosaure de loin, puis mets-le en cage"},
 	{"id": "release", "text": "Relâche le dinosaure attrapé dans un enclos"},
@@ -1358,22 +1358,6 @@ func _touch_dino(dino: Node2D, holding: String) -> void:
 		_float_text(at, "%s est dans la cage !" % dino.species.name, Color("fff59d"))
 		catch_dino(dino)
 		return
-	if holding == "berries" and dino.wild:
-		if dino.species.diet != "herb":
-			_float_text(at, "Il ne mange pas de baies ! Fatigue-le, puis lance une capsule.", Color("ffab91"))
-			return
-		if dino.following != null:
-			return
-		inventory.remove("berries")
-		dino.trust += 1
-		dino.roar_time = 0.0
-		if dino.trust >= dino.TRUST_NEEDED:
-			dino.following = player
-			_mark_caught(dino.species_id)
-			hud.flash("%s te suit !\nEmmène-le dans un enclos." % dino.species.name, 3.0)
-		dino.set_mood("", Color.WHITE)
-		_update_attraction()
-		return
 	if dino.wild:
 		var hint := "Donne-lui des baies, ou fatigue-le et lance une capsule !" if dino.species.diet == "herb" \
 			else "Attention, il mord ! Fatigue-le de loin, puis lance une capsule."
@@ -1396,17 +1380,6 @@ func _befriend(dino: Node2D, holding: String) -> void:
 				return
 			dino.next_brush = clock + 20.0
 			_gain_friendship(dino, 10 if shy else 20)
-		"berries":
-			if dino.species.diet != "herb":
-				_float_text(at, "Il ne mange pas de baies. Brosse-le plutôt !", Color("e0e0e0"))
-				return
-			if clock < dino.next_treat:
-				_float_text(at, "Il n'a plus faim, reviens plus tard", Color("e0e0e0"))
-				return
-			dino.next_treat = clock + 20.0
-			inventory.remove("berries")
-			dino.hunger = 100.0
-			_gain_friendship(dino, 20)
 		"saddle":
 			if not dino.can_be_ridden():
 				_float_text(at, "Il est trop petit pour porter une selle", Color("ffab91"))
@@ -1422,6 +1395,36 @@ func _befriend(dino: Node2D, holding: String) -> void:
 			_try_mount(dino)
 		_:
 			_float_text(at, "Amitié : %s" % dino.hearts_text(), Color("ff80ab"))
+
+
+# Berries are thrown from afar, like shots (see combat.gd). Why this dinosaur would not take
+# them now, or "" if it would.
+func berries_refused(dino: Node2D) -> String:
+	if dino.species.diet != "herb":
+		return "Il ne mange pas de baies !"
+	if dino.wild:
+		return "Il te suit déjà !" if dino.following != null else ""
+	if clock < dino.next_treat:
+		return "Il n'a plus faim, reviens plus tard"
+	return ""
+
+
+# The berries reached the dinosaur: a wild one trusts us a bit more (3 times and it follows us),
+# one of the park becomes a better friend.
+func feed_berries(dino: Node2D) -> void:
+	dino.roar_time = 0.0
+	if not dino.wild:
+		dino.next_treat = clock + 20.0
+		dino.hunger = 100.0
+		_gain_friendship(dino, 20)
+		return
+	dino.trust += 1
+	if dino.trust >= dino.TRUST_NEEDED:
+		dino.following = player
+		_mark_caught(dino.species_id)
+		hud.flash("%s te suit !\nEmmène-le dans un enclos." % dino.species.name, 3.0)
+	dino.set_mood("", Color.WHITE)
+	_update_attraction()
 
 
 func _gain_friendship(dino: Node2D, amount: int) -> void:

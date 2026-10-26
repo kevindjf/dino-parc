@@ -46,12 +46,14 @@ const ITEMS := {
 # loses energy, and once out of energy it falls asleep, ready to be caught.
 #   ammo: what each shot uses up (itself for things thrown by hand)
 #   tire: energy taken, stun: seconds it cannot move, range: in cells, every: seconds between shots
-#   flight: how it flies (straight, arc or spin), capture: biggest strength a capsule can hold
+#   flight: how it flies (straight, arc or spin), capture: biggest strength a capsule can hold,
+#   feed: thrown to an herbivore to make friends (berries)
 const WEAPONS := {
 	"slingshot": {"ammo": "stone", "tire": 8, "range": 6.0, "every": 0.45, "flight": "arc", "speed": 220.0},
 	"bow": {"ammo": "arrow", "tire": 16, "range": 8.0, "every": 0.6, "flight": "straight", "speed": 300.0},
 	"dart": {"ammo": "dart", "tire": 30, "range": 6.0, "every": 0.8, "flight": "straight", "speed": 260.0},
 	"bolas": {"ammo": "bolas", "tire": 4, "stun": 4.0, "range": 5.0, "every": 0.8, "flight": "spin", "speed": 180.0},
+	"berries": {"ammo": "berries", "feed": true, "range": 5.0, "every": 0.6, "flight": "arc", "speed": 160.0},
 	"capsule_copper": {"ammo": "capsule_copper", "capture": 3, "range": 5.0, "every": 1.0, "flight": "arc", "speed": 170.0},
 	"capsule_iron": {"ammo": "capsule_iron", "capture": 4, "range": 5.0, "every": 1.0, "flight": "arc", "speed": 170.0},
 	"capsule_gold": {"ammo": "capsule_gold", "capture": 5, "range": 5.0, "every": 1.0, "flight": "arc", "speed": 170.0},

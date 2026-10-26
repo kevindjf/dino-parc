@@ -71,7 +71,7 @@ Une partie commencée sur l'ancienne petite carte est replacée telle quelle pr�
 
 Des dinosaures sauvages vivent dans le parc, chacun dans son biome préféré : prairie, jungle, désert, marais ou neige. Les petits sont fréquents, les géants sont rares. Il y a deux façons de les attraper :
 
-- **Apprivoiser un herbivore.** Prendre des baies en main et lui en donner 3 (bouton Action devant lui). Il te suit alors partout, même à travers les barrières. Dès qu'il entre dans un enclos fermé, il y habite.
+- **Apprivoiser un herbivore.** Prendre des baies en main : une cible rose se place sur l'herbivore le plus proche devant toi (jusqu'à 5 cases). Le bouton Action lui lance des baies ; au bout de 3, il est apprivoisé. Il te suit alors partout, même à travers les barrières. Dès qu'il entre dans un enclos fermé, il y habite.
 - **Le combat, puis la capsule**, pour tous les dinosaures. Personne n'est blessé : chaque tir fatigue le dinosaure, et une fois épuisé il s'endort. On lance alors une capsule dessus : il va dans le sac, et on le relâche en visant une case libre dans un enclos.
 
 **Le combat se joue de loin, en direct.** Avec une arme en main, une cible apparaît sur le dinosaure sauvage le plus proche devant toi, avec sa barre d'énergie. Le bouton Action tire (garder appuyé pour tirer en continu) :
@@ -96,6 +96,8 @@ La **cage** marche encore pour les petits dinosaures (force 1 et 2) : on la pose
 Les carnivores sauvages foncent sur toi s'ils te voient de près. Fermer une barrière autour d'un dinosaure sauvage marche aussi !
 
 ## Aventure : l'amitié et la monture
+
+Les baies se lancent aussi aux herbivores du parc pour gagner leur amitié.
 
 Chaque dinosaure du parc a de l'**amitié pour toi, de 0 à 5 cœurs**. Elle démarre à 1 cœur pour un dinosaure apprivoisé, à 0 pour un dinosaure attrapé en cage ou en capsule.
 
