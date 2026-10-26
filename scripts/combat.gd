@@ -1,7 +1,7 @@
 extends Node2D
 
-# Shooting, catching and feeding in the adventure. Picks the wild dinosaur being aimed at (the nearest
-# one in front of the player), shows a target over it with its energy bar, and, with a capsule
+# Shooting, catching and feeding in the adventure. Picks the wild dinosaur being aimed at (the
+# one touched on the screen or clicked, otherwise the nearest one in front of the player), shows a target over it with its energy bar, and, with a capsule
 # in hand, a coloured dot telling the chance of catching it: green, orange or red.
 # Pebbles, arrows, darts, bolas and capsules fly through the air and always reach their target.
 
@@ -13,6 +13,7 @@ const WOBBLES := 3  # a caught dinosaur shakes the capsule three times before gi
 var park: Node2D
 var weapon := ""  # what the player holds, when it can be shot or thrown
 var target: Node2D = null
+var chosen: Node2D = null  # touched or clicked: stays the target while it is in reach
 var time := 0.0
 var ready_at := 0.0
 var hint_at := 0.0
@@ -28,8 +29,59 @@ func _process(delta: float) -> void:
 	var holding: String = park.inventory.current()
 	var usable: bool = park.mine == null and park.player.mount == null
 	weapon = holding if usable and Items.WEAPONS.has(holding) else ""
-	target = _find_target() if weapon != "" else null
+	if chosen != null and not (weapon != "" and is_instance_valid(chosen) and _can_aim(chosen) and _in_reach(chosen, 1.25)):
+		chosen = null
+	if weapon == "":
+		target = null
+	else:
+		target = chosen if chosen != null else _find_target()
 	queue_redraw()
+
+
+# Touching a dinosaur (or clicking it) aims at it and shoots. The joystick and the buttons
+# keep their touches for themselves, so only touches on the land arrive here.
+func _unhandled_input(event: InputEvent) -> void:
+	if weapon == "" or not event is InputEventScreenTouch or not event.pressed:
+		return
+	var at: Vector2 = get_viewport().get_canvas_transform().affine_inverse() * event.position
+	var touched := _dino_at(at)
+	if touched == null:
+		return
+	get_viewport().set_input_as_handled()
+	var player: Node2D = park.player
+	var hint := ""
+	if not _can_aim(touched):
+		hint = park.berries_refused(touched) if is_food(weapon) else "Pas celui-là !"
+	elif not _in_reach(touched, 1.0):
+		hint = "Trop loin ! Approche-toi."
+	if hint != "":
+		park.float_text(touched.position, hint, Color("e0e0e0"))
+		return
+	chosen = touched
+	target = touched
+	var to_dino: Vector2 = touched.position - player.position
+	if absf(to_dino.x) > absf(to_dino.y):
+		player.facing = Vector2i.RIGHT if to_dino.x > 0.0 else Vector2i.LEFT
+	else:
+		player.facing = Vector2i.DOWN if to_dino.y > 0.0 else Vector2i.UP
+	fire()
+
+
+# The dinosaur drawn under this point of the land, if any.
+func _dino_at(at: Vector2) -> Node2D:
+	var best: Node2D = null
+	var best_distance := INF
+	for dino in park.dinos:
+		if dino.habitat != "land" or dino.captured or dino.ridden:
+			continue
+		var half := Vector2(maxf(dino.frames.size.x * 0.5, 10.0), maxf(dino.frames.height * 0.6, 10.0))
+		var offset: Vector2 = (at - _aim_point(dino)).abs()
+		if offset.x <= half.x and offset.y <= half.y:
+			var distance := at.distance_to(_aim_point(dino))
+			if distance < best_distance:
+				best_distance = distance
+				best = dino
+	return best
 
 
 static func is_capsule(id: String) -> bool:
@@ -57,30 +109,33 @@ static func chance_color(chance: float) -> Color:
 	return Color("e53935")
 
 
+# Whether what the player holds can be used on this dinosaur.
+func _can_aim(dino: Node2D) -> bool:
+	if dino.habitat != "land" or dino.captured or dino.ridden or dino.following != null:
+		return false
+	if is_food(weapon):
+		# Berries go to any herbivore, wild or of the park, that is awake.
+		return dino.species.diet == "herb" and dino.state != "sleep"
+	# Capsules are for wild dinosaurs; an escaped one of the park can be put to sleep.
+	if not (dino.wild or (dino.escaped and not is_capsule(weapon))):
+		return false
+	return dino.state != "sleep" or is_capsule(weapon)
+
+
+func _in_reach(dino: Node2D, margin: float) -> bool:
+	return park.player.position.distance_to(dino.position) <= Items.WEAPONS[weapon].range * T * margin
+
+
 func _find_target() -> Node2D:
 	var player: Node2D = park.player
 	var aim := Vector2(player.facing)
-	var reach: float = Items.WEAPONS[weapon].range * T
-	var capsule := is_capsule(weapon)
-	var food := is_food(weapon)
 	var best: Node2D = null
 	var best_score := INF
 	for dino in park.dinos:
-		if dino.habitat != "land" or dino.captured or dino.ridden or dino.following != null:
-			continue
-		if food:
-			# Berries go to any herbivore, wild or of the park, that is awake.
-			if dino.species.diet != "herb" or dino.state == "sleep":
-				continue
-		# Capsules are for wild dinosaurs; an escaped one of the park can be put to sleep.
-		elif not (dino.wild or (dino.escaped and not capsule)):
-			continue
-		elif dino.state == "sleep" and not capsule:
+		if not _can_aim(dino) or not _in_reach(dino, 1.0):
 			continue
 		var to_dino: Vector2 = dino.position - player.position
 		var distance := to_dino.length()
-		if distance > reach:
-			continue
 		var facing := to_dino.normalized().dot(aim) if distance > 0.0 else 1.0
 		if distance > 1.5 * T and facing < 0.35:
 			continue

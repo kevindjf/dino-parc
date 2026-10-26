@@ -74,7 +74,7 @@ Des dinosaures sauvages vivent dans le parc, chacun dans son biome préféré : 
 - **Apprivoiser un herbivore.** Prendre des baies en main : une cible rose se place sur l'herbivore le plus proche devant toi (jusqu'à 5 cases). Le bouton Action lui lance des baies ; au bout de 3, il est apprivoisé. Il te suit alors partout, même à travers les barrières. Dès qu'il entre dans un enclos fermé, il y habite.
 - **Le combat, puis la capsule**, pour tous les dinosaures. Personne n'est blessé : chaque tir fatigue le dinosaure, et une fois épuisé il s'endort. On lance alors une capsule dessus : il va dans le sac, et on le relâche en visant une case libre dans un enclos.
 
-**Le combat se joue de loin, en direct.** Avec une arme en main, une cible apparaît sur le dinosaure sauvage le plus proche devant toi, avec sa barre d'énergie. Le bouton Action tire (garder appuyé pour tirer en continu) :
+**Le combat se joue de loin, en direct.** Avec une arme en main, une cible apparaît sur le dinosaure sauvage le plus proche devant toi, avec sa barre d'énergie. On peut aussi **toucher un dinosaure** sur l'écran (ou cliquer dessus sur ordinateur) : le personnage se tourne vers lui et tire, et il reste la cible tant qu'il est à portée. Le bouton Action tire (garder appuyé pour tirer en continu) :
 
 | Arme | Effet | Munitions |
 |---|---|---|
