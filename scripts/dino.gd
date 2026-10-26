@@ -319,7 +319,8 @@ func _process_land(delta: float) -> bool:
 	if flee_time > 0.0 and park.player != null:
 		flee_time -= delta
 		return _flee(delta)
-	if wild and park.player != null and park.away == null and chase_cool <= 0.0 and not _player_rides_stronger():
+	if wild and park.player != null and park.away == null and not park.player.flying() and chase_cool <= 0.0 \
+		and not _player_rides_stronger():
 		var distance: float = position.distance_to(park.player.position)
 		if (species.diet == "carn" and distance < 4.0 * T) or (angry_time > 0.0 and distance < 12.0 * T):
 			return _chase(delta)

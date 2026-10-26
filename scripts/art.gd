@@ -1006,6 +1006,16 @@ static func resource(id: String) -> Texture2D:
 				p.limb(Vector2(4, 15), Vector2(10, 3), 1.2, 1.2, WOOD, true)
 				p.limb(Vector2(3, 4), Vector2(10, 1.5), 1.6, 1.4, Color("b0b4bc"), true)
 				p.limb(Vector2(10, 1.5), Vector2(15, 7), 1.4, 0.6, Color("b0b4bc"), true)
+			"boots", "boots_fast":
+				var leather := Color("8a5a30") if id == "boots" else Color("e53935")
+				p.box(Rect2(4, 1, 6, 10), leather, true)
+				p.ellipse(Vector2(9, 12.5), Vector2(6, 2.8), leather, true)
+				p.flat(Rect2(3, 14, 13, 1), Color("3a2a1a"))
+				if id == "boots_fast":
+					p.flat(Rect2(4, 5, 6, 2), Color.WHITE)
+					p.polygon(PackedVector2Array([Vector2(10, 3), Vector2(15, 1), Vector2(13, 5)]), Color("fdd835"), true)
+				else:
+					p.flat(Rect2(4, 2, 6, 1), leather.lightened(0.3))
 			"hammer":
 				p.limb(Vector2(4, 15), Vector2(10, 5), 1.3, 1.3, WOOD, true)
 				p.limb(Vector2(5, 3), Vector2(14, 7), 2.4, 2.4, Color("b0b4bc"), true)
@@ -1091,6 +1101,9 @@ static func bag_icon(id: String) -> Texture2D:
 		return icon(item.place)
 	if id == "dart":
 		return icon("dart")
+	if item.kind == "vehicle":
+		return cached("bag:" + id, func() -> Texture2D:
+			return _fit(vehicle(id, 0).get_image()))
 	return cached("bag:" + id, func() -> Texture2D:
 		return _fit(resource(id).get_image()))
 
@@ -1298,4 +1311,75 @@ static func signpost() -> Texture2D:
 		p.box(Rect2(7, 8, 2, 13), WOOD, true)
 		p.polygon(PackedVector2Array([Vector2(1, 3), Vector2(12, 3), Vector2(15, 6.5), Vector2(12, 10), Vector2(1, 10)]), WOOD.lightened(0.25), true)
 		p.flat(Rect2(3, 6, 8, 1), WOOD.darkened(0.3))
+		return p.finish())
+
+
+# --- What the character drives in the adventure ------------------------------------------
+# Side views facing right, anchored at their bottom center; frames turn the wheels.
+
+static func vehicle(id: String, frame: int) -> Texture2D:
+	match id:
+		"bike":
+			return _bike(frame % 4)
+		"moto":
+			return _moto(frame % 4)
+		"car":
+			return _car(frame % 4)
+	return helicopter(frame % 2)
+
+
+static func _wheel(p: Painter, center: Vector2, radius: float, frame: int, filled: bool) -> void:
+	if filled:
+		p.ellipse(center, Vector2(radius, radius), Color("303034"), true)
+		p.dot(center, Color("b0b0b8"), 2)
+	else:
+		for i in 28:
+			var a := TAU * i / 28.0
+			p.dot(center + Vector2(cos(a), sin(a)) * radius, Color("303034"))
+	var a := frame * PI / 2.0
+	p.line(center, center + Vector2(cos(a), sin(a)) * (radius - 1.0), Color("b0b0b8"))
+
+
+static func _bike(frame: int) -> Texture2D:
+	return cached("bike:%d" % frame, func() -> Texture2D:
+		var p := _painter(Vector2i(24, 16))
+		var red := Color("e53935")
+		_wheel(p, Vector2(5, 11), 4.5, frame, false)
+		_wheel(p, Vector2(19, 11), 4.5, frame, false)
+		for bar in [[Vector2(5, 11), Vector2(11, 11)], [Vector2(11, 11), Vector2(9, 4)], [Vector2(9, 5), Vector2(17, 5)],
+				[Vector2(17, 5), Vector2(11, 11)], [Vector2(9, 5), Vector2(5, 11)], [Vector2(17, 4), Vector2(19, 11)]]:
+			p.limb(bar[0], bar[1], 0.7, 0.7, red)
+		p.box(Rect2(7, 2.5, 5, 1.5), Color("303034"))
+		p.limb(Vector2(16, 2), Vector2(18, 3), 0.6, 0.6, Color("303034"))
+		return p.finish(false))
+
+
+static func _moto(frame: int) -> Texture2D:
+	return cached("moto:%d" % frame, func() -> Texture2D:
+		var p := _painter(Vector2i(28, 18))
+		var blue := Color("1e88e5")
+		p.limb(Vector2(3, 12), Vector2(12, 12), 1.0, 1.0, Color("9a9aa2"))
+		p.limb(Vector2(20, 5), Vector2(22, 14), 1.0, 1.0, Color("9a9aa2"))
+		_wheel(p, Vector2(6, 14), 3.5, frame, true)
+		_wheel(p, Vector2(22, 14), 3.5, frame, true)
+		p.box(Rect2(9, 9, 9, 4), Color("70707a"), true)
+		p.polygon(PackedVector2Array([Vector2(9, 6), Vector2(18, 5), Vector2(21, 9), Vector2(10, 10)]), blue, true)
+		p.box(Rect2(4, 6, 8, 2), Color("303034"), true)
+		p.limb(Vector2(19, 3), Vector2(22, 4), 0.7, 0.7, Color("303034"))
+		p.dot(Vector2(23, 7), Color("fff176"), 2)
+		return p.finish())
+
+
+static func _car(frame: int) -> Texture2D:
+	return cached("car:%d" % frame, func() -> Texture2D:
+		var p := _painter(Vector2i(32, 18))
+		var red := Color("fb8c00")
+		p.box(Rect2(2, 7, 28, 7), red, true)
+		p.box(Rect2(21, 5, 9, 3), red, true)
+		p.limb(Vector2(20, 7), Vector2(18, 1), 0.8, 0.8, Color("a8e0f8"))
+		p.flat(Rect2(2, 10, 28, 1), Color.WHITE)
+		p.flat(Rect2(13, 8, 1, 5), red.darkened(0.3))
+		p.dot(Vector2(29, 8), Color("fff176"), 2)
+		_wheel(p, Vector2(8, 14), 3.5, frame, true)
+		_wheel(p, Vector2(24, 14), 3.5, frame, true)
 		return p.finish())

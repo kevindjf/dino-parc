@@ -1321,7 +1321,10 @@ func player_action(cell: Vector2i) -> void:
 		_mine_action(cell)
 		return
 	if village != null:
-		_village_action(cell)
+		if Items.kind_of(inventory.current()) == "vehicle":
+			board_vehicle(inventory.current())
+		else:
+			_village_action(cell)
 		return
 	if not in_grid(cell):
 		return
@@ -1331,6 +1334,9 @@ func player_action(cell: Vector2i) -> void:
 		return
 	var holding: String = inventory.current()
 	var kind := Items.kind_of(holding)
+	if kind == "vehicle":
+		board_vehicle(holding)
+		return
 	if kind == "dino":
 		_release(holding, cell)
 		return
@@ -1362,6 +1368,11 @@ func player_blocked(cell: Vector2i) -> bool:
 			return true
 		return false
 	return is_blocked_for_vehicle("walk", cell)
+
+
+# Where the player can go: the park, or the zone they are in.
+func player_area() -> Rect2:
+	return away.bounds() if away != null else Rect2(Vector2.ZERO, Vector2(GRID * T))
 
 
 # Where the player is in the park (where they will come back while away).
@@ -1669,6 +1680,23 @@ func _try_mount(dino: Node2D) -> void:
 		hud.flash("En selle sur %s !\nBouton Action pour descendre." % dino.species.name, 2.5)
 
 
+# Gets on the bike, the moto, the car or the helicopter held in hand.
+func board_vehicle(id: String) -> void:
+	if id == "heli" and away != null:
+		_float_text(player.position, "Pas de place pour décoller ici !", Color("ffab91"))
+		return
+	player.board(id)
+	hud.set_riding(true)
+	var hint := "L'hélicoptère décolle !\nBouton Action pour atterrir." if id == "heli" else "En route !\nBouton Action pour descendre."
+	hud.flash(hint, 2.5)
+
+
+# Off the vehicle: it goes back in the bag.
+func player_leave_vehicle() -> void:
+	player.leave_vehicle()
+	hud.set_riding(false)
+
+
 func player_dismount() -> void:
 	var dino: Node2D = player.mount
 	# Get off on a free cell next to the dinosaur.
@@ -1739,7 +1767,7 @@ func _mark_caught(species_id: String) -> void:
 
 # A wild dinosaur bumped into us: we lose a heart and are pushed back.
 func player_hit(dino: Node2D) -> void:
-	if clock < safe_until or player.mount != null:
+	if clock < safe_until or player.mount != null or player.vehicle != "":
 		return
 	hearts -= 1
 	safe_until = clock + 1.5

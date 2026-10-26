@@ -32,7 +32,7 @@ func add(id: String, amount := 1) -> void:
 	counts[id] = count(id) + amount
 	# New things go straight to a free slot of the tool bar, so they are ready to use.
 	# (Caught dinosaurs wait in "Mes dinos" instead.)
-	if is_new and not Items.kind_of(id) in ["resource", "ammo", "dino"]:
+	if is_new and not Items.kind_of(id) in ["resource", "ammo", "dino", "gear"]:
 		var free := hotbar.find("")
 		if free >= 0:
 			hotbar[free] = id
@@ -93,6 +93,15 @@ func hold(id: String) -> void:
 		hotbar[previous] = ""
 	hotbar[selected] = id
 	changed.emit()
+
+
+# How much faster the character walks with the best boots of the bag.
+func walk_bonus() -> float:
+	var bonus := 1.0
+	for id in Items.GEAR_SPEED:
+		if count(id) > 0:
+			bonus = maxf(bonus, Items.GEAR_SPEED[id])
+	return bonus
 
 
 # The caught dinosaurs, species id -> how many.

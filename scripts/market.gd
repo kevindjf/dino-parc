@@ -5,6 +5,12 @@ extends RefCounted
 # To add something to the shop, add a line to BUY: any id of items.gd, how many, the price.
 
 const BUY := [
+	{"id": "boots", "count": 1, "price": 80},
+	{"id": "boots_fast", "count": 1, "price": 250},
+	{"id": "bike", "count": 1, "price": 150},
+	{"id": "moto", "count": 1, "price": 400},
+	{"id": "car", "count": 1, "price": 800},
+	{"id": "heli", "count": 1, "price": 1500},
 	{"id": "capsule_copper", "count": 2, "price": 40},
 	{"id": "capsule_iron", "count": 2, "price": 90},
 	{"id": "capsule_gold", "count": 1, "price": 250},

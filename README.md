@@ -74,6 +74,21 @@ Sors du parc par le **portail, à gauche** (le panneau « ← Village ») : la r
 - La **boutique** est sur la place. Mets-toi devant le marchand et appuie sur Action.
   - **Acheter** : capsules (même en or), flèches, bolas, fléchettes, selle, brosse, pioche en fer, buissons, mangeoire, barrières électriques, fer, cristal, or.
   - **Vendre** : le bois, les pierres, les baies, les minerais et les fossiles qu'on a en trop.
+- **Pour aller plus vite** (achetés une seule fois) :
+
+| Achat | Prix | Vitesse (cases par seconde) |
+|---|---|---|
+| à pied | | 4 |
+| Bottes | 80 | 5 |
+| Bottes de course | 250 | 6 |
+| Vélo | 150 | 8 |
+| Moto | 400 | 11 |
+| Voiture | 800 | 14 |
+| Hélicoptère | 1500 | 16 |
+
+  - Les bottes marchent toutes seules dès qu'elles sont dans le sac.
+  - Un véhicule se prend en main comme un outil : Action pour monter, Action pour descendre, et il retourne dans le sac. Il passe là où on passe à pied, et on ne se fait pas bousculer par les dinos.
+  - L'**hélicoptère** décolle tout seul et vole au-dessus des arbres, de l'eau et des barrières. Action pour atterrir, sur une case libre.
 - Les **pièces** viennent des visiteurs du parc, de la vente à la boutique et des coffres.
 - Quatre **maisons abandonnées** cachent chacune un **coffre** : des pièces et un objet rare. Un coffre ne s'ouvre qu'une fois.
 - Les maisons des villageois sont fermées pour l'instant : elles serviront aux missions.
@@ -182,6 +197,7 @@ Les règles sont celles de la version 3D (`~/dino-parc-3d`).
 | Objets du sac, recettes, ce que donnent les arbres et rochers | `scripts/items.gd` |
 | Objectifs de l'aventure | `scripts/main.gd` (`ADVENTURE_GOALS`) |
 | Ce que vend et achète la boutique, et à quel prix | `scripts/market.gd` |
+| Vitesse des bottes et des véhicules | `scripts/items.gd` (`GEAR_SPEED`, `VEHICLES`) |
 | Plan du village, contenu des coffres | `scripts/village.gd` (`HOUSES`, `RUINS`, `CHESTS`…) |
 | Ce qui pousse dans chaque biome au début d'une aventure | `scripts/world_gen.gd` |
 | Couleurs proposées pour le personnage | `scripts/creator.gd` |

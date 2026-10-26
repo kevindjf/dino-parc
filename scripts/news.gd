@@ -9,10 +9,13 @@ extends RefCounted
 const ENTRIES := [
 	{
 		"version": 4,
-		"title": "Le village et sa boutique !",
+		"title": "Le village, la boutique et les véhicules !",
 		"items": [
 			["dino:triceratops", "Sors du parc par le portail, à gauche : la route mène au village !"],
 			["capsule_gold", "À la boutique, tes pièces achètent des capsules, des flèches, une selle, de l'or…"],
+			["boots_fast", "Achète des bottes : tu marches plus vite. Les bottes de course, encore plus vite !"],
+			["bike", "Achète un vélo, une moto ou une voiture. Prends-le en main et appuie sur Action pour monter !"],
+			["heli", "L'hélicoptère vole au-dessus de tout ! Appuie sur Action pour atterrir."],
 			["wood", "Tu as trop de bois ou de pierres ? Vends-les au marchand !"],
 			["fossil", "Les fossiles valent cher : 30 pièces chacun."],
 			["capsule_iron", "Quatre maisons abandonnées cachent un coffre au trésor. Trouve-les toutes !"],

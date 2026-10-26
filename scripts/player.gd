@@ -4,12 +4,15 @@ extends Node2D
 # what is in its hand on the cell in front of it (Espace or the action button).
 # Holding the action button with a fence or a path in hand while walking lays one on every step.
 # On a dinosaur's back, the character rides it; the action button gets off.
+# With a vehicle in hand, the action button gets on it; the action button again gets off.
+# The helicopter takes off by itself and flies over everything, and lands to let the character off.
 
 const Art := preload("res://scripts/art.gd")
 const Items := preload("res://scripts/items.gd")
 const T := 16
 const SPEED := 4.0 * T
 const HIT_DELAY := 0.35
+const FLIGHT_HEIGHT := 48.0
 
 var park: Node2D
 var look: Dictionary
@@ -24,6 +27,12 @@ var last_cell := Vector2i.ZERO
 var notify_timer := 0.0
 var mount: Node2D = null
 var blink_time := 0.0
+var vehicle := ""  # what the character drives ("bike", "moto", "car", "heli"), or "" on foot
+var vehicle_sprite: Sprite2D
+var shadow: Sprite2D
+var altitude := 0.0  # of the helicopter
+var landing := false
+var rotor := 0.0
 
 
 func setup(owner_park: Node2D, player_look: Dictionary, at: Vector2) -> void:
@@ -37,6 +46,15 @@ func setup(owner_park: Node2D, player_look: Dictionary, at: Vector2) -> void:
 	tool_sprite.scale = Vector2(0.75, 0.75)
 	tool_sprite.visible = false
 	add_child(tool_sprite)
+	shadow = Art.sprite(Art.shadow(26))
+	shadow.centered = true
+	shadow.offset = Vector2.ZERO
+	shadow.visible = false
+	add_child(shadow)
+	vehicle_sprite = Sprite2D.new()
+	vehicle_sprite.centered = false
+	vehicle_sprite.visible = false
+	add_child(vehicle_sprite)
 
 
 # Blinks for a while after being bumped by a dinosaur.
@@ -76,11 +94,33 @@ func _process(delta: float) -> void:
 			facing = Vector2i.RIGHT if input.x > 0.0 else Vector2i.LEFT
 		else:
 			facing = Vector2i.DOWN if input.y > 0.0 else Vector2i.UP
-	var speed := ride_speed() if mount else SPEED
-	velocity = velocity.move_toward(input * speed, speed * 8.0 * delta)
+	var speed: float = SPEED * park.inventory.walk_bonus()
+	if mount:
+		speed = ride_speed()
+	elif vehicle != "":
+		speed = Items.VEHICLES[vehicle].speed * T
+		if vehicle == "heli":
+			_fly(delta)
+			# On the ground, the helicopter waits for its rotor.
+			if altitude < FLIGHT_HEIGHT * 0.6:
+				input = Vector2.ZERO
+	var grip := 8.0 if vehicle == "" else 4.0
+	velocity = velocity.move_toward(input * speed, speed * grip * delta)
 	_move(velocity * delta)
 
 	cooldown -= delta
+	if vehicle != "":
+		_drive()
+		if acting and cooldown <= 0.0 and not landing:
+			cooldown = 0.5
+			if vehicle != "heli":
+				park.player_leave_vehicle()
+			elif park.player_blocked(cell()):
+				park.float_text(position + Vector2(0, -altitude - 16), "Pose-toi sur un endroit libre !", Color("ffab91"))
+			else:
+				landing = true
+		last_cell = cell()
+		return
 	if mount:
 		_ride()
 		if acting and cooldown <= 0.0:
@@ -148,6 +188,11 @@ func _ride() -> void:
 
 
 func _move(step: Vector2) -> void:
+	if vehicle == "heli":
+		var area: Rect2 = park.player_area()
+		position = (position + step).clamp(area.position, area.end - Vector2.ONE)
+		travelled += step.length()
+		return
 	for axis in [Vector2(step.x, 0), Vector2(0, step.y)]:
 		var next: Vector2 = position + axis
 		# Test the feet a little ahead, so the body does not overlap what blocks it.
@@ -160,6 +205,79 @@ func _move(step: Vector2) -> void:
 		else:
 			position = next
 	travelled += step.length()
+
+
+func board(id: String) -> void:
+	vehicle = id
+	velocity = Vector2.ZERO
+	altitude = 0.0
+	landing = false
+	rotor = 0.0
+	tool_sprite.visible = false
+	vehicle_sprite.visible = true
+	shadow.visible = id == "heli"
+	_drive()
+
+
+func leave_vehicle() -> void:
+	vehicle = ""
+	landing = false
+	altitude = 0.0
+	velocity = Vector2.ZERO
+	vehicle_sprite.visible = false
+	shadow.visible = false
+	sprite.visible = true
+	sprite.position = Vector2.ZERO
+	sprite.z_index = 0
+	z_index = 0
+
+
+func flying() -> bool:
+	return vehicle == "heli" and altitude > 6.0
+
+
+# The helicopter climbs as soon as we are in, and comes down to land.
+func _fly(delta: float) -> void:
+	rotor = move_toward(rotor, 25.0, delta * 15.0)
+	if landing:
+		velocity = Vector2.ZERO
+		altitude = move_toward(altitude, 0.0, 30.0 * delta)
+		if altitude <= 0.0:
+			park.player_leave_vehicle()
+			return
+	elif rotor > 20.0:
+		altitude = move_toward(altitude, FLIGHT_HEIGHT, 30.0 * delta)
+
+
+# The character sits on the bike or the moto, in the car, or in the helicopter's cockpit.
+func _drive() -> void:
+	if vehicle == "":
+		return
+	if absf(velocity.x) > 2.0:
+		vehicle_sprite.flip_h = velocity.x < 0.0
+	var left := vehicle_sprite.flip_h
+	var frame := int(rotor * 3.0) % 2 if vehicle == "heli" else int(travelled / 4.0)
+	var texture := Art.vehicle(vehicle, frame)
+	vehicle_sprite.texture = texture
+	vehicle_sprite.offset = -Vector2(floorf(texture.get_width() / 2.0), texture.get_height())
+	vehicle_sprite.position = Vector2(0, -altitude)
+	sprite.texture = Art.person("side", 0, look)
+	sprite.flip_h = left
+	sprite.visible = vehicle != "heli"
+	match vehicle:
+		"bike":
+			sprite.position = Vector2(2 if left else -2, -6)
+			sprite.z_index = 1
+		"moto":
+			sprite.position = Vector2(2 if left else -2, -7)
+			sprite.z_index = 1
+		"car":
+			# Drawn behind the car: only the head shows over the door.
+			sprite.position = Vector2(3 if left else -3, -6)
+			sprite.z_index = -1
+	shadow.scale = Vector2.ONE * clampf(1.0 - altitude / 160.0, 0.5, 1.0)
+	# High up, it flies over the trees.
+	z_index = 1 if altitude > 6.0 else 0
 
 
 func _animate(delta: float, holding: String) -> void:

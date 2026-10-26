@@ -228,7 +228,7 @@ func _refresh() -> void:
 		slot.icon = Art.bag_icon(id)
 		if id == "":
 			slot.text = ""
-		elif Items.kind_of(id) == "tool":
+		elif Items.kind_of(id) in ["tool", "vehicle", "gear"]:
 			slot.text = ""
 		elif Items.kind_of(id) == "weapon":
 			slot.text = "×%d" % inventory.count(Items.WEAPONS[id].ammo)
@@ -236,8 +236,12 @@ func _refresh() -> void:
 			slot.text = "×%d" % inventory.count(id)
 		slot.modulate.a = 0.45 if id != "" and inventory.count(id) == 0 else 1.0
 	var current: String = inventory.current()
-	action.caption = "Descendre" if riding else Items.name_of(current)
-	action.set_icon(Art.resource("saddle") if riding else Art.bag_icon(current))
+	action.caption = Items.name_of(current)
+	action.set_icon(Art.bag_icon(current))
+	if riding:
+		var driven: String = park.player.vehicle if park.player != null else ""
+		action.caption = "Atterrir" if driven == "heli" else "Descendre"
+		action.set_icon(Art.bag_icon(driven) if driven != "" else Art.resource("saddle"))
 	if bag_open:
 		_fill_bag()
 
@@ -402,7 +406,7 @@ func setup_builder(owner_builder: Node2D) -> void:
 func toggle_build() -> void:
 	if builder.active:
 		builder.close()
-	elif park.away == null and park.player.mount == null:
+	elif park.away == null and park.player.mount == null and park.player.vehicle == "":
 		if bag_open:
 			toggle_bag()
 		dex.visible = false
@@ -542,7 +546,10 @@ func _build_shop() -> void:
 	shop.set_anchors_preset(Control.PRESET_CENTER)
 	shop.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	shop.grow_vertical = Control.GROW_DIRECTION_BOTH
-	shop.custom_minimum_size = Vector2(860, 520)
+	shop.custom_minimum_size = Vector2(860, 500)
+	# A little low, so the messages above do not hide the coins.
+	shop.offset_top = 40
+	shop.offset_bottom = 40
 	shop.visible = false
 	root.add_child(shop)
 	var column := VBoxContainer.new()
@@ -619,7 +626,11 @@ func _buy_card(entry: Dictionary) -> void:
 			flash("Pas assez de pièces !", 1.5)
 		_fill_shop())
 	price.custom_minimum_size.y = 48
-	if park.money < entry.price:
+	# Boots and vehicles are bought once.
+	if Items.kind_of(entry.id) in ["gear", "vehicle"] and inventory.count(entry.id) > 0:
+		price.text = "Déjà à toi !"
+		price.disabled = true
+	elif park.money < entry.price:
 		price.modulate = Color(1, 1, 1, 0.5)
 
 

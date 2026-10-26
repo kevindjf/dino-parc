@@ -3,7 +3,8 @@ extends RefCounted
 const Catalog := preload("res://scripts/catalog.gd")
 
 # Everything you can carry in your bag, what you can make with it, and what nature gives you.
-# kind: resource, food, tool, weapon, ammo, catch, or build (a build item places
+# kind: resource, food, tool, weapon, ammo, catch, gear (worn as soon as it is in the bag),
+# vehicle (held, the action button gets on it), or build (a build item places
 # Catalog.ITEMS[place] in the park).
 
 const ITEMS := {
@@ -40,6 +41,23 @@ const ITEMS := {
 	"capsule_gold": {"name": "Capsule en or", "kind": "catch"},
 	"brush": {"name": "Brosse", "kind": "tool"},
 	"saddle": {"name": "Selle", "kind": "catch"},
+	"boots": {"name": "Bottes", "kind": "gear"},
+	"boots_fast": {"name": "Bottes de course", "kind": "gear"},
+	"bike": {"name": "Vélo", "kind": "vehicle"},
+	"moto": {"name": "Moto", "kind": "vehicle"},
+	"car": {"name": "Voiture", "kind": "vehicle"},
+	"heli": {"name": "Hélicoptère", "kind": "vehicle"},
+}
+
+# Boots make the character walk faster (the best pair in the bag counts).
+const GEAR_SPEED := {"boots": 1.25, "boots_fast": 1.5}
+# What the character can drive, in cells per second (walking is 4). The helicopter flies over
+# everything; the others go where the character can walk.
+const VEHICLES := {
+	"bike": {"speed": 8.0},
+	"moto": {"speed": 11.0},
+	"car": {"speed": 14.0},
+	"heli": {"speed": 16.0, "flies": true},
 }
 # A caught dinosaur travels in the bag as "dino:<species>" (kind "dino").
 
