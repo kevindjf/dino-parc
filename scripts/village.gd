@@ -204,8 +204,10 @@ func _paint(cell: Vector2i) -> void:
 
 
 func _place_sprites() -> void:
-	for house in HOUSES:
-		_stand(Art.village_house(house[1]), house[0], HOUSE_SIZE)
+	for i in HOUSES.size():
+		var house: Node2D = _stand(Art.village_house(HOUSES[i][1]), HOUSES[i][0], HOUSE_SIZE)
+		# Every other house shows its left side, so the streets do not look copied.
+		house.flip_h = i % 2 == 1
 	var stall := _stand(Art.market_stall(), SHOP, SHOP_SIZE)
 	shop_label = WorldText.make(stall, Vector2(0, -58), "Boutique", "bubble", Color("2860c0"))
 	_stand(Art.well(), WELL, Vector2i(2, 2))

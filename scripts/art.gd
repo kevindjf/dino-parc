@@ -861,8 +861,8 @@ static func person(direction: String, frame: int, colors: Dictionary) -> Texture
 
 
 # --- The hero: a little explorer with a bush hat ------------------------------------------
-# Bigger than the other people (16 x 24 pixels, feet at the bottom center): a big head under a
-# bush hat, a shirt with a pocket, shorts, white socks and red sneakers, 4 walking frames.
+# 12 x 19 pixels, feet at the bottom center: a big head under a
+# bush hat, a shirt, shorts, white socks and red sneakers, 4 walking frames.
 # colors: skin, hair, shirt, pants, hat, and style: "short" hair, or "long" (a ponytail).
 # Letters: o outline, H/h/K hat/brim/band, R/r hair, s/S skin, e eye, w white, m mouth, b blush,
 # B hair tie, c/C shirt, p/P shorts, k socks, n sneakers.
@@ -870,123 +870,107 @@ static func person(direction: String, frame: int, colors: Dictionary) -> Texture
 const KHAKI := Color("a08a70")
 
 const HERO_SIDE_HEAD := [
-	"....oooooo......",
-	"...oHHHHHHoo....",
-	"..oHHHHHHHHHo...",
-	"..oHHHHHHHHHo...",
-	"..oKKKKKKKKKKo..",
-	".ohhhhhhhhhhhhho",
-	".ooRRRRRRssssoo.",
-	"..oRRRRRsswesso.",
-	"..oRRRRSsswesso.",
-	"..oRRRRRssssssso",
-	"...oRRRsssssmo..",
-	"....oooossssoo..",
+	"...ooooo....",
+	"..oHHHHHo...",
+	".oHHHHHHHo..",
+	".oKKKKKKKKo.",
+	"ohhhhhhhhhho",
+	".oRRRssssso.",
+	".oRRSssweso.",
+	".oRRssssssso",
+	"..oRssssmso.",
+	"...oossssoo.",
 ]
 
 const HERO_SIDE_ARMS := {
-	"hang": [".....occccco....", "....occcccco....", "....occCcCco....", "....occCcCco....", "....occcssco...."],
-	"front": [".....occccco....", "....occccccco...", "....occccoCcso..", "....occcco.osso.", "....occcco..oo.."],
-	"back": [".....occccco....", "...oocccccco....", "..osCoccccco....", ".osso.occcco....", "..oo..occcco...."],
+	"hang": ["...occcco...", "..occcccco..", "..occCcCco..", "..occcssco.."],
+	"front": ["...occcco...", "..occccccoo.", "..occccoCsso", "..occcco.oo."],
+	"back": ["...occcco...", ".oocccccco..", "osCoccccco..", ".oo.occcco.."],
 }
 
 const HERO_SIDE_SHORTS := [
-	"....opppppPo....",
-	"....opppppPo....",
+	"..oppppPpo..",
 ]
 
 const HERO_SIDE_LEGS := {
-	"together": [".....oso.oso....", ".....oko.oko....", ".....oko.oko....", ".....onnnonnno..", ".....oooooooo..."],
-	"apart": ["....oso..oso....", "...oso....oso...", "...oko....oko...", "..onnno...onnno.", "..ooooo...ooooo."],
+	"together": ["...oso.oso..", "...oko.oko..", "...onnnonnno", "...ooooooooo"],
+	"apart": ["..oso.oso...", "..oko..oko..", ".onnno.onnno", ".ooooo.ooooo"],
 }
 
 # Seen from the front and the back: the left half, mirrored.
 
 const HERO_FRONT_HEAD := [
-	".....ooo",
-	"....oHHH",
-	"...oHHHH",
-	"...oHHHH",
-	"...oKKKK",
-	".ohhhhhh",
-	".ooRRRRR",
-	"..oRssss",
-	"..oRsess",
-	"..oRsess",
-	"..oRbssm",
-	"...oosss",
+	"...ooo",
+	"..oHHH",
+	".oHHHH",
+	".oKKKK",
+	"ohhhhh",
+	".oRRRR",
+	".oRses",
+	".obsss",
+	"..ossm",
+	"...oos",
 ]
 
 const HERO_BACK_HEAD := [
-	".....ooo",
-	"....oHHH",
-	"...oHHHH",
-	"...oHHHH",
-	"...oKKKK",
-	".ohhhhhh",
-	".ooRRRRR",
-	"..oRRRRR",
-	"..oRRRRR",
-	"..oRRRRR",
-	"..orRRRR",
-	"...oorrs",
+	"...ooo",
+	"..oHHH",
+	".oHHHH",
+	".oKKKK",
+	"ohhhhh",
+	".oRRRR",
+	".oRRRR",
+	".oRRRR",
+	"..orRR",
+	"...oos",
 ]
 
 const HERO_FRONT_BODY := [
-	"....ocCs",
-	"...occcc",
-	"..oCcccc",
-	"..oscccc",
-	"..osoccc",
-	"....oppp",
-	"....oppp",
+	"...ocs",
+	"..occc",
+	".oCccc",
+	".osccc",
+	"..oppp",
 ]
 
 const HERO_BACK_BODY := [
-	"....occc",
-	"...occcc",
-	"..oCcccc",
-	"..oscccc",
-	"..osoccc",
-	"....oppp",
-	"....oppp",
+	"...occ",
+	"..occc",
+	".oCccc",
+	".osccc",
+	"..oppp",
 ]
 
 const HERO_LEGS := [
-	"....osso",
-	"....okko",
-	"....okko",
-	"...onnno",
-	"...ooooo",
+	"...oso",
+	"...oko",
+	"..onno",
+	"..oooo",
 ]
 
 # The ponytail ("long" style), drawn over the rest from a row ("." keeps what is there).
 
 const HERO_SIDE_TAIL := [
-	"..B.............",
-	"oRRo............",
-	"oRRo............",
-	"oRro............",
-	".oRo............",
-	"..o.............",
+	".B..........",
+	"oRo.........",
+	"oRo.........",
+	"oro.........",
+	".o..........",
 ]
 
 const HERO_FRONT_TAIL := [
-	"................",
-	".oRo........oRo.",
-	".oRo........oRo.",
-	".oRo........oRo.",
-	".oRo........oRo.",
-	"..o..........o..",
+	"............",
+	"oR........Ro",
+	"oR........Ro",
+	"oR........Ro",
+	".o........o.",
 ]
 
 const HERO_BACK_TAIL := [
-	".......BB.......",
-	"......oRRo......",
-	"......oRRo......",
-	"......oRro......",
-	".......oo.......",
-	"................",
+	".....BB.....",
+	"....oRRo....",
+	"....oRRo....",
+	".....oo.....",
 ]
 
 
@@ -1000,7 +984,7 @@ static func hero(direction: String, frame: int, colors: Dictionary) -> Texture2D
 			rows = HERO_SIDE_HEAD + HERO_SIDE_ARMS[["hang", "front", "hang", "back"][frame]] + HERO_SIDE_SHORTS \
 				+ HERO_SIDE_LEGS["together" if frame % 2 == 0 else "apart"]
 			if long:
-				rows = _over(rows, 6, HERO_SIDE_TAIL)
+				rows = _over(rows, 5, HERO_SIDE_TAIL)
 		else:
 			var front := direction == "down"
 			var legs := _mirror(HERO_LEGS)
@@ -1008,10 +992,10 @@ static func hero(direction: String, frame: int, colors: Dictionary) -> Texture2D
 			if frame == 1:
 				legs = _lift(legs, 0)
 			elif frame == 3:
-				legs = _lift(legs, 8)
+				legs = _lift(legs, 6)
 			rows = _mirror(HERO_FRONT_HEAD if front else HERO_BACK_HEAD) + _mirror(HERO_FRONT_BODY if front else HERO_BACK_BODY) + legs
 			if long:
-				rows = _over(rows, 6, HERO_FRONT_TAIL) if front else _over(rows, 8, HERO_BACK_TAIL)
+				rows = _over(rows, 5, HERO_FRONT_TAIL) if front else _over(rows, 7, HERO_BACK_TAIL)
 		var hat: Color = colors.get("hat", KHAKI)
 		var palette := {
 			"o": OUTLINE, "H": hat, "h": hat.darkened(0.12), "K": hat.darkened(0.55),
@@ -1020,7 +1004,7 @@ static func hero(direction: String, frame: int, colors: Dictionary) -> Texture2D
 			"c": colors.shirt, "C": colors.shirt.darkened(0.2), "p": colors.pants, "P": colors.pants.darkened(0.25),
 			"k": Color("f4f4f4"), "n": Color("e53935"),
 		}
-		var image := Image.create(16, 24, false, Image.FORMAT_RGBA8)
+		var image := Image.create(12, 19, false, Image.FORMAT_RGBA8)
 		_stamp(image, Vector2i.ZERO, rows, palette)
 		return ImageTexture.create_from_image(image))
 
@@ -1041,13 +1025,13 @@ static func _over(rows: Array, top: int, over: Array) -> Array:
 	return rows
 
 
-# The leg in the 8 columns from `left` one pixel higher.
+# The leg in the 6 columns from `left` one pixel higher.
 static func _lift(legs: Array, left: int) -> Array:
 	var out := []
 	for y in legs.size():
 		var row: String = legs[y]
-		var below: String = legs[y + 1] if y + 1 < legs.size() else ".".repeat(16)
-		out.append(row.substr(0, left) + below.substr(left, 8) + row.substr(left + 8))
+		var below: String = legs[y + 1] if y + 1 < legs.size() else ".".repeat(row.length())
+		out.append(row.substr(0, left) + below.substr(left, 6) + row.substr(left + 6))
 	return out
 
 
@@ -1555,56 +1539,80 @@ static func _chimney(img: Image, rect: Rect2i, rng: RandomNumberGenerator) -> vo
 	img.fill_rect(Rect2i(rect.position.x - 1, rect.position.y, rect.size.x + 2, 2), STONES[1])
 
 
-# A house of the village, 4 x 3 cells, door in the middle of the bottom: 64 x 84 pixels.
-# 0: a small thatched hut of planks, 1: a thatched log cottage with a dormer and flowers,
+# Fills a polygon pixel by pixel: color(x, y) gives each pixel.
+static func _fill_poly(img: Image, points: PackedVector2Array, color: Callable) -> void:
+	var box := Rect2(points[0], Vector2.ZERO)
+	for point in points:
+		box = box.expand(point)
+	for y in range(int(box.position.y), int(ceil(box.end.y)) + 1):
+		for x in range(int(box.position.x), int(ceil(box.end.x)) + 1):
+			if Geometry2D.is_point_in_polygon(Vector2(x, y) + Vector2(0.5, 0.5), points):
+				_put(img, x, y, color.call(x, y))
+
+
+# A house of the village seen from three quarters, 4 x 3 cells: 80 x 72 pixels. The front wall
+# with the door (in the middle, where the player walks in), the right wall going back in the
+# shade, and the right slope of the roof.
+# 0: a small hut of planks under straw, 1: a log cottage under straw with flowers,
 # 2: a big log house under a roof of leaves.
+const HOUSE_DEPTH := Vector2(16, -12)
+
+
 static func village_house(variant: int) -> Texture2D:
 	return cached("village_house:%d" % variant, func() -> Texture2D:
-		var p := _painter(Vector2i(64, 84))
+		var p := _painter(Vector2i(80, 72))
 		var img := p.image
 		var rng := RandomNumberGenerator.new()
 		rng.seed = 400 + variant
-		match variant % 3:
-			0:
-				_chimney(img, Rect2i(12, 8, 8, 26), rng)
-				_planks(img, Rect2i(8, 48, 48, 30), rng)
-				img.fill_rect(Rect2i(8, 54, 48, 3), LOG[0])
-				_stones(img, Rect2i(7, 76, 50, 7), rng)
-				_thatch(img, PackedVector2Array([Vector2(1, 52), Vector2(24, 18), Vector2(40, 18), Vector2(63, 52), Vector2(56, 54), Vector2(8, 54)]), rng)
-				_moss(img, Rect2i(6, 22, 52, 28), 14, rng)
-				# Crossed poles at the top of the roof.
-				p.line(Vector2(26, 13), Vector2(34, 21), LOG[1])
-				p.line(Vector2(38, 13), Vector2(30, 21), LOG[1])
-				_window(img, Rect2i(13, 59, 7, 6))
-				_door(img, Rect2i(26, 60, 12, 18))
-				_window(img, Rect2i(45, 59, 7, 6))
-			1:
-				_logs(img, Rect2i(8, 46, 48, 32), rng)
-				img.fill_rect(Rect2i(8, 52, 48, 3), LOG[0])
-				_stones(img, Rect2i(6, 74, 52, 9), rng)
-				_thatch(img, PackedVector2Array([Vector2(0, 50), Vector2(6, 28), Vector2(16, 14), Vector2(32, 9), Vector2(48, 14), Vector2(58, 28), Vector2(64, 50), Vector2(56, 52), Vector2(8, 52)]), rng)
-				_moss(img, Rect2i(6, 14, 52, 34), 12, rng)
-				# The round dormer window in the straw.
-				p.ellipse(Vector2(32, 30), Vector2(7, 6), THATCH[1])
-				img.fill_rect(Rect2i(28, 27, 8, 8), LOG[0])
-				_window(img, Rect2i(29, 28, 6, 6))
-				_window(img, Rect2i(12, 57, 8, 7), true)
-				_window(img, Rect2i(44, 57, 8, 7), true)
-				_door(img, Rect2i(26, 58, 12, 18))
-				for spot in [Vector2(7, 79), Vector2(57, 79)]:
-					p.ellipse(spot, Vector2(3, 3), Color("b0603a"), true)
-					p.ellipse(spot + Vector2(0, -3), Vector2(3, 2), LEAVES[2])
-			_:
-				_chimney(img, Rect2i(44, 2, 8, 20), rng)
-				_logs(img, Rect2i(6, 44, 52, 32), rng)
-				img.fill_rect(Rect2i(6, 50, 52, 3), LOG[0])
-				_stones(img, Rect2i(4, 72, 56, 11), rng)
-				_leaf_roof(img, PackedVector2Array([Vector2(0, 48), Vector2(14, 16), Vector2(50, 14), Vector2(64, 48), Vector2(58, 50), Vector2(6, 50)]), rng)
-				# The ridge log on top of the leaves.
-				p.limb(Vector2(13, 15), Vector2(51, 13), 1.8, 1.8, LOG[1], true)
-				_window(img, Rect2i(11, 55, 8, 7))
-				_window(img, Rect2i(45, 55, 8, 7))
-				_door(img, Rect2i(26, 56, 12, 20))
+		var logs := variant % 3 != 0
+		var leaves := variant % 3 == 2
+		var d := HOUSE_DEPTH
+		# The right wall, in the shade: logs or planks following the slope.
+		var side := PackedVector2Array([Vector2(60, 45), Vector2(60, 45) + d, Vector2(60, 71) + d, Vector2(60, 71)])
+		_fill_poly(img, side, func(x: int, y: int) -> Color:
+			var v := float(y) + (x - 60) * 0.75
+			var c: Color = [LOG[1], LOG[1], LOG[0], LOG[2]][int(v) % 4] if logs else [LOG[0], LOG[1], LOG[1]][x % 3]
+			if v > 64.0:
+				c = STONES[1] if (int(v) + x / 3) % 4 != 0 else STONES[0]
+			return c.darkened(0.3))
+		# The front wall and its stone base.
+		if logs:
+			_logs(img, Rect2i(20, 44, 40, 22), rng)
+		else:
+			_planks(img, Rect2i(20, 44, 40, 22), rng)
+		_stones(img, Rect2i(19, 64, 42, 8), rng)
+		# The gable above the front wall.
+		_fill_poly(img, PackedVector2Array([Vector2(20, 45), Vector2(40, 30), Vector2(60, 45)]), func(x: int, y: int) -> Color:
+			return [LOG[0], LOG[1], LOG[2]][x % 3] if not logs else [LOG[2], LOG[1], LOG[1], LOG[0]][y % 4])
+		# Shadow of the roof on the wall.
+		img.fill_rect(Rect2i(20, 44, 40, 2), LOG[0])
+		# The roof: its right slope going back, and the rim over the gable.
+		var apex := Vector2(40, 27)
+		var eave := Vector2(65, 48)
+		var slope := PackedVector2Array([apex, eave, eave + d, apex + d])
+		var rim := PackedVector2Array([apex + Vector2(0, -2), Vector2(15, 48), Vector2(21, 50), apex + Vector2(0, 5)])
+		if leaves:
+			_leaf_roof(img, slope, rng)
+			_leaf_roof(img, rim, rng)
+		else:
+			_thatch(img, slope, rng)
+			_thatch(img, rim, rng)
+			_moss(img, Rect2i(18, 18, 60, 30), 10, rng)
+		if variant % 3 != 1:
+			_chimney(img, Rect2i(62, 14, 6, 14), rng)
+		p.limb(apex + Vector2(0, -1), apex + d + Vector2(0, -1), 1.6, 1.6, LOG[1], true)
+		if variant % 3 == 0:
+			# Crossed poles at the front of the ridge.
+			p.line(apex + Vector2(-4, -5), apex + Vector2(2, 1), LOG[1])
+			p.line(apex + Vector2(4, -5), apex + Vector2(-2, 1), LOG[1])
+		# Door, windows, flowers.
+		_door(img, Rect2i(34, 52, 12, 20))
+		_window(img, Rect2i(24, 52, 6, 6), variant % 3 == 1)
+		_window(img, Rect2i(50, 52, 6, 6), variant % 3 == 1)
+		if variant % 3 == 1:
+			for spot in [Vector2(17, 69), Vector2(63, 69)]:
+				p.ellipse(spot, Vector2(3, 3), Color("b0603a"), true)
+				p.ellipse(spot + Vector2(0, -3), Vector2(3, 2), LEAVES[2])
 		return p.finish())
 
 
