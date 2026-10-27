@@ -1025,7 +1025,7 @@ const HERO_SIDE_HEAD := [
 	"..oRRRRRSSSSSo..",
 	"..oRrRRSssrrso..",
 	"..oRRrSSssweso..",
-	"..oRrRSSsssesso.",
+	"..oRrRSSssseso..",
 	"..oRRRSsbsssso..",
 	"...oRRsssssmo...",
 	"....ooossso.....",
