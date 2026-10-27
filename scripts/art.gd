@@ -1006,7 +1006,7 @@ static func dino_folk(kind: String, direction: String, frame: int, colors: Dicti
 # 14 x 19 pixels, feet at the bottom center, seen a little from above: a big head under a
 # bush hat, a shirt, shorts, white socks and red sneakers, 4 walking frames.
 # colors: skin, hair, shirt, pants, hat, and style: "short" hair, or "long" (a ponytail).
-# Letters: o outline, H/h/K/d hat/brim/band/brim edge, R/r hair, s/S skin, e eye, w white, m mouth, b blush,
+# Letters: o outline, H/h/K hat/brim/band, R/r hair, s/S skin, e eye, w white, m mouth, b blush,
 # B hair tie, c/C shirt, p/P shorts, k socks, n sneakers.
 
 const KHAKI := Color("a08a70")
@@ -1014,15 +1014,15 @@ const KHAKI := Color("a08a70")
 const HERO_SIDE_HEAD := [
 	"...ooooo......",
 	"..oHHHHHo.....",
-	"..oHHHHHHo....",
-	"..oKKKKKKo....",
-	".ohhhhhhhhho..",
-	"ohhhhhhhhhhhho",
-	".oddddddddddo.",
-	"..oRRRSSSSo...",
-	"..oRRSssweso..",
-	"..oRRsssssso..",
-	"...oossmso....",
+	".oHHHHHHHo....",
+	".oKKKKKKKKo...",
+	"ohhhhhhhhhhho.",
+	".oRRRSSSSSo...",
+	".oRRSssweso...",
+	".oRRsssssso...",
+	"..oRssssmo....",
+	"...oossso.....",
+	"....osso......",
 ]
 
 const HERO_SIDE_ARMS := {
@@ -1036,11 +1036,11 @@ const HERO_SIDE_LEGS := {
 	"apart": ["...oso..oso...", "..oso....oso..", ".onnno...onnno", ".ooooo...ooooo"],
 }
 
-# The top of the head without a hat (people of the park), replacing rows 0 to 6.
+# The top of the head without a hat (people of the park), replacing rows 0 to 4.
 
-const HERO_SIDE_HAIR := ["..............", "..............", "....ooooo.....", "...oRRRRRo....", "..oRRRRRRRo...", "..oRRRRRRRRo..", "..oRRRRRRRRo.."]
+const HERO_SIDE_HAIR := ["..............", "...ooooo......", "..oRRRRRo.....", ".oRRRRRRRo....", ".oRRRRRRRRo..."]
 
-const HERO_HAIR := [".......", ".......", "....ooo", "...oRRR", "..oRRRR", "..oRRRR", "..oRRRR"]
+const HERO_HAIR := [".......", "....ooo", "...oRRR", "..oRRRR", "..oRRRR"]
 
 # Seen from the front and the back: the left half, mirrored.
 
@@ -1048,13 +1048,13 @@ const HERO_FRONT_HEAD := [
 	"....ooo",
 	"...oHHH",
 	"..oHHHH",
-	"..ooKKK",
+	"..oKKKK",
 	".ohhhhh",
-	"ohhhhhh",
-	".oddddd",
 	"..oRSSS",
 	"..oRses",
+	"..oRsss",
 	"..oRssm",
+	"...ooss",
 	"....oss",
 ]
 
@@ -1062,13 +1062,13 @@ const HERO_BACK_HEAD := [
 	"....ooo",
 	"...oHHH",
 	"..oHHHH",
-	"..oohhh",
+	"..oKKKK",
 	".ohhhhh",
-	"ohhhhhh",
-	".oddddd",
+	"..oRRRR",
 	"..oRRRR",
 	"..oRRRR",
 	"..orRRR",
+	"...oorr",
 	"....oss",
 ]
 
@@ -1089,7 +1089,7 @@ const HERO_LEGS := [
 # The ponytail ("long" style), drawn over the rest from a row ("." keeps what is there).
 
 const HERO_SIDE_TAIL := [
-	"..B...........",
+	".B............",
 	"oRRo..........",
 	"oRRo..........",
 	"oRo...........",
@@ -1121,9 +1121,9 @@ static func hero(direction: String, frame: int, colors: Dictionary) -> Texture2D
 			rows = HERO_SIDE_HEAD + HERO_SIDE_ARMS[["hang", "front", "hang", "back"][frame]] \
 				+ HERO_SIDE_LEGS["together" if frame % 2 == 0 else "apart"]
 			if not colors.has("hat"):
-				rows = HERO_SIDE_HAIR + rows.slice(7)
+				rows = HERO_SIDE_HAIR + rows.slice(5)
 			if long:
-				rows = _over(rows, 7, HERO_SIDE_TAIL)
+				rows = _over(rows, 5, HERO_SIDE_TAIL)
 		else:
 			var front := direction == "down"
 			var legs := _mirror(HERO_LEGS)
@@ -1134,12 +1134,12 @@ static func hero(direction: String, frame: int, colors: Dictionary) -> Texture2D
 				legs = _lift(legs, 7)
 			rows = _mirror(HERO_FRONT_HEAD if front else HERO_BACK_HEAD) + _mirror(HERO_BODY) + legs
 			if not colors.has("hat"):
-				rows = _mirror(HERO_HAIR) + rows.slice(7)
+				rows = _mirror(HERO_HAIR) + rows.slice(5)
 			if long:
-				rows = _over(rows, 7, HERO_FRONT_TAIL) if front else _over(rows, 10, HERO_BACK_TAIL)
+				rows = _over(rows, 5, HERO_FRONT_TAIL) if front else _over(rows, 8, HERO_BACK_TAIL)
 		var hat: Color = colors.get("hat", KHAKI)
 		var palette := {
-			"o": OUTLINE, "H": hat, "h": hat.darkened(0.12), "K": hat.darkened(0.55), "d": hat.darkened(0.45),
+			"o": OUTLINE, "H": hat, "h": hat.darkened(0.12), "K": hat.darkened(0.55),
 			"R": colors.hair, "r": colors.hair.darkened(0.25), "s": colors.skin, "S": colors.skin.darkened(0.2),
 			"e": Color("2a1a10"), "w": Color.WHITE, "m": Color("c0505a"), "b": Color("f4a0a0"), "B": Color("2a8adf"),
 			"c": colors.shirt, "C": colors.shirt.darkened(0.2), "p": colors.pants, "P": colors.pants.darkened(0.25),
