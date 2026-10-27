@@ -15,7 +15,7 @@ const T := 16
 const SIZE := Vector2i(44, 30)
 const ROAD := 14  # the road to the park takes this row and the next one, out of the east edge
 const DIRS := [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
-# Houses of 4 x 3 cells: [top-left cell, look].
+# Houses of 4 x 3 cells: [top-left cell, look]. Each one has a resident inside (see house.gd).
 const HOUSES := [
 	[Vector2i(4, 9), 0], [Vector2i(9, 9), 1], [Vector2i(4, 17), 2], [Vector2i(9, 17), 0],
 	[Vector2i(31, 9), 2], [Vector2i(36, 9), 1], [Vector2i(31, 18), 1], [Vector2i(36, 18), 0],
@@ -47,7 +47,7 @@ const TREES := [Vector2i(15, 22), Vector2i(27, 4), Vector2i(19, 25), Vector2i(28
 const VILLAGERS := 5
 const BORDER := 2
 
-var state: Dictionary  # {"opened": [chest index, ...]}, saved with the game
+var state: Dictionary  # {"opened": [chest index, ...], "gifts": [house index, ...]}, saved with the game
 var solid := {}  # Vector2i -> "tree", "house", "shop", "wall", "chest" or "well"
 var paths := {}  # Vector2i -> true
 var floors := {}  # Vector2i -> true: inside an abandoned house
@@ -105,6 +105,19 @@ func arrival() -> Vector2:
 # The last cells of the road: walking there goes back to the park.
 func is_exit(cell: Vector2i) -> bool:
 	return cell.x >= SIZE.x - 1 and (cell.y == ROAD or cell.y == ROAD + 1)
+
+
+# The house standing on this cell, or -1.
+func house_at(cell: Vector2i) -> int:
+	for i in HOUSES.size():
+		if Rect2i(HOUSES[i][0], HOUSE_SIZE).has_point(cell):
+			return i
+	return -1
+
+
+# Where the player stands when coming out of a house: in front of its door.
+func house_door(index: int) -> Vector2:
+	return cell_center(HOUSES[index][0] + Vector2i(1, HOUSE_SIZE.y)) + Vector2(T / 2.0, 0)
 
 
 # Close to the merchant, the sign tells how to open the shop.

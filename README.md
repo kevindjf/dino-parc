@@ -72,7 +72,7 @@ Une partie commencée sur l'ancienne petite carte est replacée telle quelle pr�
 Sors du parc par le **portail, à gauche** (le panneau « ← Village ») : la route mène au village. On y va à pied, pas sur le dos d'un dinosaure.
 
 - La **boutique** est sur la place. Mets-toi devant le marchand et appuie sur Action.
-  - **Acheter** : capsules (même en or), flèches, bolas, fléchettes, selle, brosse, pioche en fer, buissons, mangeoire, barrières électriques, fer, cristal, or.
+  - **Acheter** : capsules (même en or), flèches, bolas, fléchettes, **viande** (5 pour 25 pièces), mangeoire à viande, selle, brosse, pioche en fer, buissons, mangeoire, barrières électriques, fer, cristal, or.
   - **Vendre** : le bois, les pierres, les baies, les minerais et les fossiles qu'on a en trop.
 - **Pour aller plus vite** (achetés une seule fois) :
 
@@ -91,7 +91,7 @@ Sors du parc par le **portail, à gauche** (le panneau « ← Village ») : la r
   - L'**hélicoptère** décolle tout seul et vole au-dessus des arbres, de l'eau et des barrières. Action pour atterrir, sur une case libre.
 - Les **pièces** viennent des visiteurs du parc, de la vente à la boutique et des coffres.
 - Quatre **maisons abandonnées** cachent chacune un **coffre** : des pièces et un objet rare. Un coffre ne s'ouvre qu'une fois.
-- Les maisons des villageois sont fermées pour l'instant : elles serviront aux missions.
+- **On entre dans les huit maisons** : devant une maison, appuie sur Action. Chacune a son habitant (Mamie Rose, Marcel le boucher, Léa l'exploratrice…). Mets-toi devant lui et appuie sur Action pour parler : à la première visite, il te fait un **cadeau** (baies, viande, flèches, pièces…), ensuite il donne des conseils. Pour ressortir, passe la porte en bas. Les habitants et leurs cadeaux sont dans `scripts/house.gd` (`RESIDENTS`).
 - Pour rentrer, suis la route vers la droite (le panneau « Parc → »). Le parc continue de vivre pendant ce temps : les visiteurs paient leur billet.
 
 ### Une carte en zones
@@ -117,7 +117,7 @@ L'ancienne façon marche toujours : objet en main, Action pose devant le personn
 
 Des dinosaures sauvages vivent dans le parc, chacun dans son biome préféré : prairie, jungle, désert, marais ou neige. Les petits sont fréquents, les géants sont rares. Il y a deux façons de les attraper :
 
-- **Apprivoiser un herbivore.** Prendre des baies en main : une cible rose se place sur l'herbivore le plus proche devant toi (jusqu'à 5 cases). Le bouton Action lui lance des baies ; au bout de 3, il est apprivoisé et saute tout seul dans **« Mes dinos »**, sans capsule. Il te suit alors partout, même à travers les barrières. Dès qu'il entre dans un enclos fermé, il y habite.
+- **Apprivoiser un dinosaure avec à manger.** Les herbivores mangent des **baies**, les carnivores de la **viande** (achetée à la boutique). Prendre la nourriture en main : une cible rose se place sur le dinosaure le plus proche devant toi (jusqu'à 5 cases). Le bouton Action la lui lance ; au bout de 3 (5 pour un carnivore, plus méfiant), il est apprivoisé et saute tout seul dans **« Mes dinos »**, sans capsule. Il te suit alors partout, même à travers les barrières. Dès qu'il entre dans un enclos fermé, il y habite.
 - **Le combat, puis la capsule**, pour tous les dinosaures. Personne n'est blessé : chaque tir fatigue le dinosaure, et une fois épuisé il s'endort. On lance alors une capsule dessus : il va dans « Mes dinos ».
 
 **« Mes dinos »** (bouton en haut) garde tous les dinosaures attrapés, à part du sac à objets. On touche « Relâcher » : le dinosaure passe dans la main, on vise une case libre dans un enclos et on appuie sur Action. Une fois relâché, la case de la barre d'outils retrouve l'objet qu'elle avait avant.
@@ -145,7 +145,7 @@ Les carnivores sauvages foncent sur toi s'ils te voient de près. Fermer une bar
 
 ## Aventure : l'amitié et la monture
 
-Les baies se lancent aussi aux herbivores du parc pour gagner leur amitié.
+Les baies et la viande se lancent aussi aux dinosaures du parc pour gagner leur amitié. Un carnivore sauvage qui reçoit de la viande arrête de te foncer dessus un moment.
 
 Chaque dinosaure du parc a de l'**amitié pour toi, de 0 à 5 cœurs**. Elle démarre à 0 cœur.
 
@@ -158,7 +158,7 @@ Chaque dinosaure du parc a de l'**amitié pour toi, de 0 à 5 cœurs**. Elle dé
 
 Le **Dinodex** (bouton en haut) montre les 21 espèces : les ombres noires sont celles qu'il reste à attraper. Les volants et les reptiles marins arriveront plus tard.
 
-Recettes : Hache (3 bois), Pioche (4 bois), Barrières en bambou (1 bois → 2), en bois (2 bois → 2), en pierre (2 pierres → 2), Portail (3 bois), Chemin (1 pierre → 4), Mangeoire (4 bois + 3 baies), Lance-pierre (3 bois), Arc (5 bois), Flèches (1 bois + 1 pierre → 5), Fléchettes endormantes (1 bois + 2 baies → 3), Bolas (2 pierres + 1 bois → 2), Cage (4 bois + 2 pierres), Capsules en cuivre (2 cuivre + 1 pierre → 2), en fer (2 fer + 1 cuivre → 2), en or (1 or + 1 fer + 1 cristal), Brosse (2 bois + 1 baie), Selle (4 bois + 2 pierres + 2 baies). On les modifie dans `scripts/items.gd`.
+Recettes : Hache (3 bois), Pioche (4 bois), Barrières en bambou (1 bois → 2), en bois (2 bois → 2), en pierre (2 pierres → 2), Portail (3 bois), Chemin (1 pierre → 4), Mangeoire à plantes (4 bois + 3 baies), Mangeoire à viande (4 bois + 3 viandes), Lance-pierre (3 bois), Arc (5 bois), Flèches (1 bois + 1 pierre → 5), Fléchettes endormantes (1 bois + 2 baies → 3), Bolas (2 pierres + 1 bois → 2), Cage (4 bois + 2 pierres), Capsules en cuivre (2 cuivre + 1 pierre → 2), en fer (2 fer + 1 cuivre → 2), en or (1 or + 1 fer + 1 cristal), Brosse (2 bois + 1 baie), Selle (4 bois + 2 pierres + 2 baies). On les modifie dans `scripts/items.gd`.
 
 ## Bac à sable : les commandes
 
@@ -199,6 +199,7 @@ Les règles sont celles de la version 3D (`~/dino-parc-3d`).
 | Ce que vend et achète la boutique, et à quel prix | `scripts/market.gd` |
 | Vitesse des bottes et des véhicules | `scripts/items.gd` (`GEAR_SPEED`, `VEHICLES`) |
 | Plan du village, contenu des coffres | `scripts/village.gd` (`HOUSES`, `RUINS`, `CHESTS`…) |
+| Habitants des maisons, leurs cadeaux et leurs phrases | `scripts/house.gd` (`RESIDENTS`) |
 | Ce qui pousse dans chaque biome au début d'une aventure | `scripts/world_gen.gd` |
 | Couleurs proposées pour le personnage | `scripts/creator.gd` |
 | Prix, force, biome préféré, couleurs, taille d'un dinosaure | `scripts/catalog.gd` (`DINOS`) |

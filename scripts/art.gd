@@ -960,6 +960,11 @@ static func resource(id: String) -> Texture2D:
 				for spot in [Vector2(5, 9), Vector2(11, 9), Vector2(8, 12), Vector2(8, 6.5)]:
 					p.ellipse(spot, Vector2(2.6, 2.6), Color("d8243e"))
 					p.dot(spot + Vector2(-1, -1), Color("ff9aaa"))
+			"meat":
+				p.limb(Vector2(3, 13), Vector2(7, 9), 1.3, 1.3, Color("f4ecd8"), true)
+				p.ellipse(Vector2(2.5, 13.5), Vector2(2, 2), Color("f4ecd8"), true)
+				p.ellipse(Vector2(10, 6), Vector2(5.5, 4.5), Color("c0443a"), true, -0.7)
+				p.ellipse(Vector2(9, 5), Vector2(2.5, 1.5), Color("e8806a"), false, -0.7)
 			"axe":
 				p.limb(Vector2(4, 15), Vector2(11, 2), 1.2, 1.2, WOOD, true)
 				p.polygon(PackedVector2Array([Vector2(9, 1), Vector2(15, 0), Vector2(16, 7), Vector2(11, 6)]), Color("b0b4bc"), true)
@@ -1219,6 +1224,69 @@ static func village_house(variant: int) -> Texture2D:
 		p.box(Rect2(27, 42, 10, 17), WOOD.darkened(0.2), true)
 		p.dot(Vector2(34, 51), Color("f0c830"))
 		return p.finish())
+
+
+# The furniture inside a village house, standing on its cells (bottom center).
+static func furniture(kind: String, look: int) -> Texture2D:
+	return cached("furniture:%s:%d" % [kind, look], func() -> Texture2D:
+		var cloth: Color = VILLAGE_ROOFS[look % VILLAGE_ROOFS.size()]
+		match kind:
+			"bed":
+				var p := _painter(Vector2i(32, 36))
+				p.box(Rect2(1, 1, 30, 10), WOOD, true)
+				p.box(Rect2(2, 9, 28, 26), Color("f4f0e8"), true)
+				p.box(Rect2(6, 11, 20, 6), Color.WHITE, true)
+				p.box(Rect2(2, 18, 28, 17), cloth, true)
+				p.flat(Rect2(3, 19, 26, 2), cloth.lightened(0.3))
+				return p.finish()
+			"table":
+				var p := _painter(Vector2i(32, 22))
+				p.box(Rect2(3, 10, 3, 11), WOOD.darkened(0.2), true)
+				p.box(Rect2(26, 10, 3, 11), WOOD.darkened(0.2), true)
+				p.box(Rect2(0, 3, 32, 9), WOOD, true)
+				p.flat(Rect2(1, 4, 30, 2), WOOD.lightened(0.25))
+				p.ellipse(Vector2(10, 4), Vector2(4, 2), Color("f4ecd8"), true)
+				p.dot(Vector2(9, 3), Color("d8243e"), 2)
+				p.box(Rect2(21, 0, 4, 5), Color("a8d8f0"), true)
+				return p.finish()
+			"chair":
+				var p := _painter(Vector2i(12, 14))
+				p.box(Rect2(1, 5, 10, 4), WOOD, true)
+				p.box(Rect2(2, 8, 2, 6), WOOD.darkened(0.2), true)
+				p.box(Rect2(8, 8, 2, 6), WOOD.darkened(0.2), true)
+				return p.finish()
+			"cupboard":
+				var p := _painter(Vector2i(16, 30))
+				p.box(Rect2(0, 0, 16, 30), WOOD, true)
+				p.box(Rect2(2, 3, 12, 11), WOOD.darkened(0.25), true)
+				p.box(Rect2(2, 16, 12, 12), WOOD.lightened(0.1), true)
+				p.flat(Rect2(8, 16, 1, 12), WOOD.darkened(0.3))
+				for x in [4, 7, 10]:
+					p.box(Rect2(x, 8, 2, 6), [Color("d84a3a"), Color("f0c830"), Color("4a78b8")][x % 3], true)
+				return p.finish()
+			"stove":
+				var p := _painter(Vector2i(16, 28))
+				p.box(Rect2(6, 0, 4, 12), Color("5a5a62"), true)
+				p.box(Rect2(1, 11, 14, 16), Color("4a4a52"), true)
+				p.box(Rect2(4, 16, 8, 8), Color("2a1a10"), true)
+				p.ellipse(Vector2(8, 21), Vector2(3, 3), Color("f09818"))
+				p.dot(Vector2(8, 22), Color("fff070"), 2)
+				return p.finish()
+			"plant":
+				var p := _painter(Vector2i(14, 20))
+				for leaf in [Vector2(4, 6), Vector2(10, 6), Vector2(7, 3), Vector2(7, 9)]:
+					p.ellipse(leaf, Vector2(3.5, 2.5), Color("4aa84c"), true)
+				p.box(Rect2(3, 11, 8, 8), Color("c06a3a"), true)
+				return p.finish()
+			"window":
+				var p := _painter(Vector2i(24, 14))
+				p.box(Rect2(0, 0, 24, 14), Color("a8d8f0"), true)
+				p.flat(Rect2(12, 1, 1, 12), Color.WHITE)
+				p.flat(Rect2(1, 7, 22, 1), Color.WHITE)
+				p.box(Rect2(-1, 0, 4, 14), cloth, false)
+				p.box(Rect2(21, 0, 4, 14), cloth, false)
+				return p.finish()
+		return null)
 
 
 # The market stall of the village with the merchant behind the counter: 4 x 2 cells, 64 x 56 pixels.

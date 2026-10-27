@@ -17,6 +17,8 @@ const BUY := [
 	{"id": "arrow", "count": 10, "price": 30},
 	{"id": "bolas", "count": 2, "price": 40},
 	{"id": "dart", "count": 3, "price": 45},
+	{"id": "meat", "count": 5, "price": 25},
+	{"id": "feeder_meat", "count": 1, "price": 120},
 	{"id": "saddle", "count": 1, "price": 120},
 	{"id": "brush", "count": 1, "price": 20},
 	{"id": "pickaxe_iron", "count": 1, "price": 150},

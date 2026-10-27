@@ -8,6 +8,17 @@ extends RefCounted
 
 const ENTRIES := [
 	{
+		"version": 5,
+		"title": "Les maisons et la viande !",
+		"items": [
+			["dino:triceratops", "Entre dans les maisons du village : appuie sur Action devant la porte !"],
+			["capsule_copper", "Chaque habitant te fait un cadeau à ta première visite. Va tous les voir !"],
+			["meat", "La boutique vend de la viande pour les carnivores."],
+			["dino:velociraptor", "Lance 5 viandes à un carnivore sauvage : il devient ton ami et te suit !"],
+			["feeder_meat", "Achète une mangeoire à viande pour les carnivores de ton parc."],
+		],
+	},
+	{
 		"version": 4,
 		"title": "Le village, la boutique et les véhicules !",
 		"items": [

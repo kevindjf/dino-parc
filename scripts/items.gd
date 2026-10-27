@@ -17,6 +17,7 @@ const ITEMS := {
 	"amber": {"name": "Ambre", "kind": "resource"},
 	"fossil": {"name": "Fossile", "kind": "resource"},
 	"berries": {"name": "Baies", "kind": "food"},
+	"meat": {"name": "Viande", "kind": "food"},
 	"axe": {"name": "Hache", "kind": "tool"},
 	"pickaxe": {"name": "Pioche", "kind": "tool"},
 	"pickaxe_iron": {"name": "Pioche en fer", "kind": "tool"},
@@ -30,6 +31,7 @@ const ITEMS := {
 	"fence_electric": {"name": "Barrière électrique", "kind": "build", "place": "fence_electric"},
 	"bridge": {"name": "Pont", "kind": "build", "place": "bridge"},
 	"feeder_plants": {"name": "Mangeoire à plantes", "kind": "build", "place": "feeder_plants"},
+	"feeder_meat": {"name": "Mangeoire à viande", "kind": "build", "place": "feeder_meat"},
 	"slingshot": {"name": "Lance-pierre", "kind": "weapon"},
 	"bow": {"name": "Arc", "kind": "weapon"},
 	"arrow": {"name": "Flèches", "kind": "ammo"},
@@ -66,13 +68,15 @@ const VEHICLES := {
 #   ammo: what each shot uses up (itself for things thrown by hand)
 #   tire: energy taken, stun: seconds it cannot move, range: in cells, every: seconds between shots
 #   flight: how it flies (straight, arc or spin), capture: biggest strength a capsule can hold,
-#   feed: thrown to an herbivore to make friends (berries)
+#   feed: thrown to make friends with the dinosaurs of that diet (berries for herbivores,
+#   meat for carnivores)
 const WEAPONS := {
 	"slingshot": {"ammo": "stone", "tire": 8, "range": 6.0, "every": 0.45, "flight": "arc", "speed": 220.0},
 	"bow": {"ammo": "arrow", "tire": 16, "range": 8.0, "every": 0.6, "flight": "straight", "speed": 300.0},
 	"dart": {"ammo": "dart", "tire": 30, "range": 6.0, "every": 0.8, "flight": "straight", "speed": 260.0},
 	"bolas": {"ammo": "bolas", "tire": 4, "stun": 4.0, "range": 5.0, "every": 0.8, "flight": "spin", "speed": 180.0},
-	"berries": {"ammo": "berries", "feed": true, "range": 5.0, "every": 0.6, "flight": "arc", "speed": 160.0},
+	"berries": {"ammo": "berries", "feed": "herb", "range": 5.0, "every": 0.6, "flight": "arc", "speed": 160.0},
+	"meat": {"ammo": "meat", "feed": "carn", "range": 5.0, "every": 0.6, "flight": "arc", "speed": 160.0},
 	"capsule_copper": {"ammo": "capsule_copper", "capture": 3, "range": 5.0, "every": 1.0, "flight": "arc", "speed": 170.0},
 	"capsule_iron": {"ammo": "capsule_iron", "capture": 4, "range": 5.0, "every": 1.0, "flight": "arc", "speed": 170.0},
 	"capsule_gold": {"ammo": "capsule_gold", "capture": 5, "range": 5.0, "every": 1.0, "flight": "arc", "speed": 170.0},
@@ -92,6 +96,7 @@ const RECIPES := [
 	{"make": "bridge", "count": 2, "needs": {"wood": 3}},
 	{"make": "path", "count": 4, "needs": {"stone": 1}},
 	{"make": "feeder_plants", "count": 1, "needs": {"wood": 4, "berries": 3}},
+	{"make": "feeder_meat", "count": 1, "needs": {"wood": 4, "meat": 3}},
 	{"make": "slingshot", "count": 1, "needs": {"wood": 3}},
 	{"make": "bow", "count": 1, "needs": {"wood": 5}},
 	{"make": "arrow", "count": 5, "needs": {"wood": 1, "stone": 1}},

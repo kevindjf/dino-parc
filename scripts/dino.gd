@@ -226,6 +226,11 @@ func teleport(to: Vector2i) -> void:
 	route.clear()
 
 
+# How many treats a wild dinosaur needs to follow us: carnivores trust slower.
+func trust_needed() -> int:
+	return TRUST_NEEDED + 2 if species.diet == "carn" else TRUST_NEEDED
+
+
 func set_mood(text: String, color: Color) -> void:
 	if ridden:
 		text = ""
@@ -239,7 +244,7 @@ func set_mood(text: String, color: Color) -> void:
 		text = "Je te suis !"
 		color = Color("c0306a")
 	elif wild and trust > 0:
-		text = "Miam ! %d/%d" % [trust, TRUST_NEEDED]
+		text = "Miam ! %d/%d" % [trust, trust_needed()]
 		color = Color("c0306a")
 	if text != mood:
 		mood = text

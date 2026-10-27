@@ -25,6 +25,7 @@ const Builder := preload("res://scripts/builder.gd")
 const WorldGen := preload("res://scripts/world_gen.gd")
 const Mine := preload("res://scripts/mine.gd")
 const Village := preload("res://scripts/village.gd")
+const House := preload("res://scripts/house.gd")
 const Market := preload("res://scripts/market.gd")
 
 const T := 16
@@ -133,7 +134,8 @@ var surface_spot := Vector2.ZERO  # where the player comes back to the park
 var mine: Node2D = null  # the mine the player is in, or null
 var mine_states := {}  # entrance "x,y" -> {"seed", "dug"}, saved with the game
 var village: Node2D = null  # the village, while the player is in it
-var village_state := {}  # the chests already opened, saved with the game
+var village_state := {}  # the chests already opened and the presents given, saved with the game
+var house: Node2D = null  # the inside of a village house, while the player is in it
 var world_bounds := Rect2()
 var combat: Node2D = null
 var builder: Node2D = null
@@ -1266,6 +1268,8 @@ func _process_adventure(delta: float) -> void:
 	if away != null:
 		if mine != null:
 			_process_mine()
+		elif house != null:
+			_process_house()
 		else:
 			_process_village()
 		save_timer -= delta
@@ -1320,8 +1324,11 @@ func player_action(cell: Vector2i) -> void:
 	if mine != null:
 		_mine_action(cell)
 		return
+	if house != null:
+		_house_action(cell)
+		return
 	if village != null:
-		if Items.kind_of(inventory.current()) == "vehicle":
+		if village.kind_at(cell) == "" and Items.kind_of(inventory.current()) == "vehicle":
 			board_vehicle(inventory.current())
 		else:
 			_village_action(cell)
@@ -1530,7 +1537,7 @@ func _village_action(cell: Vector2i) -> void:
 		"shop":
 			hud.open_shop()
 		"house":
-			_float_text(at, "Toc toc ! Personne ne répond…", Color("fff59d"))
+			enter_house(village.house_at(cell))
 		"chest":
 			var found: Dictionary = village.open_chest(cell)
 			if found.is_empty():
@@ -1546,6 +1553,71 @@ func _village_action(cell: Vector2i) -> void:
 					gained.append("+%d %s" % [found[id], Items.name_of(id)])
 			hud.flash("Un trésor !\n" + "  ".join(gained), 3.0)
 			save_game()
+
+
+func enter_house(index: int) -> void:
+	player.get_parent().remove_child(player)
+	village.player = null
+	village.visible = false
+	village.process_mode = Node.PROCESS_MODE_DISABLED
+	house = House.new()
+	away = house
+	add_child(house)
+	house.setup(index, Village.HOUSES[index][1], village_state)
+	house.add_child(player)
+	house.player = player
+	player.position = house.arrival()
+	player.velocity = Vector2.ZERO
+	player.facing = Vector2i.UP
+	camera.bounds = house.bounds()
+	camera.position = player.position
+	hud.flash("Toc toc ! Tu entres chez %s." % house.resident.name, 2.5)
+
+
+func exit_house() -> void:
+	var door: Vector2 = village.house_door(house.index)
+	player.get_parent().remove_child(player)
+	house.queue_free()
+	house = null
+	away = village
+	village.visible = true
+	village.process_mode = Node.PROCESS_MODE_INHERIT
+	village.add_child(player)
+	village.player = player
+	player.position = door
+	player.velocity = Vector2.ZERO
+	player.facing = Vector2i.DOWN
+	camera.bounds = village.bounds()
+	camera.position = player.position
+
+
+func _process_house() -> void:
+	if house.is_exit(player.cell()):
+		exit_house()
+		return
+	var target: Vector2i = player.front()
+	if house.kind_at(target) == "resident":
+		_show_ghost(target, Vector2i.ONE, Color.WHITE)
+	else:
+		ghost.visible = false
+
+
+func _house_action(cell: Vector2i) -> void:
+	if house.kind_at(cell) != "resident":
+		return
+	var gift: Dictionary = house.talk()
+	if gift.is_empty():
+		return
+	var gained := PackedStringArray()
+	for id in gift:
+		if id == "coins":
+			money += gift[id]
+			gained.append("+%d pièces" % gift[id])
+		else:
+			inventory.add(id, gift[id])
+			gained.append("+%d %s" % [gift[id], Items.name_of(id)])
+	_float_text(player.position + Vector2(0, -16), "  ".join(gained), Color("fff59d"))
+	save_game()
 
 
 # Buys a line of Market.BUY. Returns false when there are not enough coins.
@@ -1620,11 +1692,11 @@ func _befriend(dino: Node2D, holding: String) -> void:
 			_float_text(at, "Amitié : %s" % dino.hearts_text(), Color("ff80ab"))
 
 
-# Berries are thrown from afar, like shots (see combat.gd). Why this dinosaur would not take
-# them now, or "" if it would.
-func berries_refused(dino: Node2D) -> String:
-	if dino.species.diet != "herb":
-		return "Il ne mange pas de baies !"
+# Berries and meat are thrown from afar, like shots (see combat.gd). Why this dinosaur would not
+# take this food now, or "" if it would.
+func food_refused(dino: Node2D, food: String) -> String:
+	if dino.species.diet != Items.WEAPONS[food].feed:
+		return "Il ne mange pas de baies !" if food == "berries" else "Il ne mange pas de viande !"
 	if dino.wild:
 		return "Il te suit déjà !" if dino.following != null else ""
 	if clock < dino.next_treat:
@@ -1632,10 +1704,12 @@ func berries_refused(dino: Node2D) -> String:
 	return ""
 
 
-# The berries reached the dinosaur: a wild one trusts us a bit more (3 times and it follows us),
-# one of the park becomes a better friend.
-func feed_berries(dino: Node2D) -> void:
+# The food reached the dinosaur: a wild one trusts us a bit more (3 times and it follows us,
+# 5 for a carnivore, which also stops charging for a while), one of the park becomes a better friend.
+func feed(dino: Node2D) -> void:
 	dino.roar_time = 0.0
+	dino.chase_cool = 12.0
+	dino.angry_time = 0.0
 	if not dino.wild:
 		dino.next_treat = clock + 20.0
 		dino.hunger = 100.0
@@ -1643,7 +1717,7 @@ func feed_berries(dino: Node2D) -> void:
 		return
 	dino.trust += 1
 	dino.set_mood("", Color.WHITE)
-	if dino.trust < dino.TRUST_NEEDED:
+	if dino.trust < dino.trust_needed():
 		return
 	# Tamed: it jumps to us and into "Mes dinos", no capsule needed.
 	dino.captured = true
@@ -1745,8 +1819,8 @@ func adopt(dino: Node2D) -> void:
 	dino.wild = false
 	dino.following = null
 	if was_wild:
-		# Tamed with berries: it already likes us a little.
-		dino.friendship = dino.HEART if dino.trust >= dino.TRUST_NEEDED else 0
+		# Tamed with berries or meat: it already likes us a little.
+		dino.friendship = dino.HEART if dino.trust >= dino.trust_needed() else 0
 	dino.trust = 0
 	dino.home_cell = dino.cell
 	_mark_caught(dino.species_id)

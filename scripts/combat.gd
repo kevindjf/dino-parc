@@ -51,7 +51,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	var player: Node2D = park.player
 	var hint := ""
 	if not _can_aim(touched):
-		hint = park.berries_refused(touched) if is_food(weapon) else "Pas celui-là !"
+		hint = park.food_refused(touched, weapon) if is_food(weapon) else "Pas celui-là !"
 	elif not _in_reach(touched, 1.0):
 		hint = "Trop loin ! Approche-toi."
 	if hint != "":
@@ -114,8 +114,8 @@ func _can_aim(dino: Node2D) -> bool:
 	if dino.habitat != "land" or dino.captured or dino.ridden or dino.following != null:
 		return false
 	if is_food(weapon):
-		# Berries go to any herbivore, wild or of the park, that is awake.
-		return dino.species.diet == "herb" and dino.state != "sleep"
+		# Berries go to any herbivore, wild or of the park, that is awake; meat to any carnivore.
+		return dino.species.diet == Items.WEAPONS[weapon].feed and dino.state != "sleep"
 	# Capsules are for wild dinosaurs; an escaped one of the park can be put to sleep.
 	if not (dino.wild or (dino.escaped and not is_capsule(weapon))):
 		return false
@@ -152,12 +152,14 @@ func fire() -> void:
 	var stats: Dictionary = Items.WEAPONS[weapon]
 	var player: Node2D = park.player
 	# Nothing is wasted shooting at nothing (children keep the button pressed).
-	if target == null or (is_food(weapon) and park.berries_refused(target) != ""):
+	if target == null or (is_food(weapon) and park.food_refused(target, weapon) != ""):
 		if time > hint_at:
 			hint_at = time + 2.0
-			var hint := "Tourne-toi vers un dinosaure herbivore !" if is_food(weapon) else "Tourne-toi vers un dinosaure sauvage !"
+			var hint := "Tourne-toi vers un dinosaure sauvage !"
+			if is_food(weapon):
+				hint = "Tourne-toi vers un dinosaure %s !" % ("herbivore" if stats.feed == "herb" else "carnivore")
 			if target != null:
-				hint = park.berries_refused(target)
+				hint = park.food_refused(target, weapon)
 			park.float_text(player.position, hint, Color("e0e0e0"))
 		return
 	if park.inventory.count(stats.ammo) <= 0:
@@ -214,7 +216,7 @@ func _land(kind: String, shot: Node2D) -> void:
 		return
 	if is_food(kind):
 		park.float_text(shot.position, "Miam !", Color("ff80ab"))
-		park.feed_berries(shot)
+		park.feed(shot)
 		return
 	var stats: Dictionary = Items.WEAPONS[kind]
 	if not shot.wild:
