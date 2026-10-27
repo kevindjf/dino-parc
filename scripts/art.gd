@@ -1398,22 +1398,213 @@ const MERCHANT := {"hair": Color("b0b0b8"), "skin": Color("f1c27d"), "shirt": Co
 const RUIN_STONE := Color("a8a098")
 
 
-# A house of 4 x 3 cells with its door in the middle of the front: 64 x 60 pixels.
+# --- Rustic village style: logs, thatch, leaves and stones ---------------------------------
+# Textures painted pixel by pixel with a little noise, then the dark outline of the Painter.
+
+const LOG := [Color("5a3818"), Color("8a5a30"), Color("b07840"), Color("d8a868")]  # dark, base, light, cut end
+const THATCH := [Color("6a4a1a"), Color("a07428"), Color("d8a840"), Color("f0cc68")]
+const LEAVES := [Color("1e4a1a"), Color("2e6a24"), Color("4a8a30"), Color("7ab848")]
+const STONES := [Color("3a3a38"), Color("6a6a66"), Color("8e8c86"), Color("b4b0a8")]  # mortar, dark, base, light
+
+
+static func _in(img: Image, x: int, y: int) -> bool:
+	return x >= 0 and y >= 0 and x < img.get_width() and y < img.get_height()
+
+
+static func _put(img: Image, x: int, y: int, color: Color) -> void:
+	if _in(img, x, y):
+		img.set_pixel(x, y, color)
+
+
+# Horizontal logs, 4 pixels high, with knots and their cut ends sticking out on both sides.
+static func _logs(img: Image, rect: Rect2i, rng: RandomNumberGenerator) -> void:
+	for top in range(rect.position.y, rect.end.y, 4):
+		for x in range(rect.position.x, rect.end.x):
+			for dy in 4:
+				var y := top + dy
+				if y >= rect.end.y:
+					continue
+				var c: Color = [LOG[2], LOG[1], LOG[1], LOG[0]][dy]
+				if dy == 1 and rng.randf() < 0.08:
+					c = LOG[0]
+				_put(img, x, y, c)
+		for end in [rect.position.x - 2, rect.end.x - 1]:
+			for dy in range(0, 3):
+				for dx in 3:
+					_put(img, end + dx, top + dy, LOG[3] if dy == 1 and dx == 1 else LOG[2])
+			_put(img, end + 1, top + 1, LOG[1])
+
+
+# Upright planks, 3 pixels wide.
+static func _planks(img: Image, rect: Rect2i, rng: RandomNumberGenerator) -> void:
+	for x in range(rect.position.x, rect.end.x):
+		var plank := (x - rect.position.x) % 3
+		for y in range(rect.position.y, rect.end.y):
+			var c: Color = [LOG[0], LOG[1], LOG[2]][plank]
+			if plank == 1 and rng.randf() < 0.06:
+				c = LOG[0]
+			_put(img, x, y, c)
+
+
+# A stone base: mortar, then rows of stones of different sizes, lit on top.
+static func _stones(img: Image, rect: Rect2i, rng: RandomNumberGenerator) -> void:
+	img.fill_rect(rect, STONES[0])
+	var y := rect.position.y
+	while y < rect.end.y:
+		var h := rng.randi_range(3, 4)
+		var x := rect.position.x - rng.randi_range(0, 3)
+		while x < rect.end.x:
+			var w := rng.randi_range(4, 7)
+			for sy in range(y, mini(y + h - 1, rect.end.y)):
+				for sx in range(maxi(x, rect.position.x), mini(x + w - 1, rect.end.x)):
+					var c: Color = STONES[2]
+					if sy == y:
+						c = STONES[3]
+					elif sy == y + h - 2 or sx == x + w - 2:
+						c = STONES[1]
+					_put(img, sx, sy, c)
+			x += w
+		y += h
+
+
+# Fills a polygon with straw: streaks running down, a ragged dark fringe at the bottom.
+static func _thatch(img: Image, points: PackedVector2Array, rng: RandomNumberGenerator) -> void:
+	var box := Rect2(points[0], Vector2.ZERO)
+	for point in points:
+		box = box.expand(point)
+	var streak := {}
+	for x in range(int(box.position.x), int(box.end.x) + 1):
+		streak[x] = rng.randi_range(0, 3)
+	for y in range(int(box.position.y), int(box.end.y) + 1):
+		for x in range(int(box.position.x), int(box.end.x) + 1):
+			if not Geometry2D.is_point_in_polygon(Vector2(x, y) + Vector2(0.5, 0.5), points):
+				continue
+			var n: int = (streak[x] + (y / 3 + x * 7) % 5) % 4
+			var c: Color = THATCH[1] if n == 0 else (THATCH[3] if n == 3 and (x + y) % 3 == 0 else THATCH[2])
+			# Layers of straw, one under the other.
+			if (y - int(box.position.y)) % 9 == 8 and (x + streak[x]) % 4 != 0:
+				c = THATCH[0]
+			# Darker at the bottom edge, where the straw is cut.
+			if not Geometry2D.is_point_in_polygon(Vector2(x, y + 2) + Vector2(0.5, 0.5), points):
+				c = THATCH[0] if (x + rng.randi_range(0, 1)) % 2 == 0 else THATCH[1]
+			_put(img, x, y, c)
+
+
+# Fills a polygon with leaves: overlapping round clumps in three greens.
+static func _leaf_roof(img: Image, points: PackedVector2Array, rng: RandomNumberGenerator) -> void:
+	var box := Rect2(points[0], Vector2.ZERO)
+	for point in points:
+		box = box.expand(point)
+	for y in range(int(box.position.y), int(box.end.y) + 1):
+		for x in range(int(box.position.x), int(box.end.x) + 1):
+			if Geometry2D.is_point_in_polygon(Vector2(x, y) + Vector2(0.5, 0.5), points):
+				_put(img, x, y, LEAVES[1])
+	for i in int(box.size.x * box.size.y / 9.0):
+		var at := Vector2(rng.randf_range(box.position.x, box.end.x), rng.randf_range(box.position.y, box.end.y))
+		if not Geometry2D.is_point_in_polygon(at, points):
+			continue
+		var r := rng.randf_range(1.5, 2.8)
+		for dy in range(-3, 4):
+			for dx in range(-3, 4):
+				var d := Vector2(dx, dy).length()
+				if d <= r:
+					_put(img, int(at.x) + dx, int(at.y) + dy, LEAVES[3] if dy < -r * 0.4 and dx < 0 else (LEAVES[2] if d < r - 0.8 else LEAVES[0]))
+
+
+# Little clumps of moss or ivy here and there.
+static func _moss(img: Image, area: Rect2i, count: int, rng: RandomNumberGenerator) -> void:
+	for i in count:
+		var x := rng.randi_range(area.position.x, area.end.x - 1)
+		var y := rng.randi_range(area.position.y, area.end.y - 1)
+		if img.get_pixel(clampi(x, 0, img.get_width() - 1), clampi(y, 0, img.get_height() - 1)).a == 0.0:
+			continue
+		for d in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 1), Vector2i(1, 1)]:
+			_put(img, x + d.x, y + d.y, LEAVES[2] if d.y == 0 else LEAVES[1])
+
+
+# A window: dark wooden frame, dark glass with a reflection, a cross, and a sill.
+static func _window(img: Image, rect: Rect2i, flowers := false) -> void:
+	img.fill_rect(rect.grow(1), LOG[0])
+	img.fill_rect(rect, Color("1e2a38"))
+	img.fill_rect(Rect2i(rect.position, Vector2i(rect.size.x / 2, rect.size.y / 2)), Color("2e4258"))
+	_put(img, rect.position.x + 1, rect.position.y + 1, Color("8ab0c8"))
+	img.fill_rect(Rect2i(rect.position.x + rect.size.x / 2, rect.position.y, 1, rect.size.y), LOG[1])
+	img.fill_rect(Rect2i(rect.position.x, rect.position.y + rect.size.y / 2, rect.size.x, 1), LOG[1])
+	img.fill_rect(Rect2i(rect.position.x - 2, rect.end.y + 1, rect.size.x + 4, 2), LOG[2])
+	if flowers:
+		for x in range(rect.position.x - 1, rect.end.x + 1):
+			_put(img, x, rect.end.y, LEAVES[2] if x % 2 == 0 else LEAVES[1])
+			if x % 3 == 0:
+				_put(img, x, rect.end.y - 1, [Color("e53950"), Color("f0c830"), Color("e080f0")][x % 9 / 3])
+
+
+# A plank door with its frame and a handle.
+static func _door(img: Image, rect: Rect2i) -> void:
+	img.fill_rect(rect.grow(1), LOG[0])
+	for x in range(rect.position.x, rect.end.x):
+		for y in range(rect.position.y, rect.end.y):
+			_put(img, x, y, [Color("6a4020"), Color("7a4c26"), Color("5a3418")][(x - rect.position.x) % 3])
+	img.fill_rect(Rect2i(rect.position.x, rect.position.y + 3, rect.size.x, 1), LOG[0])
+	img.fill_rect(Rect2i(rect.position.x, rect.end.y - 5, rect.size.x, 1), LOG[0])
+	_put(img, rect.end.x - 2, rect.position.y + rect.size.y / 2, Color("f0c830"))
+
+
+# A stone chimney.
+static func _chimney(img: Image, rect: Rect2i, rng: RandomNumberGenerator) -> void:
+	_stones(img, rect, rng)
+	img.fill_rect(Rect2i(rect.position.x - 1, rect.position.y, rect.size.x + 2, 2), STONES[1])
+
+
+# A house of the village, 4 x 3 cells, door in the middle of the bottom: 64 x 84 pixels.
+# 0: a small thatched hut of planks, 1: a thatched log cottage with a dormer and flowers,
+# 2: a big log house under a roof of leaves.
 static func village_house(variant: int) -> Texture2D:
 	return cached("village_house:%d" % variant, func() -> Texture2D:
-		var p := _painter(Vector2i(64, 60))
-		var roof: Color = VILLAGE_ROOFS[variant % VILLAGE_ROOFS.size()]
-		p.box(Rect2(44, 3, 6, 14), Color("a0645a"), true)
-		p.box(Rect2(4, 30, 56, 29), VILLAGE_WALLS[variant % VILLAGE_WALLS.size()], true)
-		p.polygon(PackedVector2Array([Vector2(0, 33), Vector2(10, 9), Vector2(54, 9), Vector2(64, 33)]), roof, true)
-		for y in [16, 23]:
-			p.flat(Rect2(8, y, 48, 1), roof.darkened(0.2))
-		for x in [9, 45]:
-			p.box(Rect2(x, 38, 10, 9), Color("a8d8f0"), true)
-			p.flat(Rect2(x + 5, 38, 1, 9), Color.WHITE)
-			p.flat(Rect2(x, 42, 10, 1), Color.WHITE)
-		p.box(Rect2(27, 42, 10, 17), WOOD.darkened(0.2), true)
-		p.dot(Vector2(34, 51), Color("f0c830"))
+		var p := _painter(Vector2i(64, 84))
+		var img := p.image
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 400 + variant
+		match variant % 3:
+			0:
+				_chimney(img, Rect2i(12, 8, 8, 26), rng)
+				_planks(img, Rect2i(8, 48, 48, 30), rng)
+				img.fill_rect(Rect2i(8, 54, 48, 3), LOG[0])
+				_stones(img, Rect2i(7, 76, 50, 7), rng)
+				_thatch(img, PackedVector2Array([Vector2(1, 52), Vector2(24, 18), Vector2(40, 18), Vector2(63, 52), Vector2(56, 54), Vector2(8, 54)]), rng)
+				_moss(img, Rect2i(6, 22, 52, 28), 14, rng)
+				# Crossed poles at the top of the roof.
+				p.line(Vector2(26, 13), Vector2(34, 21), LOG[1])
+				p.line(Vector2(38, 13), Vector2(30, 21), LOG[1])
+				_window(img, Rect2i(13, 59, 7, 6))
+				_door(img, Rect2i(26, 60, 12, 18))
+				_window(img, Rect2i(45, 59, 7, 6))
+			1:
+				_logs(img, Rect2i(8, 46, 48, 32), rng)
+				img.fill_rect(Rect2i(8, 52, 48, 3), LOG[0])
+				_stones(img, Rect2i(6, 74, 52, 9), rng)
+				_thatch(img, PackedVector2Array([Vector2(0, 50), Vector2(6, 28), Vector2(16, 14), Vector2(32, 9), Vector2(48, 14), Vector2(58, 28), Vector2(64, 50), Vector2(56, 52), Vector2(8, 52)]), rng)
+				_moss(img, Rect2i(6, 14, 52, 34), 12, rng)
+				# The round dormer window in the straw.
+				p.ellipse(Vector2(32, 30), Vector2(7, 6), THATCH[1])
+				img.fill_rect(Rect2i(28, 27, 8, 8), LOG[0])
+				_window(img, Rect2i(29, 28, 6, 6))
+				_window(img, Rect2i(12, 57, 8, 7), true)
+				_window(img, Rect2i(44, 57, 8, 7), true)
+				_door(img, Rect2i(26, 58, 12, 18))
+				for spot in [Vector2(7, 79), Vector2(57, 79)]:
+					p.ellipse(spot, Vector2(3, 3), Color("b0603a"), true)
+					p.ellipse(spot + Vector2(0, -3), Vector2(3, 2), LEAVES[2])
+			_:
+				_chimney(img, Rect2i(44, 2, 8, 20), rng)
+				_logs(img, Rect2i(6, 44, 52, 32), rng)
+				img.fill_rect(Rect2i(6, 50, 52, 3), LOG[0])
+				_stones(img, Rect2i(4, 72, 56, 11), rng)
+				_leaf_roof(img, PackedVector2Array([Vector2(0, 48), Vector2(14, 16), Vector2(50, 14), Vector2(64, 48), Vector2(58, 50), Vector2(6, 50)]), rng)
+				# The ridge log on top of the leaves.
+				p.limb(Vector2(13, 15), Vector2(51, 13), 1.8, 1.8, LOG[1], true)
+				_window(img, Rect2i(11, 55, 8, 7))
+				_window(img, Rect2i(45, 55, 8, 7))
+				_door(img, Rect2i(26, 56, 12, 20))
 		return p.finish())
 
 
