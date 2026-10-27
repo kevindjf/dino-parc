@@ -12,7 +12,7 @@ Le parc de dinosaures en 2D, vu de dessus, en pixel art façon console portable 
 
 L'écran titre affiche **Mes mondes**, comme dans Minecraft : on reprend un monde en le touchant, on le supprime (avec confirmation), ou on **crée un nouveau monde**. Un monde a un nom et un mode de jeu :
 
-- **Aventure** : on crée son personnage (prénom, peau, coiffure, couleurs), puis on le dirige dans un parc sauvage. On frappe les arbres pour avoir du bois, on casse les rochers avec la pioche pour avoir de la pierre et on cueille des baies. Ensuite on fabrique ses outils et ses barrières dans le sac, et on les pose soi-même. Des objectifs guident les premiers pas.
+- **Aventure** : on crée son personnage, un petit explorateur ou une petite exploratrice avec son chapeau de brousse (prénom, peau, cheveux courts ou queue de cheval, couleurs du chapeau, de la chemise et du short), puis on le dirige dans un parc sauvage. On frappe les arbres pour avoir du bois, on casse les rochers avec la pioche pour avoir de la pierre et on cueille des baies. Ensuite on fabrique ses outils et ses barrières dans le sac, et on les pose soi-même. Des objectifs guident les premiers pas.
 - **Bac à sable** : on construit librement son parc avec des pièces (l'ancien « mode créatif »).
 
 Chaque monde a sa propre sauvegarde, qui se fait toute seule (toutes les 20 secondes, en quittant et quand le jeu passe en arrière-plan). Le bouton « Menu » sauvegarde avant de revenir à l'écran titre. Les parties faites avant l'arrivée des mondes ont été reprises automatiquement comme deux mondes.

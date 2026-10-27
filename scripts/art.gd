@@ -860,6 +860,197 @@ static func person(direction: String, frame: int, colors: Dictionary) -> Texture
 		return ImageTexture.create_from_image(image))
 
 
+# --- The hero: a little explorer with a bush hat ------------------------------------------
+# Bigger than the other people (16 x 24 pixels, feet at the bottom center): a big head under a
+# bush hat, a shirt with a pocket, shorts, white socks and red sneakers, 4 walking frames.
+# colors: skin, hair, shirt, pants, hat, and style: "short" hair, or "long" (a ponytail).
+# Letters: o outline, H/h/K hat/brim/band, R/r hair, s/S skin, e eye, w white, m mouth, b blush,
+# B hair tie, c/C shirt, p/P shorts, k socks, n sneakers.
+
+const KHAKI := Color("a08a70")
+
+const HERO_SIDE_HEAD := [
+	"....oooooo......",
+	"...oHHHHHHoo....",
+	"..oHHHHHHHHHo...",
+	"..oHHHHHHHHHo...",
+	"..oKKKKKKKKKKo..",
+	".ohhhhhhhhhhhhho",
+	".ooRRRRRRssssoo.",
+	"..oRRRRRsswesso.",
+	"..oRRRRSsswesso.",
+	"..oRRRRRssssssso",
+	"...oRRRsssssmo..",
+	"....oooossssoo..",
+]
+
+const HERO_SIDE_ARMS := {
+	"hang": [".....occccco....", "....occcccco....", "....occCcCco....", "....occCcCco....", "....occcssco...."],
+	"front": [".....occccco....", "....occccccco...", "....occccoCcso..", "....occcco.osso.", "....occcco..oo.."],
+	"back": [".....occccco....", "...oocccccco....", "..osCoccccco....", ".osso.occcco....", "..oo..occcco...."],
+}
+
+const HERO_SIDE_SHORTS := [
+	"....opppppPo....",
+	"....opppppPo....",
+]
+
+const HERO_SIDE_LEGS := {
+	"together": [".....oso.oso....", ".....oko.oko....", ".....oko.oko....", ".....onnnonnno..", ".....oooooooo..."],
+	"apart": ["....oso..oso....", "...oso....oso...", "...oko....oko...", "..onnno...onnno.", "..ooooo...ooooo."],
+}
+
+# Seen from the front and the back: the left half, mirrored.
+
+const HERO_FRONT_HEAD := [
+	".....ooo",
+	"....oHHH",
+	"...oHHHH",
+	"...oHHHH",
+	"...oKKKK",
+	".ohhhhhh",
+	".ooRRRRR",
+	"..oRssss",
+	"..oRsess",
+	"..oRsess",
+	"..oRbssm",
+	"...oosss",
+]
+
+const HERO_BACK_HEAD := [
+	".....ooo",
+	"....oHHH",
+	"...oHHHH",
+	"...oHHHH",
+	"...oKKKK",
+	".ohhhhhh",
+	".ooRRRRR",
+	"..oRRRRR",
+	"..oRRRRR",
+	"..oRRRRR",
+	"..orRRRR",
+	"...oorrs",
+]
+
+const HERO_FRONT_BODY := [
+	"....ocCs",
+	"...occcc",
+	"..oCcccc",
+	"..oscccc",
+	"..osoccc",
+	"....oppp",
+	"....oppp",
+]
+
+const HERO_BACK_BODY := [
+	"....occc",
+	"...occcc",
+	"..oCcccc",
+	"..oscccc",
+	"..osoccc",
+	"....oppp",
+	"....oppp",
+]
+
+const HERO_LEGS := [
+	"....osso",
+	"....okko",
+	"....okko",
+	"...onnno",
+	"...ooooo",
+]
+
+# The ponytail ("long" style), drawn over the rest from a row ("." keeps what is there).
+
+const HERO_SIDE_TAIL := [
+	"..B.............",
+	"oRRo............",
+	"oRRo............",
+	"oRro............",
+	".oRo............",
+	"..o.............",
+]
+
+const HERO_FRONT_TAIL := [
+	"................",
+	".oRo........oRo.",
+	".oRo........oRo.",
+	".oRo........oRo.",
+	".oRo........oRo.",
+	"..o..........o..",
+]
+
+const HERO_BACK_TAIL := [
+	".......BB.......",
+	"......oRRo......",
+	"......oRRo......",
+	"......oRro......",
+	".......oo.......",
+	"................",
+]
+
+
+static func hero(direction: String, frame: int, colors: Dictionary) -> Texture2D:
+	frame = frame % 4
+	var key := "hero:%s:%d:%s" % [direction, frame, colors.values()]
+	return cached(key, func() -> Texture2D:
+		var long: bool = colors.get("style", "") == "long"
+		var rows: Array = []
+		if direction == "side":
+			rows = HERO_SIDE_HEAD + HERO_SIDE_ARMS[["hang", "front", "hang", "back"][frame]] + HERO_SIDE_SHORTS \
+				+ HERO_SIDE_LEGS["together" if frame % 2 == 0 else "apart"]
+			if long:
+				rows = _over(rows, 6, HERO_SIDE_TAIL)
+		else:
+			var front := direction == "down"
+			var legs := _mirror(HERO_LEGS)
+			# Walking towards us or away: one foot up, then the other.
+			if frame == 1:
+				legs = _lift(legs, 0)
+			elif frame == 3:
+				legs = _lift(legs, 8)
+			rows = _mirror(HERO_FRONT_HEAD if front else HERO_BACK_HEAD) + _mirror(HERO_FRONT_BODY if front else HERO_BACK_BODY) + legs
+			if long:
+				rows = _over(rows, 6, HERO_FRONT_TAIL) if front else _over(rows, 8, HERO_BACK_TAIL)
+		var hat: Color = colors.get("hat", KHAKI)
+		var palette := {
+			"o": OUTLINE, "H": hat, "h": hat.darkened(0.12), "K": hat.darkened(0.55),
+			"R": colors.hair, "r": colors.hair.darkened(0.25), "s": colors.skin, "S": colors.skin.darkened(0.2),
+			"e": Color("2a1a10"), "w": Color.WHITE, "m": Color("c0505a"), "b": Color("f4a0a0"), "B": Color("2a8adf"),
+			"c": colors.shirt, "C": colors.shirt.darkened(0.2), "p": colors.pants, "P": colors.pants.darkened(0.25),
+			"k": Color("f4f4f4"), "n": Color("e53935"),
+		}
+		var image := Image.create(16, 24, false, Image.FORMAT_RGBA8)
+		_stamp(image, Vector2i.ZERO, rows, palette)
+		return ImageTexture.create_from_image(image))
+
+
+static func _mirror(half: Array) -> Array:
+	return half.map(func(row: String) -> String: return row + row.reverse())
+
+
+# Draws `over` on `rows` from the row `top`; "." keeps what is there.
+static func _over(rows: Array, top: int, over: Array) -> Array:
+	rows = rows.duplicate()
+	for i in over.size():
+		var row: String = rows[top + i]
+		for x in over[i].length():
+			if over[i][x] != ".":
+				row[x] = over[i][x]
+		rows[top + i] = row
+	return rows
+
+
+# The leg in the 8 columns from `left` one pixel higher.
+static func _lift(legs: Array, left: int) -> Array:
+	var out := []
+	for y in legs.size():
+		var row: String = legs[y]
+		var below: String = legs[y + 1] if y + 1 < legs.size() else ".".repeat(16)
+		out.append(row.substr(0, left) + below.substr(left, 8) + row.substr(left + 8))
+	return out
+
+
 const RANGER := {"hair": Color("5a3a1a"), "skin": Color("f1c27d"), "shirt": Color("d8c080"), "pants": Color("6d5a3a"), "hat": Color("4f7a2a")}
 
 

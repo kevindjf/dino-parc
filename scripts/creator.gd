@@ -9,17 +9,16 @@ const Art := preload("res://scripts/art.gd")
 
 const SKINS := ["ffdbac", "f1c27d", "e0ac69", "c68642", "8d5524"]
 const HAIRS := ["2a1a10", "5a3a1a", "a0602a", "e8c860", "c04020", "202020", "f0f0f0", "7050c0"]
-const CLOTHES := ["e53935", "fb8c00", "fdd835", "43a047", "1e88e5", "8e24aa", "ec407a", "f5f5f5", "37474f"]
-const PANTS := ["37474f", "3a5a9a", "6d5a3a", "2e7d32", "c62828"]
-const STYLES := [["short", "Courts"], ["long", "Longs"], ["cap", "Casquette"]]
+const CLOTHES := ["a08a70", "e53935", "fb8c00", "fdd835", "43a047", "1e88e5", "8e24aa", "ec407a", "f5f5f5", "37474f"]
+const PANTS := ["6d5a3a", "37474f", "3a5a9a", "2e7d32", "c62828"]
+const STYLES := [["short", "Courts"], ["long", "Queue de cheval"]]
 
 var look := {
-	"name": "", "skin": Color("f1c27d"), "hair": Color("5a3a1a"), "shirt": Color("e53935"),
-	"pants": Color("3a5a9a"), "style": "short", "cap": Color("1e88e5"),
+	"name": "", "skin": Color("f1c27d"), "hair": Color("5a3a1a"), "shirt": Color("a08a70"),
+	"pants": Color("6d5a3a"), "style": "short", "cap": Color("a08a70"),
 }
 var previews: Array[TextureRect] = []
 var name_edit: LineEdit
-var cap_row: Control
 var time := 0.0
 
 
@@ -79,9 +78,9 @@ func _ready() -> void:
 	_swatches(right, "Peau", SKINS, "skin")
 	_styles(right)
 	_swatches(right, "Cheveux", HAIRS, "hair")
-	cap_row = _swatches(right, "Casquette", CLOTHES, "cap")
-	_swatches(right, "T-shirt", CLOTHES, "shirt")
-	_swatches(right, "Pantalon", PANTS, "pants")
+	_swatches(right, "Chapeau", CLOTHES, "cap")
+	_swatches(right, "Chemise", CLOTHES, "shirt")
+	_swatches(right, "Short", PANTS, "pants")
 	var go := Button.new()
 	go.text = "C'est parti !"
 	go.custom_minimum_size = Vector2(0, 64)
@@ -146,34 +145,32 @@ func _styles(parent: Control) -> void:
 		button.button_group = group
 		button.focus_mode = Control.FOCUS_NONE
 		button.custom_minimum_size = Vector2(120, 48)
-		button.button_pressed = look.style == style[0]
+		button.button_pressed = look.style == style[0] or (look.style == "cap" and style[0] == "short")
 		button.pressed.connect(func() -> void:
 			look.style = style[0]
 			_update())
 		row.add_child(button)
 
 
-# The colours as the sprites expect them.
+# The colours as the sprites expect them. (Characters made before the explorer had a "cap"
+# style: they get short hair and a hat of their cap colour.)
 static func colors_of(data: Dictionary) -> Dictionary:
-	var colors := {"hair": data.hair, "skin": data.skin, "shirt": data.shirt, "pants": data.pants, "style": data.style}
-	if data.style == "cap":
-		colors.hat = data.cap
-	return colors
+	return {"hair": data.hair, "skin": data.skin, "shirt": data.shirt, "pants": data.pants,
+		"style": "long" if data.style == "long" else "short", "hat": data.get("cap", Art.KHAKI)}
 
 
 func _update() -> void:
-	cap_row.visible = look.style == "cap"
 	var colors := colors_of(look)
-	var frame := int(time * 3.0) % 2
-	previews[0].texture = Art.person("down", frame, colors)
-	previews[1].texture = Art.person("side", frame, colors)
-	previews[2].texture = Art.person("up", frame, colors)
+	var frame := int(time * 6.0) % 4
+	previews[0].texture = Art.hero("down", frame, colors)
+	previews[1].texture = Art.hero("side", frame, colors)
+	previews[2].texture = Art.hero("up", frame, colors)
 
 
 func _process(delta: float) -> void:
-	var before := int(time * 3.0)
+	var before := int(time * 6.0)
 	time += delta
-	if int(time * 3.0) != before:
+	if int(time * 6.0) != before:
 		_update()
 
 

@@ -41,7 +41,7 @@ func setup(owner_park: Node2D, player_look: Dictionary, at: Vector2) -> void:
 	look = player_look
 	position = at
 	last_cell = cell()
-	sprite = Art.sprite(Art.person("down", 0, look), Vector2(6, 16))
+	sprite = Art.sprite(Art.hero("down", 0, look))
 	add_child(sprite)
 	tool_sprite = Art.sprite(Art.resource("axe"), Vector2(3, 14))
 	tool_sprite.scale = Vector2(0.75, 0.75)
@@ -183,7 +183,7 @@ func _ride() -> void:
 	mount.ride_moving = velocity.length() > 4.0
 	if absf(velocity.x) > 2.0:
 		mount.sprite.flip_h = velocity.x < 0.0
-	sprite.texture = Art.person("side", 0, look)
+	sprite.texture = Art.hero("side", 0, look)
 	sprite.flip_h = mount.sprite.flip_h
 	sprite.position = Vector2(0, -mount.seat_height() + 6)
 	# Always drawn over the saddle.
@@ -267,7 +267,7 @@ func _drive() -> void:
 	vehicle_sprite.flip_h = left
 	vehicle_sprite.offset = -Vector2(floorf(texture.get_width() / 2.0), texture.get_height())
 	vehicle_sprite.position = Vector2(0, -altitude)
-	sprite.texture = Art.person(direction, 0, look)
+	sprite.texture = Art.hero(direction, 0, look)
 	sprite.flip_h = left
 	sprite.visible = vehicle != "heli"
 	var back := 0.0 if direction != "side" else (2.0 if left else -2.0)
@@ -292,8 +292,8 @@ func _animate(delta: float, holding: String) -> void:
 	if facing.y != 0:
 		direction = "down" if facing.y > 0 else "up"
 	sprite.flip_h = facing == Vector2i.LEFT
-	var frame := int(travelled / 5.0) % 2 if velocity.length() > 4.0 else 0
-	sprite.texture = Art.person(direction, frame, look)
+	var frame := int(travelled / 4.0) % 4 if velocity.length() > 4.0 else 0
+	sprite.texture = Art.hero(direction, frame, look)
 
 	blink_time = maxf(blink_time - delta, 0.0)
 	sprite.visible = blink_time <= 0.0 or int(blink_time * 12.0) % 2 == 0
@@ -304,7 +304,7 @@ func _animate(delta: float, holding: String) -> void:
 		tool_sprite.texture = Art.resource(holding)
 		var side := -1.0 if facing == Vector2i.LEFT else 1.0
 		tool_sprite.flip_h = side < 0.0
-		tool_sprite.position = Vector2(5.0 * side, -5.0) if facing.x != 0 else Vector2(6, -4)
+		tool_sprite.position = Vector2(5.0 * side, -8.0) if facing.x != 0 else Vector2(7, -7)
 		tool_sprite.offset = Vector2(-13 if side < 0.0 else -3, -14)
 		tool_sprite.rotation = side * (-0.9 + 2.2 * (1.0 - swing / 0.25)) if swing > 0.0 else 0.0
 	# Draw the tool behind the character when it faces away.
