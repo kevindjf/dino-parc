@@ -1003,7 +1003,7 @@ static func dino_folk(kind: String, direction: String, frame: int, colors: Dicti
 
 
 # --- The hero: a little explorer with a bush hat ------------------------------------------
-# Drawn like the characters of Stardew Valley: 16 x 32 pixels (two cells high), feet at the
+# Drawn like the characters of Stardew Valley: 16 x 28 pixels (almost two cells high), feet at the
 # bottom center, a round head under a bush hat, a shirt with lit shoulders, a backpack, shorts,
 # white socks and red sneakers, 4 walking frames, shaded by hand.
 # colors: skin, hair, shirt, pants, optionally hat, and style: "short" hair, or "long" (a ponytail).
@@ -1017,44 +1017,42 @@ const HERO_SIDE_HEAD := [
 	"................",
 	"....oooooo......",
 	"...oHHHHHHo.....",
-	"..oHHHHHHhho....",
 	"..ohhhhhhhhko...",
 	"..oKKKKKKKKKo...",
 	".ohhhhhhhhhhhoo.",
 	"ohhhhhhhhhhhhhko",
 	".oookkkkkkkkkoo.",
 	"..oRRRRRSSSSSo..",
-	"..oRRRRSssssso..",
-	"..oRRRSssssweo..",
-	"..oRRRSssssweo..",
-	"..oRRRssssssso..",
-	"...oRRssssmso...",
+	"..oRrRRSssrrso..",
+	"..oRRrSSssweso..",
+	"..oRrRSSsssesso.",
+	"..oRRRSsbsssso..",
+	"...oRRsssssmo...",
 	"....ooossso.....",
 ]
 
 const HERO_SIDE_ARMS := {
-	"hang": [".oGGoLcccco.....", ".oGGoLccCcco....", ".oGgoLccCCco....", ".oGgocccCCco....", ".oGgocccCCco....", ".oggocccssco....", "..ooocccssco...."],
-	"front": [".oGGoLcccco.....", ".oGGoLcccccoo...", ".oGgoLccccoCCo..", ".oGgoccccco.Cso.", ".oGgoccccco..so.", ".oggoccccco..oo.", "..ooocccccco...."],
-	"back": [".oGGoLcccco.....", ".oGGoLcccco.....", ".oGgoLcccco.....", ".oGgocccccCo....", ".oGgocccccCo....", ".oggocccccCo....", "..ooocccccCo...."],
+	"hang": [".oGGoLcccco.....", ".oGGoLccCcco....", ".oGgocccCCco....", ".oGgocccCCco....", ".oggocccssco....", "..ooocccssco...."],
+	"front": [".oGGoLcccco.....", ".oGGoLcccccoo...", ".oGgoccccco.Cso.", ".oGgoccccco..so.", ".oggoccccco..oo.", "..ooocccccco...."],
+	"back": [".oGGoLcccco.....", ".oGGoLcccco.....", ".oGgocccccCo....", ".oGgocccccCo....", ".oggocccccCo....", "..ooocccccCo...."],
 }
 
 const HERO_SIDE_HIPS := [
 	"....oppppppo....",
-	"....oppppPpo....",
 	".....opppPpo....",
 	".....oppppo.....",
 ]
 
 const HERO_SIDE_LEGS := {
-	"together": [".....osooso.....", ".....oWooWo.....", ".....oWooWo.....", ".....onnonnno...", ".....oooooooo..."],
-	"apart": ["....oso..oso....", "...oWo....oWo...", "...oWo....oWo...", "..onnno...onnno.", "..ooooo...ooooo."],
+	"together": [".....osooso.....", ".....oWooWo.....", ".....onnonnno...", ".....oooooooo..."],
+	"apart": ["....oso..oso....", "...oWo....oWo...", "..onnno...onnno.", "..ooooo...ooooo."],
 }
 
-# The top of the head without a hat (people of the park), replacing rows 0 to 8.
+# The top of the head without a hat (people of the park), replacing rows 0 to 7.
 
-const HERO_SIDE_HAIR := ["................", "................", "................", ".....ooooo......", "....oRRRRRo.....", "...oRRRRRRRo....", "...oRRRRRRRRo...", "...oRRRRRRRRo...", "...oRRRRRRRRo..."]
+const HERO_SIDE_HAIR := ["................", "................", "................", "....oRRRRRo.....", "...oRRRRRRRo....", "...oRRRRRRRRo...", "...oRRRRRRRRo...", "...oRRRRRRRRo..."]
 
-const HERO_HAIR := ["........", "........", "........", ".....ooo", "....oRRR", "...oRRRR", "..oRRRRR", "..oRRRRR", "..oRRRRR"]
+const HERO_HAIR := ["........", "........", "........", "....oRRR", "...oRRRR", "..oRRRRR", "..oRRRRR", "..oRRRRR"]
 
 # Seen from the front and the back: the left half, mirrored.
 
@@ -1062,7 +1060,6 @@ const HERO_FRONT_HEAD := [
 	"........",
 	".....ooo",
 	"....oHHH",
-	"...oHHHH",
 	"...ohhhh",
 	"...oKKKK",
 	".oohhhhh",
@@ -1081,7 +1078,6 @@ const HERO_BACK_HEAD := [
 	"........",
 	".....ooo",
 	"....oHHH",
-	"...oHHHH",
 	"...ohhhh",
 	"...oKKKK",
 	".oohhhhh",
@@ -1099,13 +1095,11 @@ const HERO_BACK_HEAD := [
 const HERO_BODY := [
 	"...ooccc",
 	"..ocLccc",
-	".ocLcccc",
 	".ocCcccc",
 	".ocCcccc",
 	".ocCcccc",
 	".osCcccc",
 	".ossoppp",
-	"..oopppp",
 	"...opppp",
 	"...opppp",
 ]
@@ -1113,26 +1107,26 @@ const HERO_BODY := [
 const HERO_LEGS := [
 	"...ossso",
 	"...oWWWo",
-	"...oWWWo",
 	"..onnnno",
 	"..oooooo",
 ]
 
-# The backpack: seen from the back (rows 17 to 22), its straps from the front (rows 16 to 19).
+# The backpack: seen from the back (rows 16 to 20), its straps from the front (rows 15 to 17).
+
 const HERO_BACKPACK := [
-	"....oGGGGGGo....",
 	"....oGGGGGGo....",
 	"....oGggggGo....",
 	"....oGGGGGGo....",
 	"....oGGGGGGo....",
 	"....oggggggo....",
 ]
+
 const HERO_STRAPS := [
 	".....g....g.....",
 	".....g....g.....",
 	".....g....g.....",
-	".....g....g.....",
 ]
+
 # The ponytail ("long" style), drawn over the rest from a row ("." keeps what is there).
 
 const HERO_SIDE_TAIL := [
@@ -1157,7 +1151,6 @@ const HERO_BACK_TAIL := [
 	"......oRRo......",
 	"......oRRo......",
 	"......oRRo......",
-	".......oo.......",
 ]
 
 
@@ -1171,9 +1164,9 @@ static func hero(direction: String, frame: int, colors: Dictionary) -> Texture2D
 			rows = HERO_SIDE_HEAD + HERO_SIDE_ARMS[["hang", "front", "hang", "back"][frame]] + HERO_SIDE_HIPS \
 				+ HERO_SIDE_LEGS["together" if frame % 2 == 0 else "apart"]
 			if not colors.has("hat"):
-				rows = HERO_SIDE_HAIR + rows.slice(9)
+				rows = HERO_SIDE_HAIR + rows.slice(8)
 			if long:
-				rows = _over(rows, 9, HERO_SIDE_TAIL)
+				rows = _over(rows, 8, HERO_SIDE_TAIL)
 		else:
 			var front := direction == "down"
 			var legs := _mirror(HERO_LEGS)
@@ -1184,10 +1177,10 @@ static func hero(direction: String, frame: int, colors: Dictionary) -> Texture2D
 				legs = _lift(legs, 8)
 			rows = _mirror(HERO_FRONT_HEAD if front else HERO_BACK_HEAD) + _mirror(HERO_BODY) + legs
 			if not colors.has("hat"):
-				rows = _mirror(HERO_HAIR) + rows.slice(9)
-			rows = _over(rows, 16, HERO_STRAPS) if front else _over(rows, 17, HERO_BACKPACK)
+				rows = _mirror(HERO_HAIR) + rows.slice(8)
+			rows = _over(rows, 15, HERO_STRAPS) if front else _over(rows, 16, HERO_BACKPACK)
 			if long:
-				rows = _over(rows, 10, HERO_FRONT_TAIL) if front else _over(rows, 13, HERO_BACK_TAIL.slice(0, 4))
+				rows = _over(rows, 9, HERO_FRONT_TAIL) if front else _over(rows, 12, HERO_BACK_TAIL)
 		var hat: Color = colors.get("hat", KHAKI)
 		var shirt: Color = colors.shirt
 		var palette := {
@@ -1197,7 +1190,7 @@ static func hero(direction: String, frame: int, colors: Dictionary) -> Texture2D
 			"L": shirt.lightened(0.15), "c": shirt, "C": shirt.darkened(0.22), "p": colors.pants, "P": colors.pants.darkened(0.25),
 			"W": Color("f0f0f0"), "n": Color("d2322d"), "G": Color("966437"), "g": Color("694426"),
 		}
-		var image := Image.create(16, 32, false, Image.FORMAT_RGBA8)
+		var image := Image.create(16, 28, false, Image.FORMAT_RGBA8)
 		_stamp(image, Vector2i.ZERO, rows, palette)
 		return ImageTexture.create_from_image(image))
 
