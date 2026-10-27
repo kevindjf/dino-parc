@@ -254,7 +254,7 @@ func start_adventure(data: Dictionary) -> void:
 	world.add_child(sign)
 	WorldText.make(sign, Vector2(0, -24), "← Village", "bubble", Color("2a7a3a"))
 	camera.position = start
-	camera.remember("adventure", 3)
+	camera.remember("adventure", 1)
 	camera.follow(player)
 	_refresh()
 	if data.is_empty():
