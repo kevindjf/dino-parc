@@ -1004,37 +1004,38 @@ static func dino_folk(kind: String, direction: String, frame: int, colors: Dicti
 
 # --- The hero: a little explorer with a bush hat ------------------------------------------
 # Drawn like the characters of Stardew Valley: 16 x 32 pixels (two cells high), feet at the
-# bottom center, a round head under a bush hat, a shirt with lit shoulders, shorts, white socks
-# and red sneakers, 4 walking frames, shaded by hand.
+# bottom center, a round head under a bush hat, a shirt with lit shoulders, a backpack, shorts,
+# white socks and red sneakers, 4 walking frames, shaded by hand.
 # colors: skin, hair, shirt, pants, optionally hat, and style: "short" hair, or "long" (a ponytail).
 # Letters: o outline, H/h/k/K hat light/base/shade/band, R/r hair, s/S skin, e eye, w white,
-# m mouth, b blush, B hair tie, L/c/C shirt light/base/shade, p/P shorts, W socks, n sneakers.
+# m mouth, b blush, B hair tie, L/c/C shirt light/base/shade, p/P shorts, W socks, n sneakers,
+# G/g backpack.
 
 const KHAKI := Color("b09a78")
 
 const HERO_SIDE_HEAD := [
 	"................",
-	".....ooooo......",
-	"....oHHHHHo.....",
-	"...oHHHHHhho....",
-	"...ohhhhhhhko...",
-	"...oKKKKKKKKo...",
-	"..ohhhhhhhhhhoo.",
-	".ohhhhhhhhhhhhko",
-	"..ookkkkkkkkkoo.",
-	"...oRRRRSSSSo...",
-	"...oRRRSsssso...",
-	"...oRRRSssweo...",
-	"...oRRRsssweo...",
-	"....oRRssssso...",
-	"....ooossmso....",
-	".....oosso......",
+	"....oooooo......",
+	"...oHHHHHHo.....",
+	"..oHHHHHHhho....",
+	"..ohhhhhhhhko...",
+	"..oKKKKKKKKKo...",
+	".ohhhhhhhhhhhoo.",
+	"ohhhhhhhhhhhhhko",
+	".oookkkkkkkkkoo.",
+	"..oRRRRRSSSSSo..",
+	"..oRRRRSssssso..",
+	"..oRRRSssssweo..",
+	"..oRRRSssssweo..",
+	"..oRRRssssssso..",
+	"...oRRssssmso...",
+	"....ooossso.....",
 ]
 
 const HERO_SIDE_ARMS := {
-	"hang": [".....occcco.....", "....oLcccCco....", "....oLccCcco....", "....oLccCcco....", "....occcCcco....", "....occcssco....", "....occcssco...."],
-	"front": [".....occcco.....", "....oLccccco....", "....oLcccccCo...", "....oLccccoCCo..", "....occcco.oCso.", "....occcco..sso.", "....occcco..oo.."],
-	"back": [".....occcco.....", "...ooLcccco.....", "..oCoLcccco.....", ".oCCoccccco.....", ".osCoccccco.....", ".osso.occcco....", "..oo..occcco...."],
+	"hang": [".oGGoLcccco.....", ".oGGoLccCcco....", ".oGgoLccCCco....", ".oGgocccCCco....", ".oGgocccCCco....", ".oggocccssco....", "..ooocccssco...."],
+	"front": [".oGGoLcccco.....", ".oGGoLcccccoo...", ".oGgoLccccoCCo..", ".oGgoccccco.Cso.", ".oGgoccccco..so.", ".oggoccccco..oo.", "..ooocccccco...."],
+	"back": [".oGGoLcccco.....", ".oGGoLcccco.....", ".oGgoLcccco.....", ".oGgocccccCo....", ".oGgocccccCo....", ".oggocccccCo....", "..ooocccccCo...."],
 }
 
 const HERO_SIDE_HIPS := [
@@ -1117,6 +1118,21 @@ const HERO_LEGS := [
 	"..oooooo",
 ]
 
+# The backpack: seen from the back (rows 17 to 22), its straps from the front (rows 16 to 19).
+const HERO_BACKPACK := [
+	"....oGGGGGGo....",
+	"....oGGGGGGo....",
+	"....oGggggGo....",
+	"....oGGGGGGo....",
+	"....oGGGGGGo....",
+	"....oggggggo....",
+]
+const HERO_STRAPS := [
+	".....g....g.....",
+	".....g....g.....",
+	".....g....g.....",
+	".....g....g.....",
+]
 # The ponytail ("long" style), drawn over the rest from a row ("." keeps what is there).
 
 const HERO_SIDE_TAIL := [
@@ -1169,8 +1185,9 @@ static func hero(direction: String, frame: int, colors: Dictionary) -> Texture2D
 			rows = _mirror(HERO_FRONT_HEAD if front else HERO_BACK_HEAD) + _mirror(HERO_BODY) + legs
 			if not colors.has("hat"):
 				rows = _mirror(HERO_HAIR) + rows.slice(9)
+			rows = _over(rows, 16, HERO_STRAPS) if front else _over(rows, 17, HERO_BACKPACK)
 			if long:
-				rows = _over(rows, 10, HERO_FRONT_TAIL) if front else _over(rows, 13, HERO_BACK_TAIL)
+				rows = _over(rows, 10, HERO_FRONT_TAIL) if front else _over(rows, 13, HERO_BACK_TAIL.slice(0, 4))
 		var hat: Color = colors.get("hat", KHAKI)
 		var shirt: Color = colors.shirt
 		var palette := {
@@ -1178,7 +1195,7 @@ static func hero(direction: String, frame: int, colors: Dictionary) -> Texture2D
 			"R": colors.hair, "r": colors.hair.darkened(0.25), "s": colors.skin, "S": colors.skin.darkened(0.18),
 			"e": Color("281a14"), "w": Color.WHITE, "m": Color("b44646"), "b": Color("f4968c"), "B": Color("2a8adf"),
 			"L": shirt.lightened(0.15), "c": shirt, "C": shirt.darkened(0.22), "p": colors.pants, "P": colors.pants.darkened(0.25),
-			"W": Color("f0f0f0"), "n": Color("d2322d"),
+			"W": Color("f0f0f0"), "n": Color("d2322d"), "G": Color("966437"), "g": Color("694426"),
 		}
 		var image := Image.create(16, 32, false, Image.FORMAT_RGBA8)
 		_stamp(image, Vector2i.ZERO, rows, palette)
