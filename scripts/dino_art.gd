@@ -8,6 +8,7 @@ extends RefCounted
 
 const Painter := preload("res://scripts/painter.gd")
 const Catalog := preload("res://scripts/catalog.gd")
+const Hand := preload("res://scripts/dino_hand.gd")
 const T := 16
 const METERS_PER_CELL := 3.0
 const HORN := Color("fff1d0")
@@ -24,11 +25,15 @@ static func target_length(meters: float) -> float:
 	return cells if cells <= 4.0 else 4.0 + (cells - 4.0) * 0.6
 
 
-# Returns {walk: [Texture2D, Texture2D], roar, sleep, origin: pixel of the feet, size, height}.
+# Returns {walk: [Texture2D, ...], roar, sleep, origin: pixel of the feet, size, height}.
+# Hand-drawn species (dino_hand.gd) also have "down" and "up" (4 frames each) and front_origin.
 static func frames(id: String) -> Dictionary:
 	if _cache.has(id):
 		return _cache[id]
 	var sp: Dictionary = Catalog.DINOS[id]
+	if Hand.has(id):
+		_cache[id] = _hand_frames(id, sp)
+		return _cache[id]
 	var painter := Painter.new()
 	painter.measure()
 	for pose in POSES:
@@ -51,6 +56,22 @@ static func frames(id: String) -> Dictionary:
 		"origin": origin, "size": size, "height": origin.y,
 	}
 	_cache[id] = result
+	return result
+
+
+static func _hand_frames(id: String, sp: Dictionary) -> Dictionary:
+	var tex := func(direction: String, frame: int, pose := "walk") -> Texture2D:
+		return ImageTexture.create_from_image(Hand.draw(id, sp, direction, frame, pose))
+	var info: Dictionary = Hand.SPECIES[id]
+	var result := {
+		"walk": [], "down": [], "up": [],
+		"roar": tex.call("side", 0, "roar"), "sleep": tex.call("side", 0, "sleep"),
+		"origin": Vector2(info.feet, info.side.y), "size": info.side, "height": info.side.y,
+		"front_origin": Vector2(info.front.x / 2, info.front.y),
+	}
+	for frame in 4:
+		for direction in ["side", "down", "up"]:
+			result["walk" if direction == "side" else direction].append(tex.call(direction, frame))
 	return result
 
 

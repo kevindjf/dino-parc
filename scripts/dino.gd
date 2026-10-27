@@ -73,6 +73,7 @@ var friendship := 0
 var saddled := false
 var saddle_sprite: Sprite2D
 var ridden := false
+var look := "side"  # "side", or "down" / "up" while walking towards or away from the camera
 var ride_moving := false
 var next_brush := 0.0
 var next_treat := 0.0
@@ -282,7 +283,19 @@ func _process(delta: float) -> void:
 
 
 func _animate(delta: float, moving: bool) -> void:
+	if moving:
+		var speed: float = species.speed
+		walk_phase += delta * (3.0 + 3.0 * speed) * (2.0 if habitat == "air" else 1.0)
+	# Hand-drawn species are also seen from the front and the back, when walking up or down.
+	var toward := look if frames.has(look) and not ridden and state != "sleep" and roar_time <= 0.0 else "side"
+	if toward != "side":
+		var textures: Array = frames[toward]
+		sprite.flip_h = false
+		sprite.texture = textures[int(walk_phase) % textures.size()]
+		sprite.offset = -frames.front_origin
+		return
 	# Keep the body in place when the sprite turns around (the tail makes it lopsided).
+	sprite.offset = -frames.origin
 	sprite.offset.x = -(frames.size.x - frames.origin.x) if sprite.flip_h else -frames.origin.x
 	if state == "sleep":
 		sprite.texture = frames.sleep
@@ -290,10 +303,18 @@ func _animate(delta: float, moving: bool) -> void:
 	if roar_time > 0.0:
 		sprite.texture = frames.roar
 		return
-	if moving:
-		var speed: float = species.speed
-		walk_phase += delta * (3.0 + 3.0 * speed) * (2.0 if habitat == "air" else 1.0)
-	sprite.texture = frames.walk[int(walk_phase) % 2]
+	sprite.texture = frames.walk[int(walk_phase) % frames.walk.size()]
+
+
+# Turns towards a move: to the left or the right, or, for the species drawn from the front and the
+# back, down or up when the move is mostly vertical. Below `dead_x`, a move does not turn around.
+func _face(step: Vector2, dead_x: float) -> void:
+	if absf(step.y) > absf(step.x) * 1.3:
+		look = "down" if step.y > 0.0 else "up"
+		return
+	look = "side"
+	if absf(step.x) > dead_x:
+		sprite.flip_h = step.x < 0.0
 
 
 # --- Land --------------------------------------------------------------
@@ -393,8 +414,7 @@ func _follow_route(delta: float) -> bool:
 			_arrive()
 		return true
 	position += to_goal.normalized() * minf(speed * delta, to_goal.length())
-	if absf(to_goal.x) > 0.3:
-		sprite.flip_h = to_goal.x < 0.0
+	_face(to_goal, 0.3)
 	return true
 
 
@@ -428,8 +448,7 @@ func _follow(delta: float) -> bool:
 		return false
 	var speed := maxf(species.speed * T * 1.6, 56.0)
 	position += to_player.normalized() * minf(speed * delta, to_player.length() - 16.0)
-	if absf(to_player.x) > 2.0:
-		sprite.flip_h = to_player.x < 0.0
+	_face(to_player, 2.0)
 	return true
 
 
@@ -449,7 +468,7 @@ func _chase(delta: float) -> bool:
 		return false
 	position += step
 	cell = next_cell
-	sprite.flip_h = step.x < 0.0
+	_face(step, 0.0)
 	if roar_time <= 0.0 and randf() < delta:
 		roar()
 	return true
@@ -470,7 +489,7 @@ func _flee(delta: float) -> bool:
 			return false
 	position += step
 	cell = next_cell
-	sprite.flip_h = step.x < 0.0
+	_face(step, 0.0)
 	return true
 
 
