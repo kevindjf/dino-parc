@@ -552,15 +552,20 @@ static func _small_head_front(l: Layers, kind: String, h: Vector2, skin: Color, 
 				l.part([l.ellipse(cx, 5.5 + y, 4.5, 3.8)], skin)
 			l.part([l.poly([Vector2(cx - 4, 3 + y), Vector2(cx - 2, y), Vector2(cx + 1, 2 + y)])], accent, 0, 0)
 		"dome":
-			l.part([l.ellipse(cx + 1, 6 + y, 4.5, 4), l.poly([Vector2(cx + 1, 5 + y), Vector2(cx + 7, 6 + y), Vector2(cx + 7, 9 + y), Vector2(cx + 1, 10 + y)])], skin)
-			l.part([l.ellipse(cx, 3 + y, 5, 3.6)], accent, 1, 1)
-			for dx in [-4, 0, 4]:
-				l.dot(cx + dx, 1 + y, HORN)
+			# A big round face, the dome sitting on top of it, rimmed with little knobs.
+			l.part([l.ellipse(cx + 1, 8 + y, 5.5, 4.5), l.poly([Vector2(cx + 2, 6.5 + y), Vector2(cx + 9, 8 + y), Vector2(cx + 8.5, 11 + y), Vector2(cx + 1, 12 + y)])], skin)
+			l.part([l.ellipse(cx, 3.5 + y, 4.5, 3)], accent.lightened(0.1), 1, 1)
+			for dx in [-5, -2.5, 2.5, 5]:
+				l.dot(cx + dx, 5.5 + y - absf(dx) * 0.2, HORN)
 			if front:
-				_eye(l, cx + 2, 6 + y, sleep)
-				l.dot(cx - 2, 7 + y, EYE)
+				_eye(l, cx + 2, 7 + y, sleep)
+				l.dot(cx - 3, 8 + y, EYE)
+				l.dot(cx + 8, 8.5 + y, skin.darkened(0.6))
 				if roar:
-					l.part([l.ellipse(cx + 5, 9 + y, 1.5, 1)], MOUTH, 0, 0)
+					l.part([l.ellipse(cx + 6, 10.5 + y, 2, 1.2)], MOUTH, 0, 0)
+				else:
+					for x in range(3, 9):
+						l.dot(cx + x, 10.5 + y, skin.darkened(0.72))
 		"beak":
 			l.part([l.ellipse(cx, 5 + y, 3.5, 3)], skin)
 			l.part([l.poly([Vector2(cx + 2, 4 + y), Vector2(cx + 9, 6 + y), Vector2(cx + 2, 7.5 + y)])], BEAK if not roar else MOUTH, 0, 1)
