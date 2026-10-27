@@ -286,7 +286,7 @@ func _drive() -> void:
 			sprite.z_index = 1
 		"car":
 			# Drawn behind the car: only the head shows over the door.
-			sprite.position = Vector2(back * 1.5, -6 if direction == "side" else -9)
+			sprite.position = Vector2(back * 1.5, -7 if direction == "side" else -10)
 			sprite.z_index = -1
 	shadow.scale = Vector2.ONE * clampf(1.0 - altitude / 160.0, 0.5, 1.0)
 	# High up, it flies over the trees.
@@ -310,7 +310,7 @@ func _animate(delta: float, holding: String) -> void:
 		tool_sprite.texture = Art.resource(holding)
 		var side := -1.0 if facing == Vector2i.LEFT else 1.0
 		tool_sprite.flip_h = side < 0.0
-		tool_sprite.position = Vector2(5.0 * side, -9.0) if facing.x != 0 else Vector2(7, -8)
+		tool_sprite.position = Vector2(5.0 * side, -8.0) if facing.x != 0 else Vector2(7, -7)
 		tool_sprite.offset = Vector2(-13 if side < 0.0 else -3, -14)
 		tool_sprite.rotation = side * (-0.9 + 2.2 * (1.0 - swing / 0.25)) if swing > 0.0 else 0.0
 	# Draw the tool behind the character when it faces away.
