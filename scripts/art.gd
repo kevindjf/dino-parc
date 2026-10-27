@@ -1370,133 +1370,145 @@ static func shadow(width: int) -> Texture2D:
 
 # --- Things in the bag -----------------------------------------------------------
 
+# Drawn in parts like the dinosaurs: every piece with its own contour, lit from the top left.
+# 16 x 16 pixels.
+const STEEL := Color("b8bcc4")
+
+
 static func resource(id: String) -> Texture2D:
 	return cached("resource:" + id, func() -> Texture2D:
-		var p := _painter(Vector2i(16, 16))
+		var l := Layers.new(Vector2i(16, 16))
 		match id:
 			"wood":
-				p.limb(Vector2(3, 9), Vector2(12, 7), 3.5, 3.5, WOOD, true)
-				p.ellipse(Vector2(12.5, 7), Vector2(2.5, 3.5), Color("e8c080"), true)
-				p.dot(Vector2(12.5, 7), Color("b08050"))
+				l.part([l.limb(Vector2(3, 10.5), Vector2(11, 6.5), 3.3, 3.3)], LOG[1], 1, 1)
+				for spot in [Vector2(4, 9), Vector2(6, 11), Vector2(8, 8), Vector2(5, 12)]:
+					l.dot(spot.x, spot.y, LOG[0])
+				l.part([l.ellipse(11.8, 6.3, 2.6, 3.4)], LOG[3], 0, 0)
+				l.dot(12, 6, LOG[2])
+				l.dot(11, 5, LOG[2])
 			"stone":
-				p.ellipse(Vector2(8, 9), Vector2(6.5, 5), Color("9a9aa2"))
-				p.ellipse(Vector2(6, 7), Vector2(2.5, 1.5), Color("c0c0c8"))
-			"berries":
-				p.ellipse(Vector2(8, 3), Vector2(3, 1.5), Color("4aa84c"))
-				for spot in [Vector2(5, 9), Vector2(11, 9), Vector2(8, 12), Vector2(8, 6.5)]:
-					p.ellipse(spot, Vector2(2.6, 2.6), Color("d8243e"))
-					p.dot(spot + Vector2(-1, -1), Color("ff9aaa"))
-			"meat":
-				p.limb(Vector2(3, 13), Vector2(7, 9), 1.3, 1.3, Color("f4ecd8"), true)
-				p.ellipse(Vector2(2.5, 13.5), Vector2(2, 2), Color("f4ecd8"), true)
-				p.ellipse(Vector2(10, 6), Vector2(5.5, 4.5), Color("c0443a"), true, -0.7)
-				p.ellipse(Vector2(9, 5), Vector2(2.5, 1.5), Color("e8806a"), false, -0.7)
-			"axe":
-				p.limb(Vector2(4, 15), Vector2(11, 2), 1.2, 1.2, WOOD, true)
-				p.polygon(PackedVector2Array([Vector2(9, 1), Vector2(15, 0), Vector2(16, 7), Vector2(11, 6)]), Color("b0b4bc"), true)
-			"brush":
-				p.limb(Vector2(2, 13), Vector2(8, 7), 1.2, 1.2, WOOD, true)
-				p.box(Rect2(7, 2, 8, 6), Color("c08040"), true)
-				for x in range(8, 15, 2):
-					p.flat(Rect2(x, 8, 1, 3), Color("f0e0a0"))
-			"saddle":
-				p.ellipse(Vector2(8, 9), Vector2(7, 4), Color("8a4a24"), true)
-				p.ellipse(Vector2(4, 6), Vector2(2.5, 3), Color("a05a2c"), true)
-				p.ellipse(Vector2(12, 6.5), Vector2(2, 2.5), Color("a05a2c"), true)
-				p.box(Rect2(7, 11, 2, 4), Color("5a3018"))
-				p.dot(Vector2(8, 14), Color("e0c040"), 2)
-			"copper", "iron", "crystal", "gold", "amber":
+				l.part([l.ellipse(8, 9.5, 6.6, 4.8)], STONES[2], 2, 2)
+				l.part([l.poly([Vector2(3, 8), Vector2(7, 5.5), Vector2(10, 6.5), Vector2(6, 9)])], STONES[3], 0, 0, false)
+				for spot in [Vector2(9, 10), Vector2(10, 11), Vector2(12, 9)]:
+					l.dot(spot.x, spot.y, STONES[1])
+			"copper", "iron", "gold":
+				# A lump of rock with shiny nuggets of the metal in it.
 				var colors: Array = ORE_COLORS[id]
-				if id == "crystal":
-					p.polygon(PackedVector2Array([Vector2(8, 1), Vector2(13, 7), Vector2(8, 15), Vector2(3, 7)]), colors[0], true)
-					p.dot(Vector2(7, 5), colors[1], 2)
-				elif id == "amber":
-					p.ellipse(Vector2(8, 8.5), Vector2(6, 5.5), colors[0], true)
-					p.dot(Vector2(8, 9), Color("3a2a10"), 2)
-					p.dot(Vector2(5.5, 6), colors[1], 2)
-				else:
-					p.polygon(PackedVector2Array([Vector2(1, 12), Vector2(4, 5), Vector2(12, 3), Vector2(15, 10), Vector2(10, 14)]), colors[0], true)
-					p.dot(Vector2(6, 7), colors[1], 2)
-					p.dot(Vector2(11, 9), colors[1])
+				l.part([l.ellipse(8, 9.5, 6.6, 5)], STONES[1], 1, 2)
+				for nugget in [Vector3(5.5, 8, 2.2), Vector3(10.5, 7.5, 1.8), Vector3(9, 11.5, 1.8)]:
+					l.part([l.ellipse(nugget.x, nugget.y, nugget.z, nugget.z * 0.9)], colors[0], 1, 1)
+					l.dot(nugget.x - 1, nugget.y - 1, colors[1])
+			"crystal":
+				var colors: Array = ORE_COLORS.crystal
+				l.part([l.poly([Vector2(1, 15), Vector2(1, 9), Vector2(3, 6), Vector2(5.5, 9), Vector2(5.5, 15)])], colors[0].darkened(0.25), 1, 1)
+				l.part([l.poly([Vector2(10.5, 15), Vector2(10.5, 8), Vector2(13, 5), Vector2(15, 8), Vector2(15, 15)])], colors[0].darkened(0.12), 1, 1)
+				l.part([l.poly([Vector2(5.5, 15), Vector2(5.5, 5), Vector2(8, 1), Vector2(10.5, 5), Vector2(10.5, 15)])], colors[0], 1, 1)
+				l.part([l.box(7, 5, 1, 8)], colors[1], 0, 0, false)
+			"amber":
+				var colors: Array = ORE_COLORS.amber
+				l.part([l.ellipse(8, 9.5, 5.5, 5), l.poly([Vector2(4, 8), Vector2(8, 1.5), Vector2(12, 8)])], colors[0], 1, 2)
+				l.part([l.ellipse(8.5, 10, 1.5, 1)], Color("5a3a10"), 0, 0, false)
+				l.dot(7, 9, Color("5a3a10"))
+				l.dot(10, 9, Color("5a3a10"))
+				l.part([l.box(5, 6, 1, 3)], colors[1], 0, 0, false)
 			"fossil":
-				p.limb(Vector2(3, 12), Vector2(13, 4), 1.6, 1.6, ORE_COLORS.fossil[0], true)
-				p.ellipse(Vector2(3, 12), Vector2(2.5, 2.5), ORE_COLORS.fossil[0], true)
-				p.ellipse(Vector2(13, 4), Vector2(2.5, 2.5), ORE_COLORS.fossil[0], true)
-			"pickaxe_iron":
-				p.limb(Vector2(4, 15), Vector2(10, 3), 1.2, 1.2, WOOD, true)
-				p.limb(Vector2(3, 4), Vector2(10, 1.5), 1.6, 1.4, Color("e0e4ec"), true)
-				p.limb(Vector2(10, 1.5), Vector2(15, 7), 1.4, 0.6, Color("e0e4ec"), true)
-				p.dot(Vector2(9, 2), Color("70a0e0"), 2)
-			"cage":
-				p.box(Rect2(1, 3, 14, 12), Color("c8a070"), true)
-				p.box(Rect2(3, 5, 10, 8), Color("4a3a2a"))
-				for x in [4, 7, 10]:
-					p.box(Rect2(x, 4, 2, 10), Color("a07848"), true)
-				p.box(Rect2(0, 1, 16, 3), WOOD, true)
-			"pickaxe":
-				p.limb(Vector2(4, 15), Vector2(10, 3), 1.2, 1.2, WOOD, true)
-				p.limb(Vector2(3, 4), Vector2(10, 1.5), 1.6, 1.4, Color("b0b4bc"), true)
-				p.limb(Vector2(10, 1.5), Vector2(15, 7), 1.4, 0.6, Color("b0b4bc"), true)
-			"boots", "boots_fast":
-				var leather := Color("8a5a30") if id == "boots" else Color("e53935")
-				p.box(Rect2(4, 1, 6, 10), leather, true)
-				p.ellipse(Vector2(9, 12.5), Vector2(6, 2.8), leather, true)
-				p.flat(Rect2(3, 14, 13, 1), Color("3a2a1a"))
-				if id == "boots_fast":
-					p.flat(Rect2(4, 5, 6, 2), Color.WHITE)
-					p.polygon(PackedVector2Array([Vector2(10, 3), Vector2(15, 1), Vector2(13, 5)]), Color("fdd835"), true)
-				else:
-					p.flat(Rect2(4, 2, 6, 1), leather.lightened(0.3))
-			"hammer":
-				p.limb(Vector2(4, 15), Vector2(10, 5), 1.3, 1.3, WOOD, true)
-				p.limb(Vector2(5, 3), Vector2(14, 7), 2.4, 2.4, Color("b0b4bc"), true)
-				p.dot(Vector2(7, 3), Color("e0e4ec"), 2)
+				var bone: Color = ORE_COLORS.fossil[0]
+				l.part([l.limb(Vector2(4, 11.5), Vector2(12, 4.5), 1.6, 1.6)], bone, 1, 1)
+				for end in [Vector2(4, 11.5), Vector2(12, 4.5)]:
+					l.part([l.ellipse(end.x - 1.2, end.y + 0.6, 1.8, 1.8), l.ellipse(end.x + 0.6, end.y + 1.6, 1.8, 1.8),
+						l.ellipse(end.x - 0.6, end.y - 1.4, 1.8, 1.8), l.ellipse(end.x + 1.4, end.y - 0.6, 1.8, 1.8)], bone, 1, 1)
+			"berries":
+				l.part([l.poly([Vector2(4, 4), Vector2(8, 1), Vector2(12, 3), Vector2(8, 5)])], LEAVES[2], 1, 0)
+				l.part([l.box(7.5, 3, 1, 3)], LEAVES[0], 0, 0, false)
+				for spot in [Vector2(5, 9), Vector2(11, 9), Vector2(8, 7), Vector2(8, 12)]:
+					l.part([l.ellipse(spot.x, spot.y, 2.7, 2.7)], Color("d8243e"), 0, 1)
+					l.dot(spot.x - 1, spot.y - 1, Color("ffb0b8"))
+			"meat":
+				l.part([l.limb(Vector2(3, 13), Vector2(7, 9), 1.2, 1.2)], Color("f4ecd8"), 1, 0)
+				l.part([l.ellipse(2.5, 12, 1.6, 1.6), l.ellipse(4, 13.8, 1.6, 1.6)], Color("f4ecd8"), 1, 0)
+				l.part([l.limb(Vector2(7.5, 8.5), Vector2(10.5, 5.5), 3.4, 4.2)], Color("c0443a"), 1, 2)
+				l.part([l.limb(Vector2(8.5, 5), Vector2(11, 3.5), 1, 0.8)], Color("e8806a"), 0, 0, false)
+				l.dot(12, 7, Color("f4d0b0"))
+			"axe", "pickaxe", "pickaxe_iron", "hammer", "brush":
+				l.part([l.limb(Vector2(3.5, 14.5), Vector2(10.5, 3), 1.2, 1.1)], LOG[2], 0, 1)
+				var metal := Color("e0e4ec") if id == "pickaxe_iron" else STEEL
+				match id:
+					"axe":
+						l.part([l.poly([Vector2(8.5, 1.5), Vector2(14.5, 0.5), Vector2(15, 8), Vector2(10.5, 6.5)])], metal, 1, 1)
+						l.part([l.box(14, 1, 1, 6)], Color.WHITE, 0, 0, false)
+					"pickaxe", "pickaxe_iron":
+						l.part([l.limb(Vector2(2, 5), Vector2(9.5, 2), 1.5, 1.3), l.limb(Vector2(9.5, 2), Vector2(14.5, 7.5), 1.3, 0.5)], metal, 1, 1)
+						if id == "pickaxe_iron":
+							l.part([l.ellipse(9.5, 2.5, 1.2, 1.2)], Color("70a0e0"), 0, 0)
+					"hammer":
+						l.part([l.limb(Vector2(5, 3), Vector2(13.5, 6.5), 2.4, 2.4)], metal, 1, 1)
+					"brush":
+						l.part([l.box(7, 2, 8, 5)], Color("c08040"), 1, 1)
+						for x in range(8, 15, 2):
+							l.part([l.box(x, 7, 1, 3)], Color("f0e0a0"), 0, 0, false)
 			"slingshot":
-				p.limb(Vector2(8, 15), Vector2(8, 9), 1.3, 1.3, WOOD, true)
-				p.limb(Vector2(8, 9), Vector2(3, 2), 1.2, 1.0, WOOD, true)
-				p.limb(Vector2(8, 9), Vector2(13, 2), 1.2, 1.0, WOOD, true)
-				p.line(Vector2(3, 2), Vector2(8, 6), Color("d84a3a"))
-				p.line(Vector2(13, 2), Vector2(8, 6), Color("d84a3a"))
-				p.dot(Vector2(8, 6), Color("7a5030"), 2)
+				l.part([l.limb(Vector2(8, 14.5), Vector2(8, 9), 1.3, 1.3), l.limb(Vector2(8, 9.5), Vector2(3.5, 2.5), 1.2, 1),
+					l.limb(Vector2(8, 9.5), Vector2(12.5, 2.5), 1.2, 1)], LOG[2], 0, 1)
+				l.part([l.limb(Vector2(3.5, 2.5), Vector2(8, 6), 0.5, 0.5), l.limb(Vector2(12.5, 2.5), Vector2(8, 6), 0.5, 0.5)], Color("d84a3a"), 0, 0, false)
+				l.part([l.ellipse(8, 6.5, 1.5, 1.2)], Color("7a5030"), 0, 0)
 			"bow":
+				var arc := []
 				for i in 8:
-					var a := -1.25 + 2.5 * i / 7.0
-					var b := -1.25 + 2.5 * (i + 1) / 7.0
-					p.limb(Vector2(4 + 9 * cos(a), 8 + 7 * sin(a)), Vector2(4 + 9 * cos(b), 8 + 7 * sin(b)), 1.1, 1.1, WOOD, true)
-				p.line(Vector2(7, 1), Vector2(7, 15), Color("f0e8d0"))
+					var a := -1.2 + 2.4 * i / 7.0
+					var b := -1.2 + 2.4 * (i + 1) / 7.0
+					arc.append(l.limb(Vector2(4 + 9 * cos(a), 8 + 6.5 * sin(a)), Vector2(4 + 9 * cos(b), 8 + 6.5 * sin(b)), 1.1, 1.1))
+				l.part([l.box(7, 1.5, 1, 13)], Color("f0e8d0"), 0, 0, false)
+				l.part(arc, LOG[2], 0, 1)
 			"arrow":
-				p.limb(Vector2(2, 14), Vector2(12, 4), 0.7, 0.7, Color("c09060"), true)
-				p.polygon(PackedVector2Array([Vector2(15, 1), Vector2(10, 3), Vector2(13, 6)]), Color("b0b4bc"), true)
-				p.polygon(PackedVector2Array([Vector2(1, 15), Vector2(1, 11), Vector2(4, 13), Vector2(5, 15)]), Color("e8e0f0"), true)
+				l.part([l.limb(Vector2(3, 13), Vector2(12, 4), 0.7, 0.7)], Color("c09060"), 0, 0)
+				l.part([l.poly([Vector2(15, 1), Vector2(10, 2.5), Vector2(13.5, 6)])], STEEL, 1, 0)
+				l.part([l.poly([Vector2(1, 15), Vector2(1, 11), Vector2(4, 12), Vector2(5, 15)])], Color("e8e0f0"), 1, 0)
 			"bolas":
-				p.line(Vector2(8, 8), Vector2(3, 4), Color("a07848"))
-				p.line(Vector2(8, 8), Vector2(13, 5), Color("a07848"))
-				p.line(Vector2(8, 8), Vector2(8, 14), Color("a07848"))
-				for spot in [Vector2(3, 4), Vector2(13, 5), Vector2(8, 13)]:
-					p.ellipse(spot, Vector2(2.6, 2.6), Color("9a9aa2"), true)
-					p.dot(spot + Vector2(-1, -1), Color("d0d0d8"))
+				for end in [Vector2(3.5, 4), Vector2(12.5, 4.5), Vector2(8, 12.5)]:
+					l.part([l.limb(Vector2(8, 8), end, 0.45, 0.45)], Color("a07848"), 0, 0, false)
+				for end in [Vector2(3.5, 4), Vector2(12.5, 4.5), Vector2(8, 12.5)]:
+					l.part([l.ellipse(end.x, end.y, 2.5, 2.5)], STONES[2], 1, 1)
+					l.dot(end.x - 1, end.y - 1, STONES[3])
+			"cage":
+				l.part([l.box(2, 4, 12, 10)], Color("4a3a2a"), 0, 0)
+				for x in [2, 5.5, 9, 12.5]:
+					l.part([l.box(x, 4, 1.5, 10)], LOG[2], 0, 0)
+				l.part([l.box(1, 12.5, 14, 2)], LOG[1], 1, 0)
+				l.part([l.box(1, 2, 14, 2.5)], LOG[1], 1, 0)
 			"capsule_copper", "capsule_iron", "capsule_gold":
 				var metal: Array = ORE_COLORS[id.substr(8)]
-				p.ellipse(Vector2(8, 8.5), Vector2(6.5, 6.5), Color("f4ecd8"), true)
-				p.ellipse(Vector2(8, 6), Vector2(6.3, 4.2), metal[0])
-				p.dot(Vector2(5, 4), metal[1], 2)
-				p.flat(Rect2(2, 8, 13, 1), Color("4a3a2a"))
-				p.ellipse(Vector2(8, 8.5), Vector2(2.3, 2.3), Color("f09818"), true)
-				p.dot(Vector2(7.5, 8), Color("ffd070"))
-		return p.finish())
+				l.part([l.ellipse(8, 8.5, 6.5, 6.5)], Color("f4ecd8"), 1, 2)
+				l.part([l.ellipse(8, 6.2, 6.2, 4.5)], metal[0], 1, 0, false)
+				l.dot(5, 4, metal[1])
+				l.dot(6, 3, metal[1])
+				l.part([l.box(1.5, 8, 13, 1)], Color("4a3a2a"), 0, 0, false)
+				l.part([l.ellipse(8, 8.5, 2.2, 2.2)], Color("f09818"), 1, 0)
+			"saddle":
+				l.part([l.ellipse(8, 9, 6.5, 3.8)], Color("8a4a24"), 1, 1)
+				l.part([l.ellipse(3.8, 6.2, 2.2, 2.8), l.ellipse(12, 6.8, 2, 2.2)], Color("a05a2c"), 1, 1)
+				l.part([l.box(7.5, 11, 1, 3)], Color("5a3018"), 0, 0, false)
+				l.part([l.box(6.5, 13, 3, 1.5)], Color("e0c040"), 0, 0)
+			"boots", "boots_fast":
+				var leather := Color("8a5a30") if id == "boots" else Color("e53935")
+				l.part([l.box(4, 1.5, 6, 10), l.ellipse(9.5, 12, 5.5, 2.6)], leather, 1, 1)
+				l.part([l.box(3, 13.5, 12.5, 1.5)], Color("3a2a1a"), 0, 0)
+				if id == "boots_fast":
+					l.part([l.box(4, 5, 6, 1.5)], Color.WHITE, 0, 0, false)
+					l.part([l.poly([Vector2(10, 4), Vector2(15, 1.5), Vector2(13, 6)])], Color("fdd835"), 1, 0)
+				else:
+					l.part([l.box(4, 3, 6, 1)], leather.lightened(0.3), 0, 0, false)
+		return ImageTexture.create_from_image(l.image))
 
 
 # A heart of the player's life bar, full or empty.
 static func heart(full: bool) -> Texture2D:
 	return cached("heart:%s" % full, func() -> Texture2D:
-		var p := _painter(Vector2i(11, 10))
+		var l := Layers.new(Vector2i(12, 11))
 		var color := Color("e53950") if full else Color("d8d0d8")
-		p.ellipse(Vector2(3, 3.5), Vector2(2.6, 2.6), color, true)
-		p.ellipse(Vector2(8, 3.5), Vector2(2.6, 2.6), color, true)
-		p.polygon(PackedVector2Array([Vector2(0.6, 4.5), Vector2(10.4, 4.5), Vector2(5.5, 9.5)]), color, true)
+		l.part([l.ellipse(3.6, 4, 2.6, 2.6), l.ellipse(8.4, 4, 2.6, 2.6), l.poly([Vector2(1.1, 5), Vector2(10.9, 5), Vector2(6, 10)])], color, 1, 2)
 		if full:
-			p.dot(Vector2(2.5, 2.5), Color("ffb0c0"))
-		return p.finish())
+			l.dot(3, 3, Color("ffc0cc"))
+		return ImageTexture.create_from_image(l.image))
 
 
 # What flies through the air when shooting: a pebble, an arrow, a dart, bolas or a capsule.
@@ -1618,11 +1630,12 @@ static func _bulldozer() -> Texture2D:
 
 
 static func _dart() -> Texture2D:
-	var p := _painter(Vector2i(22, 10))
-	p.limb(Vector2(3, 5), Vector2(15, 5), 1.6, 1.6, Color("e0e0e8"), true)
-	p.limb(Vector2(15, 5), Vector2(21, 5), 0.6, 0.5, Color("909098"))
-	p.polygon(PackedVector2Array([Vector2(1, 1), Vector2(6, 5), Vector2(1, 9)]), Color("ab47bc"), true)
-	return p.finish()
+	var l := Layers.new(Vector2i(22, 10))
+	l.part([l.limb(Vector2(15, 5), Vector2(20.5, 5), 0.6, 0.5)], Color("909098"), 0, 0)
+	l.part([l.limb(Vector2(4, 5), Vector2(15, 5), 1.6, 1.6)], Color("e0e0e8"), 1, 1)
+	l.part([l.box(8, 4, 5, 1)], Color("c0a0e0"), 0, 0, false)
+	l.part([l.poly([Vector2(1, 1.5), Vector2(6.5, 5), Vector2(1, 8.5)])], Color("ab47bc"), 1, 1)
+	return ImageTexture.create_from_image(l.image)
 
 
 # --- The village ---------------------------------------------------------------
