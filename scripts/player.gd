@@ -253,27 +253,31 @@ func _fly(delta: float) -> void:
 func _drive() -> void:
 	if vehicle == "":
 		return
-	if absf(velocity.x) > 2.0:
-		vehicle_sprite.flip_h = velocity.x < 0.0
-	var left := vehicle_sprite.flip_h
+	# It turns where the character goes: seen from the side, from the front or from the back.
+	var direction := "side"
+	if facing.y != 0:
+		direction = "down" if facing.y > 0 else "up"
+	var left := facing == Vector2i.LEFT
 	var frame := int(rotor * 3.0) % 2 if vehicle == "heli" else int(travelled / 4.0)
-	var texture := Art.vehicle(vehicle, frame)
+	var texture := Art.vehicle(vehicle, frame, direction)
 	vehicle_sprite.texture = texture
+	vehicle_sprite.flip_h = left
 	vehicle_sprite.offset = -Vector2(floorf(texture.get_width() / 2.0), texture.get_height())
 	vehicle_sprite.position = Vector2(0, -altitude)
-	sprite.texture = Art.person("side", 0, look)
+	sprite.texture = Art.person(direction, 0, look)
 	sprite.flip_h = left
 	sprite.visible = vehicle != "heli"
+	var back := 0.0 if direction != "side" else (2.0 if left else -2.0)
 	match vehicle:
 		"bike":
-			sprite.position = Vector2(2 if left else -2, -6)
+			sprite.position = Vector2(back, -6)
 			sprite.z_index = 1
 		"moto":
-			sprite.position = Vector2(2 if left else -2, -7)
+			sprite.position = Vector2(back, -7)
 			sprite.z_index = 1
 		"car":
 			# Drawn behind the car: only the head shows over the door.
-			sprite.position = Vector2(3 if left else -3, -6)
+			sprite.position = Vector2(back * 1.5, -6 if direction == "side" else -9)
 			sprite.z_index = -1
 	shadow.scale = Vector2.ONE * clampf(1.0 - altitude / 160.0, 0.5, 1.0)
 	# High up, it flies over the trees.

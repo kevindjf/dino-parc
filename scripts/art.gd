@@ -1384,8 +1384,11 @@ static func signpost() -> Texture2D:
 
 # --- What the character drives in the adventure ------------------------------------------
 # Side views facing right, anchored at their bottom center; frames turn the wheels.
+# direction "down" draws it coming towards us, "up" going away (seen from the back).
 
-static func vehicle(id: String, frame: int) -> Texture2D:
+static func vehicle(id: String, frame: int, direction := "side") -> Texture2D:
+	if direction != "side":
+		return _vehicle_end(id, frame, direction == "down")
 	match id:
 		"bike":
 			return _bike(frame % 4)
@@ -1394,6 +1397,63 @@ static func vehicle(id: String, frame: int) -> Texture2D:
 		"car":
 			return _car(frame % 4)
 	return helicopter(frame % 2)
+
+
+# A vehicle seen from the front (coming towards us) or from the back.
+static func _vehicle_end(id: String, frame: int, front: bool) -> Texture2D:
+	return cached("vehicle_end:%s:%d:%s" % [id, frame % 4, front], func() -> Texture2D:
+		var light := Color("fff176") if front else Color("e53935")
+		match id:
+			"bike", "moto":
+				var moto := id == "moto"
+				var color := Color("1e88e5") if moto else Color("e53935")
+				var p := _painter(Vector2i(16, 18))
+				var width := 3.0 if moto else 2.0
+				# The wheel, seen edge-on: its tread runs down as it turns.
+				p.box(Rect2(8 - width / 2.0, 9, width, 8), Color("303034"), true)
+				p.flat(Rect2(8 - width / 2.0 + 0.5, 10 + (frame % 4) * 2, width - 1.0, 1), Color("70707a"))
+				if moto:
+					p.box(Rect2(5, 6, 6, 5), color, true)
+					p.dot(Vector2(8, 8), light, 2)
+				else:
+					p.limb(Vector2(8, 5), Vector2(8, 10), 0.8, 0.8, color)
+				p.limb(Vector2(1, 5), Vector2(15, 5), 0.7, 0.7, Color("303034"))
+				return p.finish(false)
+			"car":
+				var p := _painter(Vector2i(28, 20))
+				var orange := Color("fb8c00")
+				for x in [2, 21]:
+					p.box(Rect2(x, 13, 5, 6), Color("303034"), true)
+				p.box(Rect2(1, 8, 26, 9), orange, true)
+				p.box(Rect2(5, 3, 18, 6), orange, true)
+				p.box(Rect2(7, 4, 14, 4), Color("a8e0f8"), true)
+				p.flat(Rect2(2, 12, 24, 1), Color.WHITE)
+				for x in [3, 22]:
+					p.box(Rect2(x, 9, 3, 2), light)
+				p.box(Rect2(10, 14, 8, 2), Color("d0d0d8") if front else Color("303034"))
+				return p.finish()
+		# The helicopter: its round cabin, the skids and the rotor spinning above.
+		var p := _painter(Vector2i(36, 24))
+		var red := Color("e53935")
+		p.box(Rect2(9, 21, 18, 1), Color("404040"))
+		for x in [12, 23]:
+			p.box(Rect2(x, 18, 1, 3), Color("404040"))
+		if not front:
+			p.limb(Vector2(18, 12), Vector2(18, 22), 2.0, 1.4, red)
+		p.ellipse(Vector2(18, 13), Vector2(8, 6.5), red, true)
+		if front:
+			p.ellipse(Vector2(18, 12.5), Vector2(5.5, 4), Color("a8e0f8"))
+			p.dot(Vector2(16, 11), Color.WHITE, 2)
+		else:
+			p.polygon(PackedVector2Array([Vector2(15, 19), Vector2(21, 19), Vector2(18, 23)]), red.darkened(0.2), true)
+		p.box(Rect2(17, 4, 2, 3), Color("404040"))
+		if frame % 2 == 0:
+			p.flat(Rect2(1, 3, 34, 1), Color("303030"))
+		else:
+			p.flat(Rect2(11, 3, 14, 1), Color("303030"))
+			p.flat(Rect2(3, 3, 7, 1), Color(0.2, 0.2, 0.2, 0.35))
+			p.flat(Rect2(26, 3, 7, 1), Color(0.2, 0.2, 0.2, 0.35))
+		return p.finish())
 
 
 static func _wheel(p: Painter, center: Vector2, radius: float, frame: int, filled: bool) -> void:

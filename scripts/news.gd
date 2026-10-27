@@ -16,6 +16,7 @@ const ENTRIES := [
 			["meat", "La boutique vend de la viande pour les carnivores."],
 			["dino:velociraptor", "Lance 5 viandes à un carnivore sauvage : il devient ton ami et te suit !"],
 			["feeder_meat", "Achète une mangeoire à viande pour les carnivores de ton parc."],
+			["car", "En vélo, en moto, en voiture ou en hélico, ton personnage se tourne dans le sens où il roule !"],
 		],
 	},
 	{
