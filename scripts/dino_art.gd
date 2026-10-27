@@ -45,8 +45,8 @@ static func _scales(image: Image) -> Image:
 			var c := image.get_pixel(x, y)
 			if c.a < 0.5 or c.get_luminance() < 0.15 or c.get_luminance() > 0.9 or c.s < 0.12:
 				continue
-			if (x * 7 + y * 13) % 11 == 0:
+			if (x * 7 + y * 13) % 19 == 0:
 				image.set_pixel(x, y, c.darkened(0.12))
-			elif (x * 5 + y * 3) % 17 == 0:
+			elif (x * 5 + y * 3) % 29 == 0:
 				image.set_pixel(x, y, c.lightened(0.1))
 	return image

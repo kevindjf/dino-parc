@@ -102,30 +102,75 @@ func part(shapes: Array, color: Color, rim := 1, low := 2, outline := true) -> v
 	var first := mask.find(1)
 	if first < 0:
 		return
-	var has := func(x: int, y: int) -> bool:
-		return x >= 0 and y >= 0 and x < size.x and y < size.y and mask[y * size.x + x] == 1
+	# A copy of the mask with a border of 2 empty pixels all around, read without bound checks.
+	var w := size.x + 4
+	var m := PackedByteArray()
+	m.resize(w * (size.y + 4))
+	var left := size.x
+	var right := 0
+	var top := first / size.x
+	var bottom := mask.rfind(1) / size.x
+	for y in range(top, bottom + 1):
+		for x in size.x:
+			if mask[y * size.x + x] == 1:
+				m[(y + 2) * w + x + 2] = 1
+				left = mini(left, x)
+				right = maxi(right, x)
 	var light := color.lightened(0.22)
+	var shine := color.lightened(0.4)
 	var dark := color.darkened(0.2)
 	var deep := color.darkened(0.36)
-	# Only the rows of the part, and the outline just around them.
-	for y in range(maxi(first / size.x - 1, 0), mini(mask.rfind(1) / size.x + 2, size.y)):
-		for x in size.x:
-			if not has.call(x, y):
-				if outline and (has.call(x + 1, y) or has.call(x - 1, y) or has.call(x, y + 1) or has.call(x, y - 1)):
-					image.set_pixel(x, y, color.darkened(0.72))
+	# To round the part: lighter toward the top left, darker toward the bottom right, in three
+	# tones with a checker where they meet.
+	var lit := color.lightened(0.13)
+	var dim := color.darkened(0.13)
+	var span := Vector2(maxf(right - left, 1), maxf(bottom - top, 1))
+	var x0 := maxi(left - 1, 0)
+	var x1 := mini(right + 2, size.x)
+	# The part casts a shadow on what is behind it, just under its outline, so that a leg or a
+	# head stands out from the body.
+	if outline:
+		for y in range(top + 2, mini(bottom + 3, size.y)):
+			for x in range(x0, x1):
+				var i := (y + 2) * w + x + 2
+				if m[i] == 1 or m[i - 1] == 1 or m[i + 1] == 1 or m[i - w] == 1 or m[i + w] == 1:
+					continue
+				if m[i - 2 * w] == 1 or m[i - 2 * w - 1] == 1 or m[i - 2 * w + 1] == 1:
+					var behind := image.get_pixel(x, y)
+					if behind.a > 0.5:
+						image.set_pixel(x, y, behind.darkened(0.18))
+	for y in range(maxi(top - 1, 0), mini(bottom + 2, size.y)):
+		for x in range(x0, x1):
+			var i := (y + 2) * w + x + 2
+			if m[i] == 0:
+				if outline and (m[i - 1] == 1 or m[i + 1] == 1 or m[i - w] == 1 or m[i + w] == 1):
+					# Lit from the top: the outline is softer on top than at the bottom.
+					var above := m[i + w] == 1 and m[i - w] == 0
+					image.set_pixel(x, y, color.darkened(0.6 if above else 0.75))
 				continue
 			var c := color
+			if rim > 0:
+				var t := ((x - left) / span.x * 0.6 + (y - top) / span.y) / 1.6
+				var checker := (x + y) % 2 == 0
+				if t < 0.3 or (t < 0.36 and checker):
+					c = lit
+				elif t > 0.7 or (t > 0.64 and checker):
+					c = dim
 			var up := 0
-			while up < rim and has.call(x, y - up - 1):
+			while up < rim and y - up - 1 >= -2 and m[i - (up + 1) * w] == 1:
 				up += 1
 			var down := 0
-			while down < low and has.call(x, y + down + 1):
+			while down < low and y + down + 1 < size.y + 2 and m[i + (down + 1) * w] == 1:
 				down += 1
+			var edge_left := m[i - 1] == 0
 			if up < rim:
+				# The top left corner of the part catches the most light.
+				c = shine if edge_left else light
+			elif rim > 0 and edge_left and down >= low:
 				c = light
 			if down < low:
 				c = deep if down == 0 and low > 1 else dark
-			elif not has.call(x + 1, y):
+			elif m[i + 1] == 0:
 				c = dark
 			image.set_pixel(x, y, c)
 
@@ -134,4 +179,11 @@ func dot(x: float, y: float, color: Color) -> void:
 	var at := Vector2i(_at(x, y).floor())
 	if Rect2i(Vector2i.ZERO, size).has_point(at):
 		image.set_pixel(at.x, at.y, color)
+
+
+# Darkens the pixel already drawn there: a brow, a fold of skin.
+func shade(x: float, y: float, amount: float) -> void:
+	var at := Vector2i(_at(x, y).floor())
+	if Rect2i(Vector2i.ZERO, size).has_point(at) and image.get_pixel(at.x, at.y).a > 0.5:
+		image.set_pixel(at.x, at.y, image.get_pixel(at.x, at.y).darkened(amount))
 

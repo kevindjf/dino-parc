@@ -13,29 +13,30 @@ const Layers := preload("res://scripts/layers.gd")
 
 # k: size of the drawing; top: room added above it (a sail, a crest); accent: the frill or the
 # plates when the catalog's second color is not the right one; head: the head of a small biped;
-# neck: how much higher a small biped holds its head; crest: the crest of a flyer.
+# neck: how much higher a small biped holds its head; crest: the crest of a flyer; pattern: marks
+# on the back (stripes, spots or bands).
 const SPECIES := {
-	"triceratops": {"plan": "quad", "k": 1.0, "accent": Color("e8a040")},
-	"pachyrhinosaurus": {"plan": "quad", "k": 0.82, "accent": Color("d8b878")},
-	"stegosaurus": {"plan": "quad", "k": 1.0},
+	"triceratops": {"plan": "quad", "k": 1.0, "accent": Color("e8a040"), "pattern": "spots"},
+	"pachyrhinosaurus": {"plan": "quad", "k": 0.82, "accent": Color("d8b878"), "pattern": "spots"},
+	"stegosaurus": {"plan": "quad", "k": 1.0, "pattern": "bands"},
 	"ankylosaurus": {"plan": "quad", "k": 0.9},
 	"trex": {"plan": "theropod", "k": 1.0},
 	"carnotaurus": {"plan": "theropod", "k": 0.78},
-	"dilophosaurus": {"plan": "theropod", "k": 0.62, "top": 4},
-	"yutyrannus": {"plan": "theropod", "k": 0.84},
+	"dilophosaurus": {"plan": "theropod", "k": 0.62, "top": 4, "pattern": "spots"},
+	"yutyrannus": {"plan": "theropod", "k": 0.84, "pattern": "bands"},
 	"spinosaurus": {"plan": "theropod", "k": 1.08, "top": 14},
-	"velociraptor": {"plan": "small", "k": 1.0, "head": "raptor"},
-	"pachycephalosaurus": {"plan": "small", "k": 1.1, "head": "dome"},
-	"gallimimus": {"plan": "small", "k": 1.12, "head": "beak", "neck": 6, "top": 6},
-	"parasaurolophus": {"plan": "small", "k": 1.45, "head": "duck", "top": 5},
-	"diplodocus": {"plan": "sauropod", "k": 1.0},
-	"brachiosaurus": {"plan": "sauropod", "k": 1.0, "tall": true, "top": 4},
+	"velociraptor": {"plan": "small", "k": 1.0, "head": "raptor", "pattern": "stripes"},
+	"pachycephalosaurus": {"plan": "small", "k": 1.1, "head": "dome", "pattern": "spots"},
+	"gallimimus": {"plan": "small", "k": 1.12, "head": "beak", "neck": 6, "top": 6, "pattern": "stripes"},
+	"parasaurolophus": {"plan": "small", "k": 1.45, "head": "duck", "top": 5, "pattern": "stripes"},
+	"diplodocus": {"plan": "sauropod", "k": 1.0, "pattern": "bands"},
+	"brachiosaurus": {"plan": "sauropod", "k": 1.0, "tall": true, "top": 4, "pattern": "spots"},
 	"pteranodon": {"plan": "flyer", "k": 1.0, "crest": "long"},
 	"quetzalcoatlus": {"plan": "flyer", "k": 1.35, "crest": "short"},
 	"dimorphodon": {"plan": "flyer", "k": 0.72, "crest": "none"},
 	"tapejara": {"plan": "flyer", "k": 0.85, "crest": "sail"},
 	"mosasaurus": {"plan": "mosasaur", "k": 1.0},
-	"plesiosaurus": {"plan": "plesio", "k": 1.0},
+	"plesiosaurus": {"plan": "plesio", "k": 1.0, "pattern": "spots"},
 }
 # side / front: design size seen from the side / from the front and the back. feet: x of the
 # feet on the side drawing. anchor: for flyers and swimmers, the middle of the body.
@@ -108,18 +109,86 @@ static func draw(id: String, sp: Dictionary, direction: String, frame: int, pose
 			_mosasaur(l, sp, frame, pose)
 		"plesio":
 			_plesio(l, sp, frame, pose)
+	if info.has("pattern"):
+		_pattern(l.image, info.pattern, sp.color, info.k)
 	return l.image
 
 
+# Darker marks on the back, measured from the top of the skin in each column, so that they follow
+# the body when it bobs up and down. Only the skin is marked, not the frill, plates or eyes.
+static func _pattern(image: Image, kind: String, skin: Color, k: float) -> void:
+	var reach := roundi(7 * k)
+	for x in image.get_width():
+		var back := -1
+		for y in image.get_height():
+			var c := image.get_pixel(x, y)
+			if c.a < 0.5 or not _is_skin(c, skin):
+				continue
+			if back < 0:
+				back = y
+			var depth := y - back
+			if depth < 1 or depth > reach:
+				continue
+			var mark := false
+			match kind:
+				"stripes":
+					# Thin stripes going down from the spine, shorter every other one.
+					mark = x % 5 < 2 and depth <= reach - (2 if (x / 5) % 2 == 0 else 0)
+				"bands":
+					mark = x % 9 < 4 and depth <= reach - 2
+				"spots":
+					# A grid of 4 x 4 cells, every other row shifted, most of them holding a spot.
+					var row := depth / 4
+					var sx := x + (2 if row % 2 == 1 else 0)
+					var cell := Vector2i(sx / 4, row)
+					if (cell.x * 7 + cell.y * 13) % 5 < 3:
+						var inside := Vector2i(sx % 4, depth % 4)
+						mark = inside.x in [1, 2] and inside.y in [1, 2]
+			if mark:
+				image.set_pixel(x, y, c.darkened(0.3))
+
+
+# True for the skin color and its shades, not the outline nor the other colors.
+static func _is_skin(c: Color, skin: Color) -> bool:
+	if c.get_luminance() < skin.get_luminance() * 0.45:
+		return false
+	if skin.s < 0.2:
+		# A grey or pale skin has no real hue: its shades are the colors as grey as it.
+		return c.s < skin.s + 0.1 and c.get_luminance() < 0.95
+	var hue := absf(c.h - skin.h)
+	return minf(hue, 1.0 - hue) < 0.04 and absf(c.s - skin.s) < 0.25
+
+
+# A side eye looking ahead (to the right): white, a big dark pupil with a spark of light, and a
+# brow above it. Closed, a curved line.
 static func _eye(l: Layers, x: float, y: float, closed: bool) -> void:
 	if closed:
 		l.dot(x, y + 1, EYE)
+		l.dot(x + 1, y + 1.5, EYE)
+		l.dot(x + 2, y + 1, EYE)
+		return
+	for dx in 3:
+		l.shade(x + dx, y - 1.2, 0.45)
+	l.dot(x, y, Color.WHITE)
+	l.dot(x, y + 1, Color.WHITE)
+	l.dot(x + 1, y, Color.WHITE)
+	l.dot(x + 2, y, EYE)
+	l.dot(x + 1, y + 1, EYE)
+	l.dot(x + 2, y + 1, EYE)
+
+
+# An eye seen from the front: a dark round pupil with a spark of light, under a brow.
+static func _front_eye(l: Layers, x: float, y: float, closed: bool) -> void:
+	if closed:
+		l.dot(x, y + 1, EYE)
 		l.dot(x + 1, y + 1, EYE)
-	else:
-		l.dot(x, y, Color.WHITE)
-		l.dot(x + 1, y, EYE)
-		l.dot(x, y + 1, Color.WHITE)
-		l.dot(x + 1, y + 1, EYE)
+		return
+	l.shade(x, y - 1.2, 0.45)
+	l.shade(x + 1, y - 1.2, 0.45)
+	l.dot(x, y, Color.WHITE)
+	l.dot(x + 1, y, EYE)
+	l.dot(x, y + 1, EYE)
+	l.dot(x + 1, y + 1, EYE)
 
 
 static func _toes(l: Layers, x: float, y: float, steps: Array) -> void:
@@ -273,22 +342,23 @@ static func _quad(l: Layers, sp: Dictionary, info: Dictionary, f: Array, directi
 			l.part([l.ellipse(cx, 17 + y, 3, 2.2)], accent.darkened(0.1), 1, 1)
 		if roar:
 			l.part([l.ellipse(cx, 24 + y, 2.5, 1.5)], MOUTH, 0, 0)
-		for x in [cx - 4, cx + 3]:
-			l.dot(x, 13 + y, Color.WHITE if not sleep else skin)
-			l.dot(x, 14 + y, EYE)
+		for x in [cx - 5, cx + 3]:
+			_front_eye(l, x, 13 + y, sleep)
 		return
 	# A small head low in front of the body.
 	var hy := 25 if armor else 23
 	l.part([l.ellipse(cx, hy + y, 6 if armor else 4.5, 4)], skin)
 	l.part([l.ellipse(cx, hy + 2.5 + y, 2.5, 1.5)], MOUTH if roar else BEAK, 0, 0)
-	for x in [cx - 3, cx + 2]:
-		l.dot(x, hy - 2 + y, Color.WHITE if not sleep else skin)
-		l.dot(x, hy - 1 + y, EYE)
+	for x in [cx - 4, cx + 2]:
+		_front_eye(l, x, hy - 2 + y, sleep)
 
 
-# A straight heavy leg from the shoulder or the hip down to a round foot on the ground.
+# A heavy leg: a round thigh at the shoulder or the hip, a shin narrowing down to the ankle, and a
+# wide round foot on the ground.
 static func _pillar(l: Layers, top: Vector2, foot_x: float, ground: int, thick := 3.4) -> PackedByteArray:
-	return _union([l.limb(top, Vector2(foot_x, ground - 3), thick, thick * 0.85), l.ellipse(foot_x + 0.5, ground - 1.2, thick + 0.6, 1.8)])
+	var thigh := l.ellipse(top.x + (foot_x - top.x) * 0.2, top.y + thick * 0.6, thick * 1.25, thick * 1.2)
+	var shin := l.limb(top + Vector2(0, thick), Vector2(foot_x, ground - 3), thick * 0.95, thick * 0.75)
+	return _union([thigh, shin, l.ellipse(foot_x + 0.5, ground - 1.2, thick + 0.6, 1.8)])
 
 
 # --- Big meat eaters: T-Rex, carnotaurus, dilophosaurus, yutyrannus, spinosaurus --------------
