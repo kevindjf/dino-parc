@@ -188,7 +188,7 @@ func _ride() -> void:
 		mount.sprite.flip_h = velocity.x < 0.0
 	sprite.texture = Art.hero("side", 0, look)
 	sprite.flip_h = mount.sprite.flip_h
-	sprite.position = Vector2(0, -mount.seat_height() + 6)
+	sprite.position = Vector2(0, -mount.seat_height() + 9)
 	# Always drawn over the saddle.
 	sprite.z_index = 1
 
@@ -279,10 +279,10 @@ func _drive() -> void:
 	var back := 0.0 if direction != "side" else (2.0 if left else -2.0)
 	match vehicle:
 		"bike":
-			sprite.position = Vector2(back, -6)
+			sprite.position = Vector2(back, -4)
 			sprite.z_index = 1
 		"moto":
-			sprite.position = Vector2(back, -7)
+			sprite.position = Vector2(back, -5)
 			sprite.z_index = 1
 		"car":
 			# Drawn behind the car: only the head shows over the door.
@@ -310,7 +310,7 @@ func _animate(delta: float, holding: String) -> void:
 		tool_sprite.texture = Art.resource(holding)
 		var side := -1.0 if facing == Vector2i.LEFT else 1.0
 		tool_sprite.flip_h = side < 0.0
-		tool_sprite.position = Vector2(5.0 * side, -6.0) if facing.x != 0 else Vector2(6, -5)
+		tool_sprite.position = Vector2(5.0 * side, -10.0) if facing.x != 0 else Vector2(7, -9)
 		tool_sprite.offset = Vector2(-13 if side < 0.0 else -3, -14)
 		tool_sprite.rotation = side * (-0.9 + 2.2 * (1.0 - swing / 0.25)) if swing > 0.0 else 0.0
 	# Draw the tool behind the character when it faces away.
