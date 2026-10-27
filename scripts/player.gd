@@ -47,10 +47,11 @@ func setup(owner_park: Node2D, player_look: Dictionary, at: Vector2) -> void:
 	tool_sprite.scale = Vector2(0.75, 0.75)
 	tool_sprite.visible = false
 	add_child(tool_sprite)
-	shadow = Art.sprite(Art.shadow(26))
+	# The shadow on the ground: small under the feet, bigger under the helicopter.
+	shadow = Art.sprite(Art.shadow(12))
 	shadow.centered = true
 	shadow.offset = Vector2.ZERO
-	shadow.visible = false
+	shadow.z_index = -1
 	add_child(shadow)
 	vehicle_sprite = Sprite2D.new()
 	vehicle_sprite.centered = false
@@ -164,6 +165,7 @@ func mount_on(dino: Node2D) -> void:
 	position = dino.position
 	velocity = Vector2.ZERO
 	tool_sprite.visible = false
+	shadow.visible = false
 	_ride()
 
 
@@ -174,6 +176,7 @@ func get_off(at: Vector2) -> void:
 	position = at
 	sprite.position = Vector2.ZERO
 	sprite.z_index = 0
+	shadow.visible = true
 
 
 # The dinosaur stays right under the character; the character sits on its saddle.
@@ -219,6 +222,7 @@ func board(id: String) -> void:
 	tool_sprite.visible = false
 	vehicle_sprite.visible = true
 	shadow.visible = id == "heli"
+	shadow.texture = Art.shadow(26)
 	_drive()
 
 
@@ -228,7 +232,9 @@ func leave_vehicle() -> void:
 	altitude = 0.0
 	velocity = Vector2.ZERO
 	vehicle_sprite.visible = false
-	shadow.visible = false
+	shadow.visible = true
+	shadow.texture = Art.shadow(12)
+	shadow.scale = Vector2.ONE
 	sprite.visible = true
 	sprite.position = Vector2.ZERO
 	sprite.z_index = 0

@@ -223,6 +223,7 @@ func _place_sprites() -> void:
 	for c in solid:
 		if solid[c] == "tree":
 			var tree := Art.sprite(Art.border_tree(rng.randi() % 3))
+			Art.ground_shadow(tree, 22)
 			tree.position = Vector2((c.x + 0.5) * T + rng.randi_range(-2, 2), (c.y + 1) * T + 2)
 			add_child(tree)
 	var sign := _stand(Art.signpost(), Vector2i(SIZE.x - 4, ROAD - 1), Vector2i.ONE)
@@ -233,6 +234,8 @@ func _place_sprites() -> void:
 func _stand(texture: Texture2D, origin: Vector2i, size: Vector2i) -> Sprite2D:
 	var node := Art.sprite(texture)
 	node.position = Vector2((origin.x + size.x / 2.0) * T, (origin.y + size.y) * T - 1)
+	if texture.get_width() > 16:
+		Art.ground_shadow(node, int(texture.get_width() * 0.85))
 	add_child(node)
 	return node
 
@@ -269,6 +272,10 @@ class Villager extends Node2D:
 			"crest": Color.from_hsv(rng.randf(), 0.6, 0.7)}
 		var spots: Array = village.paths.keys()
 		position = village.cell_center(spots[rng.randi() % spots.size()])
+		var shadow := Art.sprite(Art.shadow(11))
+		shadow.centered = true
+		shadow.offset = Vector2.ZERO
+		add_child(shadow)
 		sprite = Art.sprite(Art.dino_folk(kind, "down", 0, colors))
 		add_child(sprite)
 		bubble = WorldText.make(self, Vector2(0, -20), "", "bubble")

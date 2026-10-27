@@ -549,6 +549,7 @@ func _add_building(id: String, origin: Vector2i, fixed := false) -> Dictionary:
 		"feeder", "shop", "decor", "aviary", "gyro_station", "garage":
 			building.root = Art.sprite(Art.item(id))
 			building.root.position = foot
+			Art.ground_shadow(building.root, int(building.root.texture.get_width() * 0.8))
 			world.add_child(building.root)
 			match item.kind:
 				"feeder":
@@ -2472,6 +2473,7 @@ func _build_world() -> void:
 func _border_tree(cell: Vector2i, rng: RandomNumberGenerator) -> void:
 	var tree := Art.sprite(Art.border_tree(rng.randi() % 3))
 	tree.position = Vector2((cell.x + 0.5) * T + rng.randi_range(-2, 2), (cell.y + 1) * T + 4)
+	Art.ground_shadow(tree, 22)
 	world.add_child(tree)
 
 

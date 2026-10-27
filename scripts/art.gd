@@ -31,6 +31,17 @@ static func sprite(texture: Texture2D, anchor := Vector2(-1, -1)) -> Sprite2D:
 	return node
 
 
+# A soft shadow on the ground under a standing sprite (anchored at its feet), drawn under
+# everything that stands. The light comes from the top left, so it slips a little to the right.
+static func ground_shadow(node: Sprite2D, width: int) -> Sprite2D:
+	var shadow := Sprite2D.new()
+	shadow.texture = shadow(width)
+	shadow.position = Vector2(width * 0.12, -1)
+	shadow.z_index = -1
+	node.add_child(shadow)
+	return shadow
+
+
 static func _painter(size: Vector2i) -> Painter:
 	var p := Painter.new()
 	p.start(size)
@@ -987,6 +998,7 @@ static func dino_folk(kind: String, direction: String, frame: int, colors: Dicti
 		}
 		var image := Image.create(12, 18, false, Image.FORMAT_RGBA8)
 		_stamp(image, Vector2i.ZERO, rows, palette)
+		_volume(image)
 		return ImageTexture.create_from_image(image))
 
 
@@ -1142,7 +1154,43 @@ static func hero(direction: String, frame: int, colors: Dictionary) -> Texture2D
 		}
 		var image := Image.create(12, 19, false, Image.FORMAT_RGBA8)
 		_stamp(image, Vector2i.ZERO, rows, palette)
+		_volume(image)
 		return ImageTexture.create_from_image(image))
+
+
+# Gives volume to a flat pixel sprite, lit from the top left: every part (an arm, the body, the
+# head) becomes a little cylinder, light on its left, dark on its right, lit on top and darker at
+# the bottom. The outline, eyes, whites and tiny details are kept.
+static func _volume(image: Image) -> void:
+	var source: Image = image.duplicate()
+	var w := image.get_width()
+	var h := image.get_height()
+	var at := func(x: int, y: int) -> Color:
+		return source.get_pixel(x, y) if x >= 0 and y >= 0 and x < w and y < h else Color(0, 0, 0, 0)
+	var edge := func(c: Color) -> bool:
+		return c.a < 0.5 or c.is_equal_approx(OUTLINE)
+	for y in h:
+		var x := 0
+		while x < w:
+			var c: Color = at.call(x, y)
+			var length := 1
+			while x + length < w and at.call(x + length, y).is_equal_approx(c):
+				length += 1
+			if not edge.call(c) and c.get_luminance() > 0.12 and c.get_luminance() < 0.95 and length >= 3:
+				for i in length:
+					var shaded := c
+					if i == 0:
+						shaded = c.lightened(0.16)
+					elif i == length - 1:
+						shaded = c.darkened(0.24)
+					elif length >= 6 and i == length - 2:
+						shaded = c.darkened(0.1)
+					if edge.call(at.call(x + i, y - 1)):
+						shaded = shaded.lightened(0.1)
+					elif edge.call(at.call(x + i, y + 1)):
+						shaded = shaded.darkened(0.12)
+					image.set_pixel(x + i, y, shaded)
+			x += length
 
 
 static func _mirror(half: Array) -> Array:

@@ -202,6 +202,11 @@ func _place_sprites(look: int) -> void:
 	for x in [2, 8]:
 		var window := _stand(Art.furniture("window", look), Vector2i(x, 0), Vector2i(2, 1))
 		window.z_index = -5
+	var shadow := Art.sprite(Art.shadow(11))
+	shadow.centered = true
+	shadow.offset = Vector2.ZERO
+	shadow.position = cell_center(resident_cell) + Vector2(0, T / 2.0 - 1)
+	add_child(shadow)
 	resident_sprite = Art.sprite(Art.dino_folk(resident.kind, "down", 0, resident.colors))
 	resident_sprite.position = cell_center(resident_cell) + Vector2(0, T / 2.0 - 1)
 	add_child(resident_sprite)
