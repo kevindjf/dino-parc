@@ -18,24 +18,26 @@ const WOOD := {
 }
 
 
-static func _big(image: Image) -> Image:
-	image.resize(image.get_width() * SCALE, image.get_height() * SCALE, Image.INTERPOLATE_NEAREST)
+static func _big(image: Image, scale: int) -> Image:
+	image.resize(image.get_width() * scale, image.get_height() * scale, Image.INTERPOLATE_NEAREST)
 	return image
 
 
-static func _style(image: Image, margins: Array, content: Array) -> StyleBoxTexture:
+# content: the room around what is inside, in screen pixels, frame included.
+static func _style(image: Image, margins: Array, content: Array, scale := SCALE) -> StyleBoxTexture:
 	var box := StyleBoxTexture.new()
-	box.texture = ImageTexture.create_from_image(_big(image))
+	box.texture = ImageTexture.create_from_image(_big(image, scale))
 	for i in 4:
-		box.set_texture_margin(i, margins[i] * SCALE)
+		box.set_texture_margin(i, margins[i] * scale)
 		box.set_content_margin(i, content[i])
 	box.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE_FIT
 	box.axis_stretch_vertical = StyleBoxTexture.AXIS_STRETCH_MODE_TILE_FIT
 	return box
 
 
-# A window: a frame of wood around a sheet of parchment, a nail in each corner.
-static func panel() -> StyleBoxTexture:
+# A window: a frame of wood around a sheet of parchment, a nail in each corner. compact: less
+# room inside and a thinner frame, for the small labels over the game.
+static func panel(compact := false) -> StyleBoxTexture:
 	var n := 20
 	var image := Image.create(n, n, false, Image.FORMAT_RGBA8)
 	var wood: Color = WOOD.normal
@@ -67,6 +69,8 @@ static func panel() -> StyleBoxTexture:
 			image.set_pixel(x, y, c)
 	for corner in [Vector2i(2, 2), Vector2i(n - 3, 2), Vector2i(2, n - 3), Vector2i(n - 3, n - 3)]:
 		image.set_pixel(corner.x, corner.y, Color("e8d8b0"))
+	if compact:
+		return _style(image, [5, 5, 5, 5], [14, 10, 14, 10], 2)
 	return _style(image, [5, 5, 5, 5], [16, 14, 16, 14])
 
 

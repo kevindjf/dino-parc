@@ -74,33 +74,59 @@ func setup(owner_park: Node2D, player_inventory: RefCounted, player_name: String
 
 # --- Layout -----------------------------------------------------------------
 
+# Over the game, small things in the corners instead of a big bar: who you are, your hearts and
+# coins on a little sheet at the top left with the goal under it, and the buttons at the top right.
 func _build_top(player_name: String) -> void:
-	var top := PanelContainer.new()
-	top.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	top.offset_left = 8
-	top.offset_right = -8
-	top.offset_top = 8
-	root.add_child(top)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 20)
-	top.add_child(row)
-	name_label = _label(row, player_name, 20)
+	var corner := VBoxContainer.new()
+	corner.position = Vector2(8, 8)
+	corner.add_theme_constant_override("separation", 4)
+	corner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(corner)
+	var status := _sheet(corner)
+	var lines := VBoxContainer.new()
+	lines.add_theme_constant_override("separation", 0)
+	status.add_child(lines)
+	var first := HBoxContainer.new()
+	first.add_theme_constant_override("separation", 10)
+	lines.add_child(first)
+	name_label = _label(first, player_name, 17)
 	name_label.add_theme_color_override("font_color", Color("2a6a2a"))
 	hearts_row = HBoxContainer.new()
-	hearts_row.add_theme_constant_override("separation", 2)
-	row.add_child(hearts_row)
-	money_label = _label(row, "", 18)
-	visitors_label = _label(row, "", 14)
-	goal_label = _label(row, "", 15)
-	goal_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hearts_row.add_theme_constant_override("separation", 1)
+	first.add_child(hearts_row)
+	var second := HBoxContainer.new()
+	second.add_theme_constant_override("separation", 14)
+	lines.add_child(second)
+	money_label = _label(second, "", 15)
+	money_label.add_theme_color_override("font_color", Color("8a5a00"))
+	visitors_label = _label(second, "", 13)
+	var note := _sheet(corner)
+	note.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	goal_label = _label(note, "", 13)
+	goal_label.custom_minimum_size.x = 300
 	goal_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	goal_label.add_theme_color_override("font_color", Color("b03018"))
-	_button(row, "Sac", 80, toggle_bag)
-	_button(row, "Mes dinos", 110, toggle_pocket)
-	_button(row, "Dinodex", 100, toggle_dex)
-	_button(row, "Menu", 80, park.back_to_menu)
-	_button(row, "Zoom −", 80, func() -> void: park.camera.zoom_step(-1))
-	_button(row, "Zoom +", 80, func() -> void: park.camera.zoom_step(1))
+
+	var buttons := HBoxContainer.new()
+	buttons.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	buttons.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	buttons.offset_right = -8
+	buttons.offset_top = 8
+	buttons.add_theme_constant_override("separation", 6)
+	root.add_child(buttons)
+	for entry in [["Sac", 64, toggle_bag], ["Mes dinos", 104, toggle_pocket], ["Dinodex", 92, toggle_dex], ["Menu", 72, park.back_to_menu],
+			["−", 44, func() -> void: park.camera.zoom_step(-1)], ["+", 44, func() -> void: park.camera.zoom_step(1)]]:
+		var button := _button(buttons, entry[0], entry[1], entry[2])
+		button.custom_minimum_size.y = 44
+
+
+# A small sheet of parchment over the game.
+func _sheet(parent: Control) -> PanelContainer:
+	var sheet := PanelContainer.new()
+	sheet.add_theme_stylebox_override("panel", Hud.UiSkin.panel(true))
+	sheet.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(sheet)
+	return sheet
 
 
 func _build_controls() -> void:
@@ -208,7 +234,7 @@ func _build_message() -> void:
 	message_panel = PanelContainer.new()
 	message_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	message_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	message_panel.offset_top = 90
+	message_panel.offset_top = 64
 	message_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	message_panel.modulate.a = 0.0
 	root.add_child(message_panel)
@@ -694,7 +720,7 @@ func flash(text: String, duration := 1.5) -> void:
 
 func update_stats(money: int, on_site: int, total: int, _attraction: int) -> void:
 	money_label.text = "Pièces : %d" % money
-	visitors_label.text = "Visiteurs : %d\n(total %d)" % [on_site, total]
+	visitors_label.text = "Visiteurs : %d (total %d)" % [on_site, total]
 
 
 # The player's hearts: full ones, then empty ones.
@@ -704,7 +730,7 @@ func set_hearts(full: int, total: int) -> void:
 			child.queue_free()
 		for i in total:
 			var heart := TextureRect.new()
-			heart.custom_minimum_size = Vector2(24, 24)
+			heart.custom_minimum_size = Vector2(20, 20)
 			heart.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			heart.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			hearts_row.add_child(heart)
