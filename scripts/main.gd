@@ -195,6 +195,7 @@ func start_creative(demo: bool) -> void:
 	add_child(hud)
 	hud.tool_selected.connect(_on_tool_selected)
 	hud.zoom_requested.connect(camera.zoom_step)
+	camera.remember("creative", 2)
 	hud.exit_vehicle.connect(stop_driving)
 	hud.menu_requested.connect(back_to_menu)
 	hud.pen_toggled.connect(func(on: bool) -> void: pen = on)
@@ -253,8 +254,7 @@ func start_adventure(data: Dictionary) -> void:
 	world.add_child(sign)
 	WorldText.make(sign, Vector2(0, -24), "← Village", "bubble", Color("2a7a3a"))
 	camera.position = start
-	camera.zoom_index = 3
-	camera._apply_zoom()
+	camera.remember("adventure", 3)
 	camera.follow(player)
 	_refresh()
 	if data.is_empty():
@@ -2463,6 +2463,9 @@ func _build_world() -> void:
 	world_bounds = Rect2(-Vector2.ONE * BORDER * T, size + Vector2.ONE * BORDER * T * 2)
 	camera.setup(cell_center(ENTRANCE + Vector2i(14, 0)), world_bounds)
 	camera.make_current()
+	camera.zoomed.connect(func(level: int) -> void:
+		if hud != null:
+			hud.flash("Zoom ×%d" % level))
 
 	ghost = Node2D.new()
 	ghost.z_index = 20

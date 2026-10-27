@@ -2,11 +2,15 @@ extends Camera2D
 
 # The camera: the wheel, a pinch or the HUD buttons zoom (whole steps, so pixels stay square),
 # arrows / ZQSD, a two-finger swipe or a middle-button drag move around.
-# When driving, it follows the vehicle.
+# When driving, it follows the vehicle. The zoom chosen is kept on the device, one per game mode.
+
+signal zoomed(level: int)
 
 const ZOOMS := [1, 2, 3, 4, 5, 6]
+const ZOOM_FILE := "user://zoom.json"
 
 var zoom_index := 2
+var memory := ""  # the game mode whose zoom is kept, "" to keep nothing
 var bounds := Rect2()
 var follow_target: Node2D = null
 var pinch := 1.0
@@ -19,8 +23,30 @@ func setup(center: Vector2, area: Rect2) -> void:
 
 
 func zoom_step(direction: int) -> void:
-	zoom_index = clampi(zoom_index + direction, 0, ZOOMS.size() - 1)
+	var index := clampi(zoom_index + direction, 0, ZOOMS.size() - 1)
+	if index == zoom_index:
+		return
+	zoom_index = index
 	_apply_zoom()
+	zoomed.emit(ZOOMS[zoom_index])
+	if memory != "":
+		var saved := _saved()
+		saved[memory] = zoom_index
+		var file := FileAccess.open(ZOOM_FILE, FileAccess.WRITE)
+		if file != null:
+			file.store_string(JSON.stringify(saved))
+
+
+# Uses the zoom kept for this game mode, or `default_index` the first time.
+func remember(mode: String, default_index: int) -> void:
+	memory = mode
+	zoom_index = clampi(int(_saved().get(mode, default_index)), 0, ZOOMS.size() - 1)
+	_apply_zoom()
+
+
+func _saved() -> Dictionary:
+	var data = JSON.parse_string(FileAccess.get_file_as_string(ZOOM_FILE)) if FileAccess.file_exists(ZOOM_FILE) else null
+	return data if data is Dictionary else {}
 
 
 func follow(target: Node2D) -> void:
