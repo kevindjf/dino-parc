@@ -209,7 +209,7 @@ func _place_sprites() -> void:
 		# Every other house shows its left side, so the streets do not look copied.
 		house.flip_h = i % 2 == 1
 	var stall := _stand(Art.market_stall(), SHOP, SHOP_SIZE)
-	shop_label = WorldText.make(stall, Vector2(0, -70), "Boutique", "bubble", Color("2860c0"))
+	shop_label = WorldText.make(stall, Vector2(0, -70), "Boutique", "sign")
 	_stand(Art.well(), WELL, Vector2i(2, 2))
 	for i in RUINS.size():
 		var corner: Vector2i = RUINS[i]
@@ -227,7 +227,7 @@ func _place_sprites() -> void:
 			tree.position = Vector2((c.x + 0.5) * T + rng.randi_range(-2, 2), (c.y + 1) * T + 2)
 			add_child(tree)
 	var sign := _stand(Art.signpost(), Vector2i(SIZE.x - 4, ROAD - 1), Vector2i.ONE)
-	WorldText.make(sign, Vector2(0, -24), "Parc →", "bubble", Color("2a7a3a"))
+	WorldText.make(sign, Vector2(0, -24), "Parc →", "sign")
 
 
 # A standing sprite, its bottom center at the bottom middle of its cells.

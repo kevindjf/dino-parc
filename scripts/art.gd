@@ -2100,17 +2100,20 @@ static func well() -> Texture2D:
 		return p.finish())
 
 
-# A wooden sign by the road: a rough post and a plank arrow, 16 x 24 pixels.
+# A wooden sign by the road, drawn in parts: a rough post planted in a tuft of grass and a plank
+# arrow nailed on it. 16 x 24 pixels.
 static func signpost() -> Texture2D:
 	return cached("signpost", func() -> Texture2D:
-		var p := _painter(Vector2i(16, 24))
-		p.box(Rect2(6.5, 8, 3, 15), LOG[1], true)
-		p.flat(Rect2(7, 9, 1, 13), LOG[0])
-		p.polygon(PackedVector2Array([Vector2(1, 3), Vector2(12, 3), Vector2(15, 6.5), Vector2(12, 10), Vector2(1, 10)]), LOG[2], true)
-		p.flat(Rect2(2, 5, 10, 1), LOG[1])
-		p.flat(Rect2(2, 8, 10, 1), LOG[1])
-		p.dot(Vector2(3, 6.5), LOG[0])
-		return p.finish())
+		var l := Layers.new(Vector2i(16, 24))
+		l.part([l.box(6.5, 7, 3, 16)], LOG[1], 0, 1)
+		l.dot(7, 12, LOG[0])
+		l.dot(8, 17, LOG[0])
+		l.part([l.poly([Vector2(1, 3), Vector2(11, 3), Vector2(15, 6.5), Vector2(11, 10), Vector2(1, 10)])], LOG[2], 1, 1)
+		l.part([l.box(2, 6, 9, 1)], LOG[1], 0, 0, false)
+		for nail in [Vector2(3, 4.5), Vector2(3, 8.5)]:
+			l.dot(nail.x, nail.y, LOG[0])
+		l.part([l.ellipse(5, 23, 3, 1.5), l.ellipse(11, 23, 2.5, 1.3)], LEAVES[2], 1, 0)
+		return _texture(l, 30))
 
 
 # --- What the character drives in the adventure ------------------------------------------

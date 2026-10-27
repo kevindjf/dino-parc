@@ -252,7 +252,7 @@ func start_adventure(data: Dictionary) -> void:
 	sign.position = Vector2(-1.5 * T, ENTRANCE.y * T - 1)
 	sign.flip_h = true
 	world.add_child(sign)
-	WorldText.make(sign, Vector2(0, -24), "← Village", "bubble", Color("2a7a3a"))
+	WorldText.make(sign, Vector2(0, -24), "← Village", "sign")
 	camera.position = start
 	camera.remember("adventure", 1)
 	camera.follow(player)
