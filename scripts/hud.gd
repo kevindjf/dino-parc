@@ -1,6 +1,7 @@
 extends CanvasLayer
 
-# The interface, in the style of the white boxes with a blue border of the old handheld games.
+# The interface, rustic like the world: parchment windows in wooden frames and plank buttons
+# (drawn in ui_skin.gd).
 
 signal tool_selected(id: String)
 signal zoom_requested(direction: int)
@@ -11,8 +12,8 @@ signal undo_requested
 
 const Catalog := preload("res://scripts/catalog.gd")
 const Art := preload("res://scripts/art.gd")
-const INK := Color("303040")
-const FRAME := Color("405878")
+const UiSkin := preload("res://scripts/ui_skin.gd")
+const INK := UiSkin.INK
 
 var money_label: Label
 var visitors_label: Label
@@ -53,43 +54,38 @@ func _ready() -> void:
 	message_panel.add_child(message_label)
 
 
-static func _box(fill: Color, border: Color, width := 3, radius := 8) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = fill
-	box.border_color = border
-	box.set_border_width_all(width)
-	box.set_corner_radius_all(radius)
-	box.set_content_margin_all(8)
-	box.shadow_color = Color(0, 0, 0, 0.25)
-	box.shadow_size = 2
-	box.shadow_offset = Vector2(0, 2)
-	return box
-
-
 static func make_theme() -> Theme:
 	var theme := Theme.new()
 	theme.default_font_size = 15
-	theme.set_stylebox("panel", "PanelContainer", _box(Color("f8f8f8"), FRAME, 4, 10))
-	var normal := _box(Color("f8f8f8"), Color("8898b0"), 2, 6)
-	normal.set_content_margin_all(4)
-	var hover := _box(Color("fff6c8"), FRAME, 2, 6)
-	hover.set_content_margin_all(4)
-	var pressed := _box(Color("c8dcf8"), Color("2860c0"), 3, 6)
-	pressed.set_content_margin_all(4)
-	theme.set_stylebox("normal", "Button", normal)
-	theme.set_stylebox("hover", "Button", hover)
-	theme.set_stylebox("pressed", "Button", pressed)
-	theme.set_stylebox("hover_pressed", "Button", pressed)
+	theme.set_stylebox("panel", "PanelContainer", UiSkin.panel())
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		theme.set_stylebox(state, "Button", UiSkin.button(state))
+	theme.set_stylebox("hover_pressed", "Button", UiSkin.button("pressed"))
 	theme.set_stylebox("focus", "Button", StyleBoxEmpty.new())
-	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color"]:
-		theme.set_color(state, "Button", INK)
+	# Letters carved in the wood: cream with a dark brown contour, golden on the chosen one.
+	for state in ["font_color", "font_hover_color", "font_focus_color"]:
+		theme.set_color(state, "Button", UiSkin.CREAM)
+	for state in ["font_pressed_color", "font_hover_pressed_color"]:
+		theme.set_color(state, "Button", Color("ffe48a"))
+	theme.set_color("font_disabled_color", "Button", Color("e0d8c8"))
+	theme.set_color("font_outline_color", "Button", Color("3a2410"))
+	theme.set_constant("outline_size", "Button", 4)
 	theme.set_color("font_color", "Label", INK)
-	var field := _box(Color.WHITE, Color("8898b0"), 2, 6)
-	var field_focus := _box(Color.WHITE, Color("2860c0"), 3, 6)
-	theme.set_stylebox("normal", "LineEdit", field)
-	theme.set_stylebox("focus", "LineEdit", field_focus)
+	theme.set_stylebox("normal", "LineEdit", UiSkin.field(false))
+	theme.set_stylebox("focus", "LineEdit", UiSkin.field(true))
 	theme.set_color("font_color", "LineEdit", INK)
-	theme.set_color("font_placeholder_color", "LineEdit", Color("98a0b0"))
+	theme.set_color("caret_color", "LineEdit", INK)
+	theme.set_color("font_placeholder_color", "LineEdit", Color("a08a68"))
+	for check in ["CheckButton", "CheckBox"]:
+		theme.set_color("font_color", check, INK)
+		theme.set_color("font_hover_color", check, INK)
+		theme.set_color("font_pressed_color", check, INK)
+		theme.set_color("font_hover_pressed_color", check, INK)
+	for bar in ["VScrollBar", "HScrollBar"]:
+		theme.set_stylebox("scroll", bar, UiSkin.bar(Color("d8c49c")))
+		theme.set_stylebox("grabber", bar, UiSkin.bar(UiSkin.WOOD.normal))
+		theme.set_stylebox("grabber_highlight", bar, UiSkin.bar(UiSkin.WOOD.hover))
+		theme.set_stylebox("grabber_pressed", bar, UiSkin.bar(UiSkin.WOOD.pressed))
 	return theme
 
 

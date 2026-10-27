@@ -85,7 +85,7 @@ func _build_top(player_name: String) -> void:
 	row.add_theme_constant_override("separation", 20)
 	top.add_child(row)
 	name_label = _label(row, player_name, 20)
-	name_label.add_theme_color_override("font_color", Color("2860c0"))
+	name_label.add_theme_color_override("font_color", Color("2a6a2a"))
 	hearts_row = HBoxContainer.new()
 	hearts_row.add_theme_constant_override("separation", 2)
 	row.add_child(hearts_row)
@@ -174,7 +174,7 @@ func _build_bag() -> void:
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_button(header, "Fermer", 110, toggle_bag)
 	var hint := _label(column, "Touche un objet pour le mettre dans la case choisie de ta barre d'outils.", 14)
-	hint.add_theme_color_override("font_color", Color("607080"))
+	hint.add_theme_color_override("font_color", Color("7a6248"))
 
 	var halves := HBoxContainer.new()
 	halves.add_theme_constant_override("separation", 16)
@@ -350,7 +350,7 @@ func toggle_dex() -> void:
 			("Volière" if Catalog.DINOS[id].habitat == "air" else "Lagon")
 		var hint := _label(cell, where, 11)
 		hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		hint.add_theme_color_override("font_color", Color("708090"))
+		hint.add_theme_color_override("font_color", Color("8a7258"))
 
 
 # --- The building mode ------------------------------------------------------------
@@ -469,7 +469,7 @@ func _build_pocket() -> void:
 	_button(header, "Fermer", 110, toggle_pocket)
 	var hint := _label(column, "Les dinos que tu as attrapés t'attendent ici. Touche « Relâcher », puis vise une case libre dans un enclos et appuie sur Action.", 14)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.add_theme_color_override("font_color", Color("607080"))
+	hint.add_theme_color_override("font_color", Color("7a6248"))
 	pocket_grid = GridContainer.new()
 	pocket_grid.columns = 5
 	pocket_grid.add_theme_constant_override("h_separation", 10)
@@ -631,7 +631,7 @@ func _buy_card(entry: Dictionary) -> void:
 		price.text = "Déjà à toi !"
 		price.disabled = true
 	elif park.money < entry.price:
-		price.modulate = Color(1, 1, 1, 0.5)
+		price.modulate = Color(0.72, 0.68, 0.64)  # too expensive: darker, but still readable
 
 
 func _sell_card(id: String) -> void:

@@ -39,7 +39,7 @@ func _ready() -> void:
 	title.add_theme_font_size_override("font_size", 84)
 	title.add_theme_color_override("font_color", Color("fff3c0"))
 	title.add_theme_constant_override("outline_size", 18)
-	title.add_theme_color_override("font_outline_color", Color("405878"))
+	title.add_theme_color_override("font_outline_color", Color("3a2410"))
 	column.add_child(title)
 
 	var dinos := HBoxContainer.new()
@@ -234,7 +234,7 @@ func _show_news(entries: Array) -> void:
 	scroll.add_child(lines)
 	for entry in entries:
 		var title := _label(lines, "Version %d : %s" % [entry.version, entry.title], 26)
-		title.add_theme_color_override("font_color", Color("2860c0"))
+		title.add_theme_color_override("font_color", Color("2a6a2a"))
 		for item in entry.items:
 			var row := HBoxContainer.new()
 			row.add_theme_constant_override("separation", 14)
@@ -292,7 +292,7 @@ func _heading(text: String) -> void:
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_color_override("font_color", Color("fff3c0"))
 	label.add_theme_constant_override("outline_size", 10)
-	label.add_theme_color_override("font_outline_color", Color("405878"))
+	label.add_theme_color_override("font_outline_color", Color("3a2410"))
 
 
 func _label(parent: Control, text: String, size: int) -> Label:

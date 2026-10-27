@@ -43,7 +43,9 @@ func _draw() -> void:
 	var fill := color.darkened(0.2) if held else color
 	draw_circle(center + Vector2(0, 3), radius, Color(0, 0, 0, 0.25))
 	draw_circle(center, radius, fill)
-	draw_arc(center, radius, 0, TAU, 48, Color("303040"), 3.0, true)
+	# A rim of wood around the coloured button, like the plank buttons of the interface.
+	draw_arc(center, radius - 2, 0, TAU, 48, Color("a86e3a"), 5.0, true)
+	draw_arc(center, radius, 0, TAU, 48, Color("2a1a0c"), 3.0, true)
 	draw_arc(center, radius - 5, PI * 1.1, PI * 1.6, 12, fill.lightened(0.4), 3.0, true)
 	var font := get_theme_default_font()
 	if icon:

@@ -41,7 +41,8 @@ func _update(at: Vector2) -> void:
 
 func _draw() -> void:
 	var center := size / 2.0
-	draw_circle(center, RADIUS + 6, Color(0.95, 0.97, 1.0, 0.35))
-	draw_arc(center, RADIUS + 6, 0, TAU, 48, Color("405878"), 3.0, true)
-	draw_circle(center + knob, 30, Color("f8f8f8"))
-	draw_arc(center + knob, 30, 0, TAU, 32, Color("405878"), 3.0, true)
+	draw_circle(center, RADIUS + 6, Color(0.95, 0.89, 0.74, 0.35))
+	draw_arc(center, RADIUS + 6, 0, TAU, 48, Color("2a1a0c"), 3.0, true)
+	draw_circle(center + knob, 30, Color("a86e3a"))
+	draw_arc(center + knob, 24, PI * 1.1, PI * 1.6, 12, Color("c89058"), 4.0, true)
+	draw_arc(center + knob, 30, 0, TAU, 32, Color("2a1a0c"), 3.0, true)

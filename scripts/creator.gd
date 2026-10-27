@@ -111,10 +111,10 @@ func _swatches(parent: Control, title: String, colors: Array, key: String) -> Co
 		var fill := StyleBoxFlat.new()
 		fill.bg_color = color
 		fill.set_corner_radius_all(8)
-		fill.border_color = Color("8898b0")
+		fill.border_color = Color("3a2410")
 		fill.set_border_width_all(2)
 		var chosen: StyleBoxFlat = fill.duplicate()
-		chosen.border_color = Color("2860c0")
+		chosen.border_color = Color("f0c040")
 		chosen.set_border_width_all(5)
 		button.add_theme_stylebox_override("normal", fill)
 		button.add_theme_stylebox_override("hover", fill)
