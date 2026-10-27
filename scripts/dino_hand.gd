@@ -12,8 +12,8 @@ const Layers := preload("res://scripts/layers.gd")
 # Colors not in the catalog: the frill, horns, claws.
 const SPECIES := {
 	"triceratops": {"side": Vector2i(52, 34), "front": Vector2i(32, 34), "feet": 24, "frill": Color("e8a040")},
-	"trex": {"side": Vector2i(66, 46), "front": Vector2i(36, 46), "feet": 31},
-	"velociraptor": {"side": Vector2i(40, 29), "front": Vector2i(20, 29), "feet": 18},
+	"trex": {"side": Vector2i(66, 46), "front": Vector2i(46, 46), "feet": 31},
+	"velociraptor": {"side": Vector2i(40, 29), "front": Vector2i(30, 29), "feet": 18},
 }
 const HORN := Color("f2e8cc")
 const BEAK := Color("6e6256")
@@ -177,42 +177,56 @@ static func _trex(l: Layers, sp: Dictionary, direction: String, frame: int, pose
 		if not sleep:
 			_trex_leg(l, Vector2(28, 28 + y), 28 - sw, g, skin)
 		return
+	# From the front and the back, the head is turned a little to the right (three-quarters), so
+	# the long snout full of teeth shows; the tail sticks out on the left.
 	var cx := l.size.x / 2.0
 	var y := bob
 	var lift: int = [0, 2, 0, 0][frame]
 	var lift2: int = [0, 0, 0, 2][frame]
-	if direction == "down":
-		for side in [-1, 1]:
-			var foot_y: int = g - (lift if side < 0 else lift2)
-			l.part([l.ellipse(cx + side * 7, 30 + y, 5, 6), l.limb(Vector2(cx + side * 7, 32 + y), Vector2(cx + side * 7, foot_y - 2), 3, 2.4), l.ellipse(cx + side * 7, foot_y - 1, 4, 1.8)], skin)
+	var dark := skin.darkened(0.72)
+	var front := direction == "down"
+	l.part([l.limb(Vector2(cx - 4, 30 + y), Vector2(cx - 15, 37), 5, 2.6), l.limb(Vector2(cx - 15, 37), Vector2(cx - 21, 43), 2.6, 1)], skin.darkened(0.1))
+	for side in [-1, 1]:
+		var foot_y: int = g - (lift if side < 0 else lift2)
+		l.part([l.ellipse(cx + side * 7, 31 + y, 5, 6), l.limb(Vector2(cx + side * 7, 33 + y), Vector2(cx + side * 7, foot_y - 2), 3, 2.4), l.ellipse(cx + side * 7, foot_y - 1, 4, 1.8)], skin)
+		if front:
 			_toes(l, cx + side * 7 - 2, foot_y, [0, 2, 4])
-		l.part([l.ellipse(cx, 25 + y, 11, 9)], skin)
-		l.part([l.ellipse(cx, 28 + y, 7, 5)], belly, 0, 1, false)
-		for side in [-1, 1]:
-			l.part([l.limb(Vector2(cx + side * 8, 24 + y), Vector2(cx + side * 8, 28 + y), 1.6, 1.1)], skin)
-		l.part([l.ellipse(cx, 11 + y, 11, 9)], skin)
-		l.part([l.ellipse(cx, 17 + y, 8, 5)], skin.darkened(0.08) if not roar else MOUTH)
-		if roar:
-			for x in [-5, -2, 1, 4]:
-				l.dot(cx + x, 14 + y, Color.WHITE)
-		else:
-			for x in range(-7, 7):
-				l.dot(cx + x, 16 + y, skin.darkened(0.72))
-			for x in [-6, -3, 2, 5]:
-				l.dot(cx + x, 17 + y, Color.WHITE)
-		for side in [-1, 1]:
-			_eye(l, cx + side * 7 - (1 if side < 0 else 0), 8 + y, sleep)
-		l.dot(cx - 2, 13 + y, skin.darkened(0.6))
-		l.dot(cx + 1, 13 + y, skin.darkened(0.6))
+	l.part([l.ellipse(cx, 26 + y, 11, 9)], skin)
+	if front:
+		l.part([l.ellipse(cx + 1, 29 + y, 7, 5)], belly, 0, 1, false)
+		for x in [-9, -6]:
+			l.part([l.limb(Vector2(cx + x, 21 + y), Vector2(cx + x + 1, 25 + y), 0.8, 0.5)], stripes, 0, 0, false)
 	else:
-		for side in [-1, 1]:
-			var foot_y: int = g - (lift if side < 0 else lift2)
-			l.part([l.ellipse(cx + side * 7, 30 + y, 5, 6), l.limb(Vector2(cx + side * 7, 32 + y), Vector2(cx + side * 7, foot_y - 2), 3, 2.4), l.ellipse(cx + side * 7, foot_y - 1, 4, 1.8)], skin)
-		l.part([l.ellipse(cx, 24 + y, 12, 10)], skin)
-		for row in [18, 22, 26]:
-			l.part([l.limb(Vector2(cx - 6, row + y), Vector2(cx + 6, row + y), 0.8, 0.8)], stripes, 0, 0, false)
-		l.part([l.ellipse(cx, 10 + y, 10, 8.5)], skin)
-		l.part([l.limb(Vector2(cx, 28 + y), Vector2(cx, g - 1), 6, 2)], skin)
+		for row in [20, 24, 28]:
+			l.part([l.limb(Vector2(cx - 7, row + y), Vector2(cx + 7, row + y - 1), 0.8, 0.8)], stripes, 0, 0, false)
+	# Tiny arms with two claws.
+	for x in [-6, 6]:
+		l.part([l.limb(Vector2(cx + x, 24 + y), Vector2(cx + x + 2, 28 + y), 1.6, 1.1)], skin)
+		l.dot(cx + x + 2, 29 + y, HORN)
+		l.dot(cx + x + 3, 29 + y, HORN)
+	l.part([l.ellipse(cx, 18 + y, 7, 6)], skin)
+	var open := 4 if roar else 0
+	if front:
+		# The lower jaw, then the head with its long snout.
+		l.part([l.poly([Vector2(cx - 5, 15 + y), Vector2(cx + 15, 16 + y + open), Vector2(cx + 13, 21 + y + open), Vector2(cx - 3, 21 + y)])], skin.darkened(0.1))
+		if roar:
+			l.part([l.poly([Vector2(cx - 3, 15 + y), Vector2(cx + 15, 14 + y), Vector2(cx + 14, 17 + y + open), Vector2(cx - 2, 18 + y)])], MOUTH, 0, 0, false)
+		l.part([l.ellipse(cx - 1, 10 + y, 9, 7.5), l.poly([Vector2(cx - 2, 5 + y), Vector2(cx + 13, 9 + y), Vector2(cx + 16, 13 + y), Vector2(cx + 15, 16 + y), Vector2(cx - 5, 16 + y)])], skin)
+		for x in range(-4, 16):
+			l.dot(cx + x, 16 + y, dark)
+		for x in [-1, 3, 7, 11]:
+			l.dot(cx + x, 17 + y + (open if roar else 0), Color.WHITE)
+			l.dot(cx + x + 1, 15 + y, Color.WHITE)
+		# Brow ridge and eyes: the near one big, the far one just a dot.
+		l.part([l.limb(Vector2(cx, 6 + y), Vector2(cx + 5, 6 + y), 1.1, 0.9)], skin.darkened(0.25), 0, 0, false)
+		_eye(l, cx + 2, 7 + y, sleep)
+		l.dot(cx - 7, 8 + y, EYE)
+		l.dot(cx + 14, 10 + y, skin.darkened(0.6))
+	else:
+		l.part([l.poly([Vector2(cx + 4, 7 + y), Vector2(cx + 15, 10 + y), Vector2(cx + 15, 15 + y), Vector2(cx + 4, 16 + y)])], skin.darkened(0.08))
+		l.part([l.ellipse(cx - 1, 10 + y, 9, 7.5)], skin)
+		for x in [-5, -1, 3]:
+			l.part([l.limb(Vector2(cx + x, 5 + y), Vector2(cx + x + 1, 8 + y), 0.6, 0.5)], stripes, 0, 0, false)
 
 
 static func _trex_leg(l: Layers, hip: Vector2, foot_x: float, g: int, color: Color) -> void:
@@ -258,34 +272,49 @@ static func _raptor(l: Layers, sp: Dictionary, direction: String, frame: int, po
 		if not sleep:
 			_raptor_leg(l, Vector2(16, 16 + y), 16 - sw, g, skin)
 		return
+	# From the front and the back: the head turned a little to the right, with its long snout, and
+	# the stiff tail held up on the left.
 	var cx := l.size.x / 2.0
 	var y := bob
 	var lift: int = [0, 1, 0, 0][frame]
 	var lift2: int = [0, 0, 0, 1][frame]
+	var front := direction == "down"
+	l.part([l.limb(Vector2(cx - 2, 16 + y), Vector2(cx - 13, 9 + y), 2.6, 0.9)], skin.darkened(0.1))
+	for x in [-11, -8, -5]:
+		l.dot(cx + x, 10 + y - x / 4, stripes)
 	for side in [-1, 1]:
 		var foot_y: int = g - (lift if side < 0 else lift2)
-		l.part([l.ellipse(cx + side * 3.5, 17 + y, 3, 4), l.limb(Vector2(cx + side * 3.5, 19 + y), Vector2(cx + side * 3.5, foot_y - 1), 1.8, 1.4), l.ellipse(cx + side * 3.5, foot_y - 0.5, 2.5, 1.2)], skin)
-		if direction == "down":
-			_toes(l, cx + side * 3.5 - 1, foot_y, [0, 2])
-	if direction == "down":
-		l.part([l.ellipse(cx, 14 + y, 6, 5)], skin)
-		l.part([l.ellipse(cx, 15 + y, 3.5, 3)], belly, 0, 1, false)
-		l.part([l.limb(Vector2(cx, 12 + y), Vector2(cx, 8 + y), 3, 3)], skin)
-		l.part([l.ellipse(cx, 5 + y, 5.5, 4.5)], skin)
-		l.part([l.ellipse(cx, 8 + y, 3, 2.5)], MOUTH if roar else skin.darkened(0.08))
-		l.part([l.poly([Vector2(cx - 2, 1 + y), Vector2(cx, -1 + y), Vector2(cx + 2, 1 + y)])], stripes, 0, 0)
-		_eye(l, cx - 4, 4 + y, sleep)
-		_eye(l, cx + 2, 4 + y, sleep)
-		for side in [-1, 1]:
-			l.part([l.limb(Vector2(cx + side * 5, 14 + y), Vector2(cx + side * 6, 17 + y), 1.2, 0.9)], skin)
+		l.part([l.ellipse(cx + side * 3.5, 18 + y, 3, 4), l.limb(Vector2(cx + side * 3.5, 20 + y), Vector2(cx + side * 3.5, foot_y - 1), 1.8, 1.4), l.ellipse(cx + side * 3.5, foot_y - 0.5, 2.5, 1.2)], skin)
+		if front:
+			l.dot(cx + side * 3.5 - 1, foot_y, HORN)
+			l.dot(cx + side * 3.5 + 1, foot_y, HORN)
+			# The big sickle claw, raised.
+			l.dot(cx + side * 3.5 + side * 2, foot_y - 2, HORN)
+	l.part([l.ellipse(cx, 15 + y, 6, 5)], skin)
+	if front:
+		l.part([l.ellipse(cx + 1, 17 + y, 3.5, 2.5)], belly, 0, 1, false)
+	for row in [12, 15]:
+		l.part([l.limb(Vector2(cx - 4, row + y), Vector2(cx - 2, row + y + 1), 0.6, 0.5)], stripes, 0, 0, false)
+	for x in [-5, 5]:
+		l.part([l.limb(Vector2(cx + x, 14 + y), Vector2(cx + x + 1, 18 + y), 1.2, 0.9)], skin)
+		l.dot(cx + x + 1, 19 + y, HORN)
+	l.part([l.limb(Vector2(cx, 12 + y), Vector2(cx + 1, 8 + y), 2.6, 2.4)], skin)
+	if front:
+		if roar:
+			l.part([l.poly([Vector2(cx + 1, 7 + y), Vector2(cx + 11, 7 + y), Vector2(cx + 10, 11 + y), Vector2(cx + 1, 10 + y)])], MOUTH, 0, 0)
+		l.part([l.ellipse(cx, 5.5 + y, 4.5, 3.8), l.poly([Vector2(cx, 3 + y), Vector2(cx + 9, 4.5 + y), Vector2(cx + 11, 7 + y), Vector2(cx + 1, 8.5 + y)])], skin)
+		if not roar:
+			for x in range(2, 11):
+				l.dot(cx + x, 7 + y, skin.darkened(0.72))
+			for x in [4, 7]:
+				l.dot(cx + x, 8 + y, Color.WHITE)
+		_eye(l, cx + 1, 4 + y, sleep)
+		l.dot(cx - 3, 5 + y, EYE)
 	else:
-		l.part([l.limb(Vector2(cx, 16 + y), Vector2(cx, g - 1), 2.5, 1.2)], skin)
-		l.part([l.ellipse(cx, 13 + y, 6.5, 5)], skin)
-		for row in [10, 13, 16]:
-			l.part([l.limb(Vector2(cx - 3, row + y), Vector2(cx + 3, row + y), 0.6, 0.6)], stripes, 0, 0, false)
-		l.part([l.limb(Vector2(cx, 11 + y), Vector2(cx, 7 + y), 3, 3)], skin)
-		l.part([l.ellipse(cx, 5 + y, 5, 4.5)], skin)
-		l.part([l.poly([Vector2(cx - 2, 1 + y), Vector2(cx, -1 + y), Vector2(cx + 2, 1 + y)])], stripes, 0, 0)
+		l.part([l.poly([Vector2(cx + 2, 3.5 + y), Vector2(cx + 10, 5 + y), Vector2(cx + 11, 7 + y), Vector2(cx + 2, 8.5 + y)])], skin.darkened(0.08))
+		l.part([l.ellipse(cx, 5.5 + y, 4.5, 3.8)], skin)
+	# A little crest of feathers on the head.
+	l.part([l.poly([Vector2(cx - 4, 3 + y), Vector2(cx - 2, 0), Vector2(cx + 1, 2 + y)])], stripes, 0, 0)
 
 
 static func _raptor_leg(l: Layers, hip: Vector2, foot_x: float, g: int, color: Color) -> void:
