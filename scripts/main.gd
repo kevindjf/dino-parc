@@ -2473,7 +2473,7 @@ func _build_world() -> void:
 func _border_tree(cell: Vector2i, rng: RandomNumberGenerator) -> void:
 	var tree := Art.sprite(Art.border_tree(rng.randi() % 3))
 	tree.position = Vector2((cell.x + 0.5) * T + rng.randi_range(-2, 2), (cell.y + 1) * T + 4)
-	Art.ground_shadow(tree, 22)
+	Art.ground_shadow(tree, 28)
 	world.add_child(tree)
 
 

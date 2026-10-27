@@ -7,6 +7,7 @@ const Painter := preload("res://scripts/painter.gd")
 const Catalog := preload("res://scripts/catalog.gd")
 const DinoArt := preload("res://scripts/dino_art.gd")
 const Items := preload("res://scripts/items.gd")
+const Layers := preload("res://scripts/layers.gd")
 const T := 16
 const OUTLINE := Color("283038")
 const WOOD := Color("9a6a40")
@@ -69,7 +70,8 @@ const GROUND := {
 	"marais": {"base": Color("7d8f52"), "dark": Color("5a6c3c"), "light": Color("9cae6c")},
 	"neige": {"base": Color("eef3fa"), "dark": Color("cbd8e8"), "light": Color("ffffff")},
 }
-const TUFT := [".d.d.", "d.d.d"]
+const TUFT := [".l..l", "ldl.d", "d.dd."]  # a tuft of grass: lit tips, dark at the foot
+const PEBBLE := [".oo.", "olbo", "obdo", ".oo."]
 const TALL_GRASS := ["..d...d.", ".dld.dld", "dlll.lll"]
 const FLOWER := [".p.", "pyp", ".p."]
 const REED := ["l.", "d.", "dl", "d.", "d."]
@@ -83,13 +85,13 @@ static func paint_biome(image: Image, at: Vector2i, biome: String, seed: int) ->
 	var palette := {"d": colors.dark, "l": colors.light}
 	match biome:
 		"prairie":
-			# Grass of two greens, a few tufts, sometimes a pebble.
+			# Grass of a few greens, tufts, sometimes a pebble.
 			for i in 10:
-				image.set_pixelv(at + Vector2i(rng.randi_range(0, 15), rng.randi_range(0, 15)), colors.base.darkened(0.08))
-			for i in rng.randi_range(1, 3):
+				image.set_pixelv(at + Vector2i(rng.randi_range(0, 15), rng.randi_range(0, 15)), colors.base.darkened(0.06))
+			for i in rng.randi_range(0, 2):
 				_stamp(image, at + Vector2i(rng.randi_range(0, 11), rng.randi_range(1, 13)), TUFT, palette)
-			if rng.randf() < 0.04:
-				_stamp(image, at + Vector2i(rng.randi_range(1, 12), rng.randi_range(1, 13)), ["ll.", "ddd"], {"l": STONES[3], "d": STONES[1]})
+			if rng.randf() < 0.025:
+				_stamp(image, at + Vector2i(rng.randi_range(1, 11), rng.randi_range(1, 11)), PEBBLE, {"o": STONES[1].darkened(0.3), "l": STONES[3], "b": STONES[2], "d": STONES[1]})
 			if rng.randf() < 0.08:
 				var petal: Color = [Color("f06060"), Color("ffffff"), Color("f8d030"), Color("b080f0")][rng.randi() % 4]
 				_stamp(image, at + Vector2i(rng.randi_range(1, 12), rng.randi_range(1, 12)), FLOWER, {"p": petal, "y": Color("f8e070")})
@@ -374,126 +376,142 @@ static func border_tree(variant: int) -> Texture2D:
 		return _round_tree([Color("4a8a30"), Color("3e7e2c"), Color("5a9a38")][variant % 3], variant))
 
 
-# A blob of leaves: a dark mass, then round clumps lighter towards the top left.
-static func _clumps(img: Image, center: Vector2, radius: Vector2, rng: RandomNumberGenerator, leaf: Color) -> void:
-	var dark := leaf.darkened(0.4)
-	for y in range(int(center.y - radius.y) - 1, int(center.y + radius.y) + 2):
-		for x in range(int(center.x - radius.x) - 1, int(center.x + radius.x) + 2):
-			if ((Vector2(x, y) + Vector2(0.5, 0.5) - center) / radius).length_squared() <= 1.0:
-				_put(img, x, y, dark)
-	for i in int(radius.x * radius.y * 0.5):
-		var a := rng.randf() * TAU
-		var r := sqrt(rng.randf()) * 0.85
-		var at := center + Vector2(cos(a), sin(a)) * radius * r
-		var size := rng.randf_range(1.6, 2.8)
-		# Clumps high on the left catch the sun, low ones stay in the shade.
-		var lit := ((at - center) / radius).dot(Vector2(-0.6, -0.8))
-		var color := leaf.lightened(0.25) if lit > 0.35 else (leaf if lit > -0.35 else leaf.darkened(0.2))
-		for dy in range(-3, 4):
-			for dx in range(-3, 4):
-				var d := Vector2(dx, dy).length()
-				if d <= size:
-					_put(img, int(at.x) + dx, int(at.y) + dy, color if d < size - 0.9 or dy > 0 else color.darkened(0.25))
+# Leaves, needles and bark get a little texture, like the scales of the dinosaurs: lighter and
+# darker pixels scattered in a regular pattern. Outlines, berries and flowers are kept.
+static func _speckle(image: Image, seed: int) -> Image:
+	for y in image.get_height():
+		for x in image.get_width():
+			var c := image.get_pixel(x, y)
+			if c.a < 0.5 or c.get_luminance() < 0.12 or c.get_luminance() > 0.85:
+				continue
+			var h := (x * 7 + y * 13 + seed * 5) % 23
+			if h == 0 or h == 11:
+				image.set_pixel(x, y, c.darkened(0.16))
+			elif h == 5:
+				image.set_pixel(x, y, c.lightened(0.18))
+	return image
 
 
-# A leafy tree: a trunk with bark and roots under a big round crown of clumps.
+static func _texture(layers: Layers, seed: int) -> Texture2D:
+	return ImageTexture.create_from_image(_speckle(layers.image, seed))
+
+
+# A leafy tree: a trunk with roots under a crown of round clumps, each with its own contour,
+# the back ones in the shade and the top ones in the sun. 38 x 46 pixels: taller than the
+# dinosaurs that walk under it.
+const TREE_SCALE := 1.35
+
+
 static func _round_tree(leaf: Color, seed := 0) -> Texture2D:
-	var p := _painter(Vector2i(28, 34))
+	var l := Layers.new(Vector2i((Vector2(28, 34) * TREE_SCALE).ceil()), TREE_SCALE)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 900 + seed
-	p.polygon(PackedVector2Array([Vector2(10, 33), Vector2(12, 20), Vector2(16, 20), Vector2(18, 33)]), LOG[1], true)
-	p.image.fill_rect(Rect2i(13, 22, 1, 10), LOG[0])
-	p.image.fill_rect(Rect2i(15, 24, 1, 6), LOG[2])
-	_clumps(p.image, Vector2(14, 13), Vector2(12, 10), rng, leaf)
-	return p.finish()
+	l.part([l.poly([Vector2(10.5, 33), Vector2(12, 20), Vector2(16, 20), Vector2(17.5, 33)]), l.limb(Vector2(11, 32), Vector2(7.5, 33), 1.3, 0.8), l.limb(Vector2(17, 32), Vector2(20.5, 33), 1.3, 0.8)], LOG[1], 0, 1)
+	for y in [23, 27, 30]:
+		l.dot(13, y, LOG[0])
+		l.dot(15, y + 1, LOG[0])
+	var jitter := func() -> Vector2:
+		return Vector2(rng.randf_range(-1, 1), rng.randf_range(-1, 1))
+	for c in [Vector3(7, 16, 6), Vector3(21, 16, 6), Vector3(14, 19, 7)]:
+		var at: Vector2 = Vector2(c.x, c.y) + jitter.call()
+		l.part([l.ellipse(at.x, at.y, c.z, c.z * 0.8)], leaf.darkened(0.18), 1, 2)
+	for c in [Vector3(7.5, 11, 6), Vector3(20.5, 11, 6), Vector3(14, 13, 7.5)]:
+		var at: Vector2 = Vector2(c.x, c.y) + jitter.call()
+		l.part([l.ellipse(at.x, at.y, c.z, c.z * 0.82)], leaf, 2, 2)
+	for c in [Vector3(11, 6, 5), Vector3(17.5, 6.5, 4.5)]:
+		var at: Vector2 = Vector2(c.x, c.y) + jitter.call()
+		l.part([l.ellipse(at.x, at.y, c.z, c.z * 0.85)], leaf.lightened(0.12), 2, 1)
+	return _texture(l, seed)
 
 
+# A fir: four tiers of needles, darker at the bottom, on a short trunk. 30 x 46 pixels.
 static func _pine() -> Texture2D:
-	var p := _painter(Vector2i(22, 34))
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 77
-	p.box(Rect2(9, 27, 4, 6), LOG[1], true)
+	var l := Layers.new(Vector2i((Vector2(22, 34) * TREE_SCALE).ceil()), TREE_SCALE)
 	var green := Color("2e6a40")
+	l.part([l.box(9, 26, 4, 7)], LOG[1], 0, 1)
 	for i in 4:
 		var y := 29.0 - i * 6.5
 		var w := 10.0 - i * 2.2
-		p.polygon(PackedVector2Array([Vector2(11 - w, y), Vector2(11, y - 11), Vector2(11 + w, y)]), green.lightened(i * 0.06), true)
-		# Needles: little lighter strokes on the left of each layer.
-		for k in 4:
-			var x := rng.randi_range(int(11 - w * 0.7), 11)
-			p.image.set_pixel(x, int(y) - rng.randi_range(2, 4), green.lightened(0.3 + i * 0.05))
-	return p.finish()
+		var color := green.lightened(i * 0.07)
+		l.part([l.poly([Vector2(11 - w, y), Vector2(11, y - 11), Vector2(11 + w, y), Vector2(11, y - 1.5)])], color, 1, 2)
+	return _texture(l, 3)
 
 
 static func _palm() -> Texture2D:
-	var p := _painter(Vector2i(28, 32))
+	var l := Layers.new(Vector2i(28, 32))
 	var trunk := Color("b08850")
 	for i in 5:
-		p.limb(Vector2(12 + i * 0.6, 30 - i * 4.5), Vector2(12.6 + i * 0.6, 26 - i * 4.5), 2.2, 2.0, trunk if i % 2 == 0 else trunk.darkened(0.12), true)
+		l.part([l.limb(Vector2(12 + i * 0.6, 30 - i * 4.5), Vector2(12.6 + i * 0.6, 26 - i * 4.5), 2.2, 2.0)], trunk if i % 2 == 0 else trunk.darkened(0.12), 1, 1)
 	var top := Vector2(15, 8)
-	for leaf in [Vector2(-12, 4), Vector2(-9, -5), Vector2(0, -7), Vector2(9, -5), Vector2(12, 5), Vector2(-4, 6), Vector2(5, 7)]:
-		p.limb(top, top + leaf, 2.4, 0.6, Color("4a8a30"), true)
-	p.ellipse(top + Vector2(-1, 2), Vector2(2, 2), Color("7a5030"))
-	p.ellipse(top + Vector2(2, 2), Vector2(2, 2), Color("8a6038"))
-	return p.finish()
+	for leaf in [Vector2(-12, 5), Vector2(12, 6), Vector2(-4, 7), Vector2(5, 8)]:
+		l.part([l.limb(top, top + leaf, 2.4, 0.6)], LEAVES[1], 1, 1)
+	for leaf in [Vector2(-10, -4), Vector2(0, -7), Vector2(10, -4)]:
+		l.part([l.limb(top, top + leaf, 2.4, 0.6)], LEAVES[2], 1, 1)
+	l.part([l.ellipse(top.x - 1.5, top.y + 2, 2, 2), l.ellipse(top.x + 1.5, top.y + 2.5, 2, 2)], Color("7a5030"), 1, 1)
+	return _texture(l, 4)
 
 
 static func _fern() -> Texture2D:
-	var p := _painter(Vector2i(20, 16))
+	var l := Layers.new(Vector2i(20, 16))
 	var base := Vector2(10, 15)
-	for leaf in [Vector2(-9, -5), Vector2(-5, -10), Vector2(0, -12), Vector2(5, -10), Vector2(9, -5)]:
-		p.limb(base, base + leaf, 2.0, 0.6, Color("3a7e34"), true)
-	return p.finish()
+	for leaf in [Vector2(-9, -5), Vector2(9, -5)]:
+		l.part([l.limb(base, base + leaf, 2.0, 0.6)], LEAVES[1], 1, 1)
+	for leaf in [Vector2(-5, -10), Vector2(0, -12), Vector2(5, -10)]:
+		l.part([l.limb(base, base + leaf, 2.0, 0.6)], LEAVES[2], 1, 1)
+	return _texture(l, 5)
 
 
 static func _bush(berries: bool) -> Texture2D:
-	var p := _painter(Vector2i(20, 16))
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 55
-	_clumps(p.image, Vector2(10, 9), Vector2(8.5, 6), rng, Color("3e8a3a"))
+	var l := Layers.new(Vector2i(20, 16))
+	var leaf := Color("3e8a3a")
+	for c in [Vector3(5, 10, 4.5), Vector3(15, 10, 4.5)]:
+		l.part([l.ellipse(c.x, c.y, c.z, c.z * 0.85)], leaf.darkened(0.15), 1, 2)
+	for c in [Vector3(10, 9, 5.5), Vector3(6.5, 7, 3.5), Vector3(13.5, 6.5, 3.5)]:
+		l.part([l.ellipse(c.x, c.y, c.z, c.z * 0.85)], leaf, 2, 2)
+	var image := _speckle(l.image, 6)
 	if berries:
-		for spot in [Vector2(5, 8), Vector2(9, 5), Vector2(13, 10), Vector2(15, 6), Vector2(8, 11)]:
-			p.dot(spot, Color("d8243e"), 2)
-			p.dot(spot + Vector2(-0.5, -0.5), Color("ff8a9a"))
-	return p.finish()
+		for spot in [Vector2i(5, 8), Vector2i(9, 5), Vector2i(13, 10), Vector2i(15, 6), Vector2i(8, 11)]:
+			image.fill_rect(Rect2i(spot, Vector2i(2, 2)), Color("d8243e"))
+			image.set_pixelv(spot, Color("ff8a9a"))
+			image.set_pixelv(spot + Vector2i(1, 1), Color("8a1426"))
+	return ImageTexture.create_from_image(image)
 
 
 static func _cactus() -> Texture2D:
-	var p := _painter(Vector2i(18, 26))
+	var l := Layers.new(Vector2i(18, 26))
 	var green := Color("5e9e3a")
-	p.limb(Vector2(4, 13), Vector2(4, 8), 2, 2, green, true)
-	p.limb(Vector2(4, 14), Vector2(8, 14), 2, 2, green, true)
-	p.limb(Vector2(14, 11), Vector2(14, 6), 2, 2, green, true)
-	p.limb(Vector2(14, 12), Vector2(10, 12), 2, 2, green, true)
-	p.limb(Vector2(9, 24), Vector2(9, 4), 3.3, 3, green, true)
-	for y in [7, 12, 17]:
-		p.dot(Vector2(8, y), green.lightened(0.4))
-	p.dot(Vector2(9, 2.5), Color("f06090"), 2)
-	return p.finish()
+	l.part([l.limb(Vector2(4, 13), Vector2(4, 8), 2, 2), l.limb(Vector2(4, 14), Vector2(8, 14), 2, 2)], green.darkened(0.08), 1, 1)
+	l.part([l.limb(Vector2(14, 11), Vector2(14, 6), 2, 2), l.limb(Vector2(14, 12), Vector2(10, 12), 2, 2)], green.darkened(0.08), 1, 1)
+	l.part([l.limb(Vector2(9, 24), Vector2(9, 4), 3.3, 3)], green, 1, 1)
+	for y in [7, 11, 15, 19]:
+		l.dot(8, y, green.lightened(0.45))
+		l.dot(10, y + 2, green.darkened(0.3))
+	l.part([l.ellipse(9, 2.5, 2, 1.6)], Color("f06090"), 1, 1)
+	return _texture(l, 7)
 
 
 static func _rock() -> Texture2D:
-	var p := _painter(Vector2i(18, 14))
-	p.ellipse(Vector2(9, 8), Vector2(8, 5.5), STONES[2])
-	p.polygon(PackedVector2Array([Vector2(3, 6), Vector2(8, 3), Vector2(12, 5), Vector2(7, 8)]), STONES[3])
-	p.line(Vector2(8, 8), Vector2(12, 11), STONES[1])
-	p.line(Vector2(12, 5), Vector2(15, 8), STONES[1])
-	for spot in [Vector2(4, 10), Vector2(5, 11), Vector2(14, 11)]:
-		p.dot(spot, LEAVES[2])
-	return p.finish()
+	var l := Layers.new(Vector2i(18, 14))
+	l.part([l.ellipse(9, 8, 8, 5.5)], STONES[2], 2, 2)
+	l.part([l.poly([Vector2(3, 7), Vector2(8, 3.5), Vector2(12, 5), Vector2(7, 8.5)])], STONES[3], 0, 0, false)
+	for p in [Vector2(9, 8), Vector2(10, 9), Vector2(11, 10), Vector2(13, 6), Vector2(14, 7)]:
+		l.dot(p.x, p.y, STONES[1])
+	for spot in [Vector2(4, 11), Vector2(5, 12), Vector2(14, 12), Vector2(6, 4)]:
+		l.dot(spot.x, spot.y, LEAVES[2])
+	return _texture(l, 8)
 
 
 static func _volcano() -> Texture2D:
-	var p := _painter(Vector2i(50, 46))
+	var l := Layers.new(Vector2i(50, 46))
 	var rock := Color("7a5236")
-	p.polygon(PackedVector2Array([Vector2(1, 44), Vector2(17, 10), Vector2(33, 10), Vector2(49, 44)]), rock)
-	p.polygon(PackedVector2Array([Vector2(1, 44), Vector2(17, 10), Vector2(24, 10), Vector2(16, 44)]), rock.darkened(0.15))
-	p.ellipse(Vector2(25, 10), Vector2(8, 2.5), Color("3a2418"))
-	p.ellipse(Vector2(25, 10.5), Vector2(6, 1.5), Color("ff8a20"))
+	l.part([l.poly([Vector2(1, 44), Vector2(17, 10), Vector2(33, 10), Vector2(49, 44)])], rock, 1, 2)
+	l.part([l.poly([Vector2(2, 44), Vector2(17.5, 11), Vector2(23, 11), Vector2(15, 44)])], rock.darkened(0.15), 0, 0, false)
+	l.part([l.ellipse(25, 10, 8, 2.5)], Color("3a2418"), 0, 0)
+	l.part([l.ellipse(25, 10.5, 6, 1.5)], Color("ff8a20"), 0, 0, false)
 	for lava in [[Vector2(21, 11), Vector2(17, 26)], [Vector2(28, 11), Vector2(32, 30)], [Vector2(25, 12), Vector2(26, 20)]]:
-		p.limb(lava[0], lava[1], 1.4, 0.8, Color("ff7020"))
-	p.ellipse(Vector2(10, 42), Vector2(4, 2), Color("5a8a3a"))
-	return p.finish()
+		l.part([l.limb(lava[0], lava[1], 1.4, 0.8)], Color("ff7020"), 1, 0)
+	l.part([l.ellipse(10, 42, 4, 2), l.ellipse(40, 42.5, 3, 1.6)], Color("5a8a3a"), 1, 1)
+	return _texture(l, 9)
 
 
 # The entrance of a mine, dug into a cliff: a dark hole held by a wooden frame, and rails coming

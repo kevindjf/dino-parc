@@ -223,7 +223,7 @@ func _place_sprites() -> void:
 	for c in solid:
 		if solid[c] == "tree":
 			var tree := Art.sprite(Art.border_tree(rng.randi() % 3))
-			Art.ground_shadow(tree, 22)
+			Art.ground_shadow(tree, 28)
 			tree.position = Vector2((c.x + 0.5) * T + rng.randi_range(-2, 2), (c.y + 1) * T + 2)
 			add_child(tree)
 	var sign := _stand(Art.signpost(), Vector2i(SIZE.x - 4, ROAD - 1), Vector2i.ONE)
