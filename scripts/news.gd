@@ -21,6 +21,11 @@ const ENTRIES := [
 			["feeder_meat", "Achète une mangeoire à viande pour les carnivores de ton parc."],
 			["pickaxe", "Plus besoin du bouton pour les portes et les échelles des mines : il suffit d'avancer."],
 			["car", "En vélo, en moto, en voiture ou en hélico, ton personnage se tourne dans le sens où il roule !"],
+			["dino:trex", "Tous les dinosaures sont redessinés à la main ! Tu les vois de face quand ils viennent vers toi."],
+			["bush", "Les arbres sont plus grands, la forêt plus touffue, et l'herbe plus douce."],
+			["meat", "La boutique du village est toute neuve, avec son marchand derrière le comptoir."],
+			["wood", "Nouveaux boutons en bois et fenêtres en parchemin. Tu vois mieux le jeu !"],
+			["dino:brachiosaurus", "Le jeu retient ton zoom : règle-le avec les boutons − et + en haut à droite."],
 		],
 	},
 	{
