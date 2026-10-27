@@ -21,7 +21,7 @@ const SPECIES := {
 	"ankylosaurus": {"plan": "quad", "k": 0.9},
 	"trex": {"plan": "theropod", "k": 1.0},
 	"carnotaurus": {"plan": "theropod", "k": 0.78},
-	"dilophosaurus": {"plan": "theropod", "k": 0.62},
+	"dilophosaurus": {"plan": "theropod", "k": 0.62, "top": 4},
 	"yutyrannus": {"plan": "theropod", "k": 0.84},
 	"spinosaurus": {"plan": "theropod", "k": 1.08, "top": 14},
 	"velociraptor": {"plan": "small", "k": 1.0, "head": "raptor"},
@@ -29,7 +29,7 @@ const SPECIES := {
 	"gallimimus": {"plan": "small", "k": 1.12, "head": "beak", "neck": 6, "top": 6},
 	"parasaurolophus": {"plan": "small", "k": 1.45, "head": "duck", "top": 5},
 	"diplodocus": {"plan": "sauropod", "k": 1.0},
-	"brachiosaurus": {"plan": "sauropod", "k": 1.0, "tall": true},
+	"brachiosaurus": {"plan": "sauropod", "k": 1.0, "tall": true, "top": 4},
 	"pteranodon": {"plan": "flyer", "k": 1.0, "crest": "long"},
 	"quetzalcoatlus": {"plan": "flyer", "k": 1.35, "crest": "short"},
 	"dimorphodon": {"plan": "flyer", "k": 0.72, "crest": "none"},
@@ -48,6 +48,9 @@ const PLANS := {
 	"mosasaur": {"side": Vector2i(90, 26), "anchor": Vector2(45, 13)},
 	"plesio": {"side": Vector2i(48, 32), "anchor": Vector2(22, 20)},
 }
+# Room left around every drawing (design units), so that a head going up while walking, a tail
+# or a wing tip is never cut by the edge of the picture.
+const MARGIN := 4
 const HORN := Color("f2e8cc")
 const BEAK := Color("6e6256")
 const EYE := Color("1e1612")
@@ -67,26 +70,26 @@ static func canvas(id: String, direction: String) -> Vector2i:
 	var info: Dictionary = SPECIES[id]
 	var plan: Dictionary = PLANS[info.plan]
 	var design: Vector2i = plan.side if direction == "side" else plan.front
-	return Vector2i(((Vector2(design) + Vector2(0, info.get("top", 0))) * info.k).ceil())
+	return Vector2i(((Vector2(design) + Vector2(MARGIN * 2, info.get("top", 0) + MARGIN)) * info.k).ceil())
 
 
 # Where the dinosaur stands (or the middle of its body for flyers and swimmers), in pixels.
 static func origin(id: String, direction: String) -> Vector2:
 	var info: Dictionary = SPECIES[id]
 	var plan: Dictionary = PLANS[info.plan]
-	var top: float = info.get("top", 0)
+	var shift := Vector2(MARGIN, info.get("top", 0) + MARGIN)
 	if plan.has("anchor"):
-		return (plan.anchor + Vector2(0, top)) * info.k
+		return (plan.anchor + shift) * info.k
 	if direction == "side":
-		return Vector2(plan.feet, plan.side.y + top) * info.k
-	return Vector2(plan.front.x / 2.0, plan.front.y + top) * info.k
+		return (Vector2(plan.feet, plan.side.y) + shift) * info.k
+	return (Vector2(plan.front.x / 2.0, plan.front.y) + shift) * info.k
 
 
 # pose: "walk" (frames 0 to 3), "roar" or "sleep". direction: "side", "down" or "up".
 static func draw(id: String, sp: Dictionary, direction: String, frame: int, pose := "walk") -> Image:
 	var info: Dictionary = SPECIES[id]
 	var plan: Dictionary = PLANS[info.plan]
-	var l := Layers.new(canvas(id, direction), info.k, Vector2(0, info.get("top", 0) * info.k))
+	var l := Layers.new(canvas(id, direction), info.k, Vector2(MARGIN, info.get("top", 0) + MARGIN) * info.k)
 	l.design = plan.side if direction == "side" else plan.front
 	var features: Array = sp.get("features", [])
 	var bob := -1 if frame % 2 == 1 else 0
