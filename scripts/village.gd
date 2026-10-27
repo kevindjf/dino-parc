@@ -209,7 +209,7 @@ func _place_sprites() -> void:
 		# Every other house shows its left side, so the streets do not look copied.
 		house.flip_h = i % 2 == 1
 	var stall := _stand(Art.market_stall(), SHOP, SHOP_SIZE)
-	shop_label = WorldText.make(stall, Vector2(0, -58), "Boutique", "bubble", Color("2860c0"))
+	shop_label = WorldText.make(stall, Vector2(0, -64), "Boutique", "bubble", Color("2860c0"))
 	_stand(Art.well(), WELL, Vector2i(2, 2))
 	for i in RUINS.size():
 		var corner: Vector2i = RUINS[i]
@@ -245,13 +245,13 @@ func _cells(origin: Vector2i, size: Vector2i) -> Array[Vector2i]:
 	return list
 
 
-# Someone of the village, strolling along the streets and greeting the player.
+# Someone of the village (a dinosaur in clothes), strolling along the streets and greeting the player.
 class Villager extends Node2D:
-	const SKIN := [Color("f1c27d"), Color("e0ac69"), Color("c68642"), Color("8d5524"), Color("ffdbac")]
-	const HAIR := [Color("2a1a10"), Color("5a3a1a"), Color("a0602a"), Color("e0c060"), Color("b0b0b8")]
+	const SCALES := [Color("c8a050"), Color("4a8ab0"), Color("d0b060"), Color("c05030"), Color("6a9a50"), Color("9a70b0")]
 	const GREETINGS := ["Bonjour !", "Salut !", "Il fait beau !", "Tu viens du parc ?", "As-tu vu la boutique ?"]
 
 	var village: Node2D
+	var kind := ""
 	var colors := {}
 	var sprite: Sprite2D
 	var target := Vector2.ZERO
@@ -264,13 +264,12 @@ class Villager extends Node2D:
 		village = owner
 		var rng := RandomNumberGenerator.new()
 		rng.seed = index * 31 + 5
-		colors = {"hair": HAIR[rng.randi() % HAIR.size()], "skin": SKIN[rng.randi() % SKIN.size()],
-			"shirt": Color.from_hsv(rng.randf(), 0.6, 0.9), "pants": [Color("37474f"), Color("3a5a9a"), Color("6d5a3a")][rng.randi() % 3]}
-		if index == 1:
-			colors.style = "long"
+		kind = Art.FOLK_KINDS[index % Art.FOLK_KINDS.size()]
+		colors = {"skin": SCALES[rng.randi() % SCALES.size()], "shirt": Color.from_hsv(rng.randf(), 0.5, 0.75),
+			"crest": Color.from_hsv(rng.randf(), 0.6, 0.7)}
 		var spots: Array = village.paths.keys()
 		position = village.cell_center(spots[rng.randi() % spots.size()])
-		sprite = Art.sprite(Art.person("down", 0, colors), Vector2(6, 16))
+		sprite = Art.sprite(Art.dino_folk(kind, "down", 0, colors))
 		add_child(sprite)
 		bubble = WorldText.make(self, Vector2(0, -20), "", "bubble")
 		_choose_target()
@@ -290,7 +289,7 @@ class Villager extends Node2D:
 			bubble.set_text(GREETINGS.pick_random())
 		if wait > 0.0:
 			wait -= delta
-			sprite.texture = Art.person("down", 0, colors)
+			sprite.texture = Art.dino_folk(kind, "down", 0, colors)
 			return
 		var to_target := target - position
 		if to_target.length() < 2.0:
@@ -303,10 +302,10 @@ class Villager extends Node2D:
 			return
 		position = next
 		walked += step.length()
-		var frame := int(walked / 5.0) % 2
+		var frame := int(walked / 4.0) % 4
 		if absf(to_target.x) > absf(to_target.y):
-			sprite.texture = Art.person("side", frame, colors)
+			sprite.texture = Art.dino_folk(kind, "side", frame, colors)
 			sprite.flip_h = to_target.x < 0.0
 		else:
-			sprite.texture = Art.person("down" if to_target.y > 0.0 else "up", frame, colors)
+			sprite.texture = Art.dino_folk(kind, "down" if to_target.y > 0.0 else "up", frame, colors)
 			sprite.flip_h = false

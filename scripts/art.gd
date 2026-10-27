@@ -52,8 +52,8 @@ static func _stamp(image: Image, at: Vector2i, rows: Array, palette: Dictionary)
 # --- Ground -----------------------------------------------------------------
 
 const GROUND := {
-	"prairie": {"base": Color("88d498"), "dark": Color("5fb074"), "light": Color("b4ecb8")},
-	"jungle": {"base": Color("4f9e5c"), "dark": Color("2f7440"), "light": Color("78c47c")},
+	"prairie": {"base": Color("78b85a"), "dark": Color("5a9a44"), "light": Color("a2d47a")},
+	"jungle": {"base": Color("4a8a44"), "dark": Color("2e6a30"), "light": Color("74b45a")},
 	"desert": {"base": Color("ecd59a"), "dark": Color("cfb070"), "light": Color("f8ead0")},
 	"marais": {"base": Color("7d8f52"), "dark": Color("5a6c3c"), "light": Color("9cae6c")},
 	"neige": {"base": Color("eef3fa"), "dark": Color("cbd8e8"), "light": Color("ffffff")},
@@ -72,8 +72,13 @@ static func paint_biome(image: Image, at: Vector2i, biome: String, seed: int) ->
 	var palette := {"d": colors.dark, "l": colors.light}
 	match biome:
 		"prairie":
+			# Grass of two greens, a few tufts, sometimes a pebble.
+			for i in 10:
+				image.set_pixelv(at + Vector2i(rng.randi_range(0, 15), rng.randi_range(0, 15)), colors.base.darkened(0.08))
 			for i in rng.randi_range(1, 3):
 				_stamp(image, at + Vector2i(rng.randi_range(0, 11), rng.randi_range(1, 13)), TUFT, palette)
+			if rng.randf() < 0.04:
+				_stamp(image, at + Vector2i(rng.randi_range(1, 12), rng.randi_range(1, 13)), ["ll.", "ddd"], {"l": STONES[3], "d": STONES[1]})
 			if rng.randf() < 0.08:
 				var petal: Color = [Color("f06060"), Color("ffffff"), Color("f8d030"), Color("b080f0")][rng.randi() % 4]
 				_stamp(image, at + Vector2i(rng.randi_range(1, 12), rng.randi_range(1, 12)), FLOWER, {"p": petal, "y": Color("f8e070")})
@@ -117,35 +122,43 @@ static func paint_biome(image: Image, at: Vector2i, biome: String, seed: int) ->
 static func paint_path(image: Image, at: Vector2i, edges: Array, connected: bool, seed: int) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
-	var base := Color("e8d4a0") if connected else Color("c4bba4")
+	var base := Color("d4b47a") if connected else Color("b8aa90")
 	image.fill_rect(Rect2i(at, Vector2i(T, T)), base)
-	for i in 5:
-		image.set_pixelv(at + Vector2i(rng.randi_range(1, 14), rng.randi_range(1, 14)), base.darkened(0.1))
-	for i in 2:
-		image.set_pixelv(at + Vector2i(rng.randi_range(1, 14), rng.randi_range(1, 14)), base.lightened(0.25))
-	_edges(image, at, edges, base.darkened(0.35), base.darkened(0.14))
+	for i in 8:
+		image.set_pixelv(at + Vector2i(rng.randi_range(1, 14), rng.randi_range(1, 14)), base.darkened(0.12))
+	for i in 3:
+		image.set_pixelv(at + Vector2i(rng.randi_range(1, 14), rng.randi_range(1, 14)), base.lightened(0.2))
+	# Pebbles in the dirt.
+	for i in (1 if rng.randf() < 0.3 else 0):
+		var pebble := at + Vector2i(rng.randi_range(2, 12), rng.randi_range(2, 12))
+		image.set_pixelv(pebble, STONES[3])
+		image.set_pixelv(pebble + Vector2i(1, 0), STONES[2])
+		image.set_pixelv(pebble + Vector2i(0, 1), STONES[1])
+		image.set_pixelv(pebble + Vector2i(1, 1), STONES[1])
+	_edges(image, at, edges, Color("5a7a34"), base.darkened(0.22))
 
 
+# A road of cobblestones (the jeeps drive on it).
 static func paint_road(image: Image, at: Vector2i, links: Array, seed: int) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
-	var base := Color("6e7078")
-	image.fill_rect(Rect2i(at, Vector2i(T, T)), base)
-	for i in 6:
-		image.set_pixelv(at + Vector2i(rng.randi_range(0, 15), rng.randi_range(0, 15)), base.darkened(0.12) if i % 2 == 0 else base.lightened(0.1))
+	var mortar := Color("5a5852")
+	image.fill_rect(Rect2i(at, Vector2i(T, T)), mortar)
+	for row in 4:
+		var x := -((row * 3 + seed) % 4)
+		while x < T:
+			var w := rng.randi_range(3, 5)
+			var c: Color = [Color("8e8a80"), Color("9a958a"), Color("837f76")][rng.randi() % 3]
+			for y in range(row * 4, row * 4 + 3):
+				for xx in range(maxi(x, 0), mini(x + w - 1, T)):
+					var shade := c.lightened(0.18) if y == row * 4 else (c.darkened(0.15) if y == row * 4 + 2 else c)
+					image.set_pixel(at.x + xx, at.y + y, shade)
+			x += w
 	var edges := []
 	for dir in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 		if not dir in links:
 			edges.append(dir)
-	_edges(image, at, edges, Color("8e8e96"), Color("cfd0d6"))
-	var horizontal := Vector2i.LEFT in links or Vector2i.RIGHT in links
-	var vertical := Vector2i.UP in links or Vector2i.DOWN in links
-	var paint := Color("f0d040")
-	if horizontal != vertical:
-		for a in [2, 10]:
-			for i in 4:
-				image.set_pixelv(at + (Vector2i(a + i, 7) if horizontal else Vector2i(7, a + i)), paint)
-				image.set_pixelv(at + (Vector2i(a + i, 8) if horizontal else Vector2i(8, a + i)), paint)
+	_edges(image, at, edges, Color("5a7a34"), Color("6a6860"))
 
 
 static func _edges(image: Image, at: Vector2i, edges: Array, outer: Color, inner: Color) -> void:
@@ -175,18 +188,18 @@ static func _edges(image: Image, at: Vector2i, edges: Array, outer: Color, inner
 
 # shore: directions where the land is. Waves like the old handheld games, sand along the shore.
 static func paint_water(image: Image, at: Vector2i, shore: Array, seed: int) -> void:
-	var base := Color("4a7ee0")
+	var base := Color("2f6fb8")
 	for y in T:
 		for x in T:
 			var color := base
 			var wave := (at.y + y + int(round(1.5 * sin((at.x + x) * TAU / 16.0)))) % 8
 			if wave == 0:
-				color = Color("78b0f4")
+				color = Color("6aaee8")
 			elif wave == 1:
-				color = Color("5c94ec")
+				color = Color("4a8ed0")
 			image.set_pixel(at.x + x, at.y + y, color)
 	var sand := Color("e2cc94")
-	var deep := Color("3a68c8")
+	var deep := Color("d8f0ff")  # foam where the waves meet the sand
 	for dir in shore:
 		for i in T:
 			for d in 3:
@@ -276,7 +289,7 @@ static func paint_cave(image: Image, at: Vector2i, kind: String, open_below: boo
 			image.set_pixelv(p, colors[1])
 
 
-const ROCK_LEVELS := [Color("b39a76"), Color("a68e6e"), Color("998468"), Color("e8eef6"), Color("f2f6fb"), Color("ffffff")]
+const ROCK_LEVELS := [Color("9a8c7a"), Color("8e8070"), Color("827466"), Color("e8eef6"), Color("f2f6fb"), Color("ffffff")]
 
 
 # lower: directions where the neighbour is lower (or not a mountain): a cliff is drawn there.
@@ -294,7 +307,11 @@ static func paint_mountain(image: Image, at: Vector2i, level: int, lower: Array,
 		image.set_pixelv(p + Vector2i(1, 0), top.lightened(0.2))
 	if snowy and rng.randf() < 0.5:
 		var p := at + Vector2i(rng.randi_range(2, 12), rng.randi_range(2, 8))
-		_stamp(image, p, ["dd.", "ddd"], {"d": Color("8a7a6a")})
+		_stamp(image, p, ["dd.", "ddd"], {"d": Color("7a6e62")})
+	elif not snowy and rng.randf() < 0.6:
+		# A crack in the rock.
+		var p := at + Vector2i(rng.randi_range(2, 10), rng.randi_range(2, 8))
+		_stamp(image, p, ["d...", ".dd.", "...d"], {"d": top.darkened(0.3)})
 	if Vector2i.UP in lower:
 		image.fill_rect(Rect2i(at, Vector2i(T, 1)), top.lightened(0.3))
 	if Vector2i.LEFT in lower:
@@ -302,12 +319,16 @@ static func paint_mountain(image: Image, at: Vector2i, level: int, lower: Array,
 	if Vector2i.RIGHT in lower:
 		image.fill_rect(Rect2i(at + Vector2i(15, 0), Vector2i(1, T)), top.darkened(0.3))
 	if Vector2i.DOWN in lower:
-		var face := Color("8a6a4c") if not snowy else Color("a8b8cc")
+		var face := Color("6e6258") if not snowy else Color("a8b8cc")
 		image.fill_rect(Rect2i(at + Vector2i(0, 9), Vector2i(T, 7)), face)
 		image.fill_rect(Rect2i(at + Vector2i(0, 9), Vector2i(T, 1)), top.lightened(0.25))
+		# Layers of rock and cracks running down the cliff.
+		image.fill_rect(Rect2i(at + Vector2i(0, 12), Vector2i(T, 1)), face.darkened(0.18))
 		for x in range(rng.randi_range(0, 2), T, 3):
 			var length := rng.randi_range(2, 5)
-			image.fill_rect(Rect2i(at + Vector2i(x, 11), Vector2i(1, length)), face.darkened(0.25))
+			image.fill_rect(Rect2i(at + Vector2i(x, 10), Vector2i(1, length)), face.darkened(0.3))
+			if rng.randf() < 0.3:
+				image.set_pixelv(at + Vector2i(x + 1, 10), face.lightened(0.2))
 		image.fill_rect(Rect2i(at + Vector2i(0, 15), Vector2i(T, 1)), face.darkened(0.45))
 
 
@@ -317,7 +338,7 @@ static func decor(style: String) -> Texture2D:
 	return cached("decor:" + style, func() -> Texture2D:
 		match style:
 			"tree":
-				return _round_tree(Color("6cc048"))
+				return _round_tree(Color("4e9a34"))
 			"pine":
 				return _pine()
 			"palm":
@@ -334,39 +355,62 @@ static func decor(style: String) -> Texture2D:
 				return _rock()
 			"volcano":
 				return _volcano()
-		return _round_tree(Color("6cc048")))
+		return _round_tree(Color("4e9a34")))
 
 
 static func border_tree(variant: int) -> Texture2D:
 	return cached("border:%d" % variant, func() -> Texture2D:
-		return _round_tree([Color("5cb040"), Color("4fa040"), Color("68b848")][variant % 3]))
+		return _round_tree([Color("4a8a30"), Color("3e7e2c"), Color("5a9a38")][variant % 3], variant))
 
 
-static func _round_tree(leaf: Color) -> Texture2D:
-	var p := _painter(Vector2i(24, 30))
-	p.box(Rect2(9, 21, 6, 7), WOOD, true)
-	p.ellipse(Vector2(12, 15), Vector2(10.5, 8), leaf.darkened(0.15))
-	p.ellipse(Vector2(6.5, 13), Vector2(5, 5), leaf)
-	p.ellipse(Vector2(17.5, 13), Vector2(5, 5), leaf)
-	p.ellipse(Vector2(12, 8), Vector2(7, 6), leaf)
-	p.ellipse(Vector2(12, 15), Vector2(5, 4), leaf)
-	for spot in [Vector2(8, 7), Vector2(14, 5), Vector2(4, 12), Vector2(16, 11), Vector2(10, 14)]:
-		p.dot(spot, leaf.lightened(0.4), 2)
-	for spot in [Vector2(11, 18), Vector2(6, 17), Vector2(17, 17)]:
-		p.dot(spot, leaf.darkened(0.45))
+# A blob of leaves: a dark mass, then round clumps lighter towards the top left.
+static func _clumps(img: Image, center: Vector2, radius: Vector2, rng: RandomNumberGenerator, leaf: Color) -> void:
+	var dark := leaf.darkened(0.4)
+	for y in range(int(center.y - radius.y) - 1, int(center.y + radius.y) + 2):
+		for x in range(int(center.x - radius.x) - 1, int(center.x + radius.x) + 2):
+			if ((Vector2(x, y) + Vector2(0.5, 0.5) - center) / radius).length_squared() <= 1.0:
+				_put(img, x, y, dark)
+	for i in int(radius.x * radius.y * 0.5):
+		var a := rng.randf() * TAU
+		var r := sqrt(rng.randf()) * 0.85
+		var at := center + Vector2(cos(a), sin(a)) * radius * r
+		var size := rng.randf_range(1.6, 2.8)
+		# Clumps high on the left catch the sun, low ones stay in the shade.
+		var lit := ((at - center) / radius).dot(Vector2(-0.6, -0.8))
+		var color := leaf.lightened(0.25) if lit > 0.35 else (leaf if lit > -0.35 else leaf.darkened(0.2))
+		for dy in range(-3, 4):
+			for dx in range(-3, 4):
+				var d := Vector2(dx, dy).length()
+				if d <= size:
+					_put(img, int(at.x) + dx, int(at.y) + dy, color if d < size - 0.9 or dy > 0 else color.darkened(0.25))
+
+
+# A leafy tree: a trunk with bark and roots under a big round crown of clumps.
+static func _round_tree(leaf: Color, seed := 0) -> Texture2D:
+	var p := _painter(Vector2i(28, 34))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 900 + seed
+	p.polygon(PackedVector2Array([Vector2(10, 33), Vector2(12, 20), Vector2(16, 20), Vector2(18, 33)]), LOG[1], true)
+	p.image.fill_rect(Rect2i(13, 22, 1, 10), LOG[0])
+	p.image.fill_rect(Rect2i(15, 24, 1, 6), LOG[2])
+	_clumps(p.image, Vector2(14, 13), Vector2(12, 10), rng, leaf)
 	return p.finish()
 
 
 static func _pine() -> Texture2D:
-	var p := _painter(Vector2i(20, 32))
-	p.box(Rect2(8, 25, 4, 5), WOOD, true)
-	var green := Color("2f8050")
-	for i in 3:
-		var y := 26.0 - i * 7.0
-		var w := 9.0 - i * 2.0
-		p.polygon(PackedVector2Array([Vector2(10 - w, y), Vector2(10, y - 12), Vector2(10 + w, y)]), green.lightened(i * 0.08), true)
-	p.dot(Vector2(8, 10), Color("5fb07a"), 2)
-	p.dot(Vector2(6, 18), Color("5fb07a"), 2)
+	var p := _painter(Vector2i(22, 34))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 77
+	p.box(Rect2(9, 27, 4, 6), LOG[1], true)
+	var green := Color("2e6a40")
+	for i in 4:
+		var y := 29.0 - i * 6.5
+		var w := 10.0 - i * 2.2
+		p.polygon(PackedVector2Array([Vector2(11 - w, y), Vector2(11, y - 11), Vector2(11 + w, y)]), green.lightened(i * 0.06), true)
+		# Needles: little lighter strokes on the left of each layer.
+		for k in 4:
+			var x := rng.randi_range(int(11 - w * 0.7), 11)
+			p.image.set_pixel(x, int(y) - rng.randi_range(2, 4), green.lightened(0.3 + i * 0.05))
 	return p.finish()
 
 
@@ -377,7 +421,7 @@ static func _palm() -> Texture2D:
 		p.limb(Vector2(12 + i * 0.6, 30 - i * 4.5), Vector2(12.6 + i * 0.6, 26 - i * 4.5), 2.2, 2.0, trunk if i % 2 == 0 else trunk.darkened(0.12), true)
 	var top := Vector2(15, 8)
 	for leaf in [Vector2(-12, 4), Vector2(-9, -5), Vector2(0, -7), Vector2(9, -5), Vector2(12, 5), Vector2(-4, 6), Vector2(5, 7)]:
-		p.limb(top, top + leaf, 2.4, 0.6, Color("58a838"), true)
+		p.limb(top, top + leaf, 2.4, 0.6, Color("4a8a30"), true)
 	p.ellipse(top + Vector2(-1, 2), Vector2(2, 2), Color("7a5030"))
 	p.ellipse(top + Vector2(2, 2), Vector2(2, 2), Color("8a6038"))
 	return p.finish()
@@ -387,16 +431,15 @@ static func _fern() -> Texture2D:
 	var p := _painter(Vector2i(20, 16))
 	var base := Vector2(10, 15)
 	for leaf in [Vector2(-9, -5), Vector2(-5, -10), Vector2(0, -12), Vector2(5, -10), Vector2(9, -5)]:
-		p.limb(base, base + leaf, 2.0, 0.6, Color("3f9a44"), true)
+		p.limb(base, base + leaf, 2.0, 0.6, Color("3a7e34"), true)
 	return p.finish()
 
 
 static func _bush(berries: bool) -> Texture2D:
 	var p := _painter(Vector2i(20, 16))
-	p.ellipse(Vector2(10, 9.5), Vector2(9, 5.5), Color("3a9044"))
-	p.ellipse(Vector2(6, 7.5), Vector2(4.5, 4), Color("48a64c"))
-	p.ellipse(Vector2(14, 7.5), Vector2(4.5, 4), Color("48a64c"))
-	p.ellipse(Vector2(10, 5.5), Vector2(4, 3.5), Color("52b056"))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 55
+	_clumps(p.image, Vector2(10, 9), Vector2(8.5, 6), rng, Color("3e8a3a"))
 	if berries:
 		for spot in [Vector2(5, 8), Vector2(9, 5), Vector2(13, 10), Vector2(15, 6), Vector2(8, 11)]:
 			p.dot(spot, Color("d8243e"), 2)
@@ -420,9 +463,12 @@ static func _cactus() -> Texture2D:
 
 static func _rock() -> Texture2D:
 	var p := _painter(Vector2i(18, 14))
-	p.ellipse(Vector2(9, 8), Vector2(8, 5.5), Color("9a9aa2"))
-	p.ellipse(Vector2(6, 6), Vector2(3, 2), Color("b8b8c0"))
-	p.dot(Vector2(12, 9), Color("70707a"), 2)
+	p.ellipse(Vector2(9, 8), Vector2(8, 5.5), STONES[2])
+	p.polygon(PackedVector2Array([Vector2(3, 6), Vector2(8, 3), Vector2(12, 5), Vector2(7, 8)]), STONES[3])
+	p.line(Vector2(8, 8), Vector2(12, 11), STONES[1])
+	p.line(Vector2(12, 5), Vector2(15, 8), STONES[1])
+	for spot in [Vector2(4, 10), Vector2(5, 11), Vector2(14, 11)]:
+		p.dot(spot, LEAVES[2])
 	return p.finish()
 
 
@@ -439,18 +485,24 @@ static func _volcano() -> Texture2D:
 	return p.finish()
 
 
-# The entrance of a mine, dug into a cliff: 16 x 20 pixels, anchored at its bottom center.
+# The entrance of a mine, dug into a cliff: a dark hole held by a wooden frame, and rails coming
+# out of it. 20 x 22 pixels, anchored at its bottom center.
 static func mine_entrance() -> Texture2D:
 	return cached("mine_entrance", func() -> Texture2D:
-		var p := _painter(Vector2i(18, 20))
-		p.ellipse(Vector2(9, 13), Vector2(7, 7), Color("2a2018"))
-		p.box(Rect2(2, 6, 14, 14), Color("2a2018"))
-		p.flat(Rect2(4, 8, 10, 12), Color("120c08"))
-		p.box(Rect2(1, 5, 3, 15), WOOD, true)
-		p.box(Rect2(14, 5, 3, 15), WOOD, true)
-		p.box(Rect2(0, 3, 18, 3), WOOD.lightened(0.1), true)
-		p.flat(Rect2(6, 15, 6, 1), Color("807060"))
-		p.flat(Rect2(6, 18, 6, 1), Color("807060"))
+		var p := _painter(Vector2i(20, 22))
+		p.ellipse(Vector2(10, 14), Vector2(8, 8), STONES[1])
+		p.box(Rect2(2, 7, 16, 15), STONES[1])
+		p.flat(Rect2(4, 8, 12, 14), Color("120c08"))
+		# The rails and their wooden ties.
+		for y in [14, 17, 20]:
+			p.flat(Rect2(6, y, 8, 1), LOG[0])
+		p.line(Vector2(7, 12), Vector2(6, 21), Color("9a9aa2"))
+		p.line(Vector2(12, 12), Vector2(13, 21), Color("9a9aa2"))
+		# The frame: two posts, a lintel and a brace.
+		p.box(Rect2(2, 6, 3, 16), LOG[1], true)
+		p.box(Rect2(15, 6, 3, 16), LOG[1], true)
+		p.box(Rect2(0, 3, 20, 4), LOG[2], true)
+		p.flat(Rect2(1, 5, 18, 1), LOG[0])
 		return p.finish())
 
 
@@ -483,8 +535,8 @@ static func _rail_fence(p: Painter, style: String, links: Array, sign: bool) -> 
 	var rails := [4, 9]
 	match style:
 		"wood":
-			post = Color("8d6040")
-			rail = Color("b08058")
+			post = LOG[1]
+			rail = LOG[2]
 		"glass":
 			post = Color("78909c")
 			rail = Color("90a4ae")
@@ -537,8 +589,8 @@ static func _rail_fence(p: Painter, style: String, links: Array, sign: bool) -> 
 static func _gate(p: Painter, links: Array, open: bool) -> void:
 	var h: int = FENCE_HEIGHT.gate
 	var base := 32
-	var wood := Color("a0703c")
-	var post := Color("7a4e2c")
+	var wood := LOG[2]
+	var post := LOG[1]
 	if Vector2i.UP in links or Vector2i.DOWN in links:
 		p.box(Rect2(6, base - h - 9, 4, 4), post, true)
 		p.box(Rect2(6, base - h + 7, 4, 4), post, true)
@@ -561,8 +613,8 @@ static func _gate(p: Painter, links: Array, open: bool) -> void:
 static func _wall(p: Painter, style: String, links: Array) -> void:
 	var h: int = FENCE_HEIGHT[style]
 	var base := 32
-	var face := Color("9a9aa0") if style == "stone" else Color("c4ccd0")
-	var top := Color("c8c8cc") if style == "stone" else Color("eef2f4")
+	var face := STONES[2] if style == "stone" else Color("c4ccd0")
+	var top := STONES[3] if style == "stone" else Color("eef2f4")
 	var segments := [Rect2(5, base - 3 - h, 6, 6)]
 	if Vector2i.LEFT in links:
 		segments.append(Rect2(0, base - 3 - h, 8, 6))
@@ -583,11 +635,13 @@ static func _wall(p: Painter, style: String, links: Array) -> void:
 	for rect in faces:
 		p.box(rect, face, true)
 		if style == "stone":
+			# Stones of different sizes, lit on top.
 			for y in range(int(rect.position.y) + 3, int(rect.end.y), 4):
-				p.flat(Rect2(rect.position.x, y, rect.size.x, 1), face.darkened(0.25))
+				p.flat(Rect2(rect.position.x, y, rect.size.x, 1), STONES[0])
 				var offset := 2 if (y / 4) % 2 == 0 else 5
 				for x in range(int(rect.position.x) + offset, int(rect.end.x), 6):
-					p.flat(Rect2(x, y - 3, 1, 3), face.darkened(0.25))
+					p.flat(Rect2(x, y - 3, 1, 3), STONES[0])
+					p.flat(Rect2(x + 1, y - 3, 3, 1), STONES[3])
 		else:
 			p.flat(Rect2(rect.position.x, rect.position.y + 1, rect.size.x, 2), Color("f2c230"))
 	for rect in segments:
@@ -620,76 +674,122 @@ static func item(id: String) -> Texture2D:
 	return null
 
 
+# A small building in three quarters: the front rectangle, the side wall going back (darker) on
+# the right, and the floor of its roof. wall(x, y) colours the walls.
+static func _block3q(img: Image, front: Rect2i, depth: Vector2i, wall: Callable) -> void:
+	var right := front.end.x
+	_fill_poly(img, PackedVector2Array([Vector2(right, front.position.y), Vector2(right + depth.x, front.position.y + depth.y),
+		Vector2(right + depth.x, front.end.y + depth.y), Vector2(right, front.end.y)]), func(x: int, y: int) -> Color:
+			return wall.call(x, y).darkened(0.3))
+	for y in range(front.position.y, front.end.y):
+		for x in range(front.position.x, right):
+			_put(img, x, y, wall.call(x, y))
+
+
+static func _plank_wall(x: int, y: int) -> Color:
+	return [LOG[0], LOG[1], LOG[2]][x % 3]
+
+
+static func _log_wall(x: int, y: int) -> Color:
+	return [LOG[2], LOG[1], LOG[1], LOG[0]][y % 4]
+
+
+static func _stone_wall(x: int, y: int) -> Color:
+	var row := y / 4
+	var brick := (x + row * 3) / 5
+	if y % 4 == 3 or (x + row * 3) % 5 == 0:
+		return STONES[0]
+	return STONES[3] if y % 4 == 0 else (STONES[2] if (brick + row) % 3 != 0 else STONES[1])
+
+
+# A stand of the park in three quarters: a wooden kiosk with a striped awning of its colour,
+# and what it sells on top. 1 cell, 22 x 32 pixels.
 static func shop(data: Dictionary) -> Texture2D:
 	return cached("shop:" + data.style, func() -> Texture2D:
-		var p := _painter(Vector2i(18, 30))
+		var p := _painter(Vector2i(22, 32))
+		var img := p.image
 		var color: Color = data.color
-		p.box(Rect2(2, 17, 14, 11), Color("f4ecdc"), true)
-		p.flat(Rect2(2, 21, 14, 2), color)
-		p.box(Rect2(3, 12, 2, 6), Color("8a8a90"), true)
-		p.box(Rect2(13, 12, 2, 6), Color("8a8a90"), true)
-		p.box(Rect2(1, 9, 16, 5), Color.WHITE, true)
-		for x in range(1, 17, 4):
-			p.flat(Rect2(x, 9, 2, 5), color)
+		_block3q(img, Rect2i(2, 14, 14, 17), Vector2i(4, -3), _plank_wall)
+		img.fill_rect(Rect2i(3, 15, 12, 5), Color("2a1a10"))
+		img.fill_rect(Rect2i(2, 20, 14, 2), LOG[2])
+		p.box(Rect2(2, 9, 18, 6), Color.WHITE, true)
+		for x in range(2, 20, 4):
+			p.flat(Rect2(x, 9, 2, 6), color)
+		p.flat(Rect2(2, 14, 18, 1), color.darkened(0.3))
 		match data.style:
 			"icecream":
-				p.polygon(PackedVector2Array([Vector2(6, 4), Vector2(12, 4), Vector2(9, 9)]), Color("d7a35c"), true)
-				p.ellipse(Vector2(9, 3.5), Vector2(3.5, 3), Color("f48fb1"), true)
+				p.polygon(PackedVector2Array([Vector2(7, 4), Vector2(13, 4), Vector2(10, 9)]), Color("d7a35c"), true)
+				p.ellipse(Vector2(10, 3.5), Vector2(3.5, 3), Color("f48fb1"), true)
 			"burger":
-				p.ellipse(Vector2(9, 4), Vector2(5, 2.5), Color("e0a040"), true)
-				p.box(Rect2(4, 5, 10, 1), Color("5a8a2a"))
-				p.box(Rect2(4, 6, 10, 2), Color("7a3a20"), true)
+				p.ellipse(Vector2(10, 4), Vector2(5, 2.5), Color("e0a040"), true)
+				p.box(Rect2(5, 5, 10, 1), Color("5a8a2a"))
+				p.box(Rect2(5, 6, 10, 2), Color("7a3a20"), true)
 			"souvenir":
-				p.box(Rect2(5, 2, 8, 7), Color("7e57c2"), true)
-				p.flat(Rect2(8, 2, 2, 7), Color("fdd835"))
-				p.flat(Rect2(5, 5, 8, 1), Color("fdd835"))
+				p.box(Rect2(6, 2, 8, 7), Color("7e57c2"), true)
+				p.flat(Rect2(9, 2, 2, 7), Color("fdd835"))
+				p.flat(Rect2(6, 5, 8, 1), Color("fdd835"))
 		return p.finish())
 
 
+# A feeder: a wooden trough full of hay for the herbivores, a rack with meat for the carnivores.
 static func feeder(diet: String) -> Texture2D:
 	return cached("feeder:" + diet, func() -> Texture2D:
-		var p := _painter(Vector2i(16, 22))
+		var p := _painter(Vector2i(18, 22))
+		var img := p.image
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 5
 		if diet == "herb":
-			p.box(Rect2(1, 14, 14, 6), WOOD, true)
-			for x in [3, 7, 11]:
-				p.ellipse(Vector2(x + 1, 13), Vector2(3, 2.5), Color("c0d040"))
-			p.dot(Vector2(6, 12), Color("e8f070"), 2)
+			_block3q(img, Rect2i(1, 14, 13, 7), Vector2i(3, -3), _plank_wall)
+			_thatch(img, PackedVector2Array([Vector2(1, 14), Vector2(4, 8), Vector2(10, 7), Vector2(16, 10), Vector2(14, 14)]), rng)
+			p.dot(Vector2(6, 10), Color("c0d040"), 2)
 		else:
-			p.box(Rect2(3, 4, 2, 17), WOOD, true)
-			p.box(Rect2(3, 3, 11, 2), WOOD, true)
-			p.ellipse(Vector2(11, 11), Vector2(3.5, 4), Color("c62828"), true)
-			p.box(Rect2(10, 5, 1, 3), Color("eeeeee"))
-			p.dot(Vector2(10, 15), Color("eeeeee"), 2)
+			p.box(Rect2(2, 4, 3, 17), LOG[1], true)
+			p.box(Rect2(13, 4, 3, 17), LOG[1], true)
+			p.box(Rect2(1, 3, 16, 3), LOG[2], true)
+			for x in [6, 11]:
+				p.line(Vector2(x, 6), Vector2(x, 8), Color("c8b080"))
+				p.ellipse(Vector2(x, 11), Vector2(2.5, 3), Color("c0443a"), true)
+				p.dot(Vector2(x, 14.5), Color("f4ecd8"), 2)
+			p.box(Rect2(1, 17, 16, 4), STONES[2], true)
 		return p.finish())
 
 
+# The station of the gyrospheres: a stone and wood building with a glass ball on its roof.
+# 2 x 2 cells, 36 x 42 pixels.
 static func gyro_station() -> Texture2D:
 	return cached("gyro_station", func() -> Texture2D:
-		var p := _painter(Vector2i(32, 40))
-		p.box(Rect2(2, 18, 28, 20), Color("e8f4fa"), true)
-		p.box(Rect2(12, 27, 8, 11), Color("4a6a80"), true)
-		p.box(Rect2(4, 22, 6, 5), Color("a8e0f8"), true)
-		p.box(Rect2(22, 22, 6, 5), Color("a8e0f8"), true)
-		p.box(Rect2(0, 11, 32, 8), Color("4fb3e7"), true)
-		p.ellipse(Vector2(16, 7), Vector2(6, 6), Color(0.7, 0.9, 1.0, 0.8), true)
-		p.box(Rect2(10, 6, 12, 2), Color("ff9800"))
-		p.dot(Vector2(14, 4), Color.WHITE, 2)
+		var p := _painter(Vector2i(36, 42))
+		var img := p.image
+		_block3q(img, Rect2i(2, 20, 28, 21), Vector2i(5, -4), _stone_wall)
+		img.fill_rect(Rect2i(2, 20, 28, 3), LOG[2])
+		p.box(Rect2(12, 28, 8, 13), Color("2a3a4a"), true)
+		_window(img, Rect2i(5, 27, 5, 5))
+		_window(img, Rect2i(22, 27, 5, 5))
+		_fill_poly(img, PackedVector2Array([Vector2(0, 21), Vector2(5, 15), Vector2(34, 15), Vector2(35, 17), Vector2(31, 21)]), func(x: int, y: int) -> Color:
+			return Color("2f8fc8") if (x / 3) % 2 == 0 else Color("3aa0d8"))
+		p.ellipse(Vector2(17, 9), Vector2(7, 7), Color(0.7, 0.9, 1.0, 0.85), true)
+		p.box(Rect2(10, 8, 14, 2), Color("ff9800"))
+		p.dot(Vector2(14, 5), Color.WHITE, 2)
 		return p.finish())
 
 
+# The jeep garage: a wooden barn with a big plank door under a straw roof. 2 x 2 cells, 36 x 40.
 static func garage() -> Texture2D:
 	return cached("garage", func() -> Texture2D:
-		var p := _painter(Vector2i(32, 36))
-		p.box(Rect2(2, 14, 28, 20), Color("d0b08a"), true)
-		p.box(Rect2(6, 20, 20, 14), Color("9ea0a6"), true)
-		for y in range(22, 34, 3):
-			p.flat(Rect2(6, y, 20, 1), Color("7e8086"))
-		p.box(Rect2(0, 8, 32, 7), Color("6d4c41"), true)
-		p.box(Rect2(10, 3, 12, 5), Color("6d8f3a"), true)
-		p.flat(Rect2(12, 5, 8, 1), Color("f0e070"))
+		var p := _painter(Vector2i(36, 40))
+		var img := p.image
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 8
+		_block3q(img, Rect2i(2, 18, 28, 21), Vector2i(5, -4), _log_wall)
+		_door(img, Rect2i(7, 24, 18, 15))
+		img.fill_rect(Rect2i(7, 31, 18, 1), LOG[0])
+		_thatch(img, PackedVector2Array([Vector2(0, 20), Vector2(6, 6), Vector2(36, 2), Vector2(36, 14), Vector2(32, 20)]), rng)
+		p.box(Rect2(10, 12, 12, 5), LOG[2], true)
+		p.flat(Rect2(12, 14, 8, 1), Color("6d8f3a"))
 		return p.finish())
 
 
+# The heliport, flat on the ground: a round pad of stones in a wooden ring, a big H and lights.
 static func heliport() -> Texture2D:
 	return cached("heliport", func() -> Texture2D:
 		var image := Image.create(48, 48, false, Image.FORMAT_RGBA8)
@@ -698,21 +798,22 @@ static func heliport() -> Texture2D:
 				var d := _rounded_distance(x, y, 48, 48, 5)
 				if d < 0.0:
 					continue
-				var color := Color("8a9098") if d >= 3.0 else Color("6a7078")
-				if d < 1.0:
-					color = OUTLINE
+				var color := _stone_wall(x, y)
+				if d < 3.0:
+					color = LOG[1] if d >= 1.0 else LOG[0]
 				var r := Vector2(x - 23.5, y - 23.5).length()
 				if r > 15.0 and r < 18.0:
-					color = Color("f2c230")
+					color = Color("e8c040") if r < 17.0 else Color("b08a20")
 				image.set_pixel(x, y, color)
 		_stamp(image, Vector2i(17, 16), [
 			"ww.....ww", "ww.....ww", "ww.....ww", "ww.....ww", "wwwwwwwww", "wwwwwwwww",
-			"ww.....ww", "ww.....ww", "ww.....ww", "ww.....ww"], {"w": Color("f8f8f8")})
+			"ww.....ww", "ww.....ww", "ww.....ww", "ww.....ww"], {"w": Color("f4f0e4")})
 		for corner in [Vector2i(4, 4), Vector2i(42, 4), Vector2i(4, 42), Vector2i(42, 42)]:
 			image.fill_rect(Rect2i(corner, Vector2i(2, 2)), Color("ff5252") if corner.y < 20 else Color("69f0ae"))
 		return ImageTexture.create_from_image(image))
 
 
+# The lagoon: a pool with a rim of stones, deep water in the middle, animated waves.
 static func lagoon(size: Vector2i, frame: int) -> Texture2D:
 	return cached("lagoon:%s:%d" % [size, frame], func() -> Texture2D:
 		var w := size.x * T
@@ -725,25 +826,24 @@ static func lagoon(size: Vector2i, frame: int) -> Texture2D:
 					continue
 				var color: Color
 				if d < 1.0:
-					color = Color("6a5030")
+					color = STONES[0]
 				elif d < 5.0:
-					color = Color("e2cc94") if (x * 7 + y * 3) % 11 != 0 else Color("c8ae74")
+					color = _stone_wall(x, y)
 				elif d < 6.0:
-					color = Color("2a50a8")
-				elif d < 8.0:
-					color = Color("3a68c8")
+					color = Color("d8f0ff")
+				elif d < 9.0:
+					color = Color("3a8ac8")
 				else:
-					color = Color("4a7ee0")
+					color = Color("2f6fb8")
 					var wave := (y + int(round(2.0 * sin((x + frame * 4) * TAU / 24.0)))) % 10
 					if wave == 0:
-						color = Color("78b0f4")
+						color = Color("6aaee8")
 					elif wave == 1:
-						color = Color("5c94ec")
+						color = Color("4a8ed0")
 				image.set_pixel(x, y, color)
 		return ImageTexture.create_from_image(image))
 
 
-# Distance from the border of a rectangle with rounded corners (negative outside).
 static func _rounded_distance(x: int, y: int, w: int, h: int, radius: int) -> float:
 	var q := Vector2(maxf(maxf(radius - x - 0.5, x + 0.5 - (w - radius)), 0.0), maxf(maxf(radius - y - 0.5, y + 0.5 - (h - radius)), 0.0))
 	var inner := minf(minf(x + 0.5, w - x - 0.5), minf(y + 0.5, h - y - 0.5))
@@ -762,7 +862,7 @@ static func aviary(size: Vector2i) -> Texture2D:
 		var h := size.y * T
 		var image := Image.create(w, h + AVIARY_HEIGHT, false, Image.FORMAT_RGBA8)
 		var net := Color(0.9, 0.94, 1.0, 0.32)
-		var frame := Color("6a7a88")
+		var frame: Color = LOG[1]
 		for y in h:
 			for x in w:
 				if x % 6 == 0 or y % 6 == 0:
@@ -781,20 +881,24 @@ static func aviary(size: Vector2i) -> Texture2D:
 		return ImageTexture.create_from_image(image))
 
 
-# The park gate, standing outside the left edge of the map: 16 x 64 pixels.
+# The park gate, standing outside the left edge of the map: two big log posts on stone bases
+# and a wooden sign with a green dinosaur head. 20 x 72 pixels.
 static func gate() -> Texture2D:
 	return cached("gate", func() -> Texture2D:
 		var p := _painter(Vector2i(20, 72))
-		var stone := Color("a8a098")
-		p.box(Rect2(4, 24, 12, 4), Color("e8d4a0"))
-		p.box(Rect2(5, 10, 10, 13), stone, true)
-		p.box(Rect2(5, 56, 10, 13), stone, true)
-		p.box(Rect2(7, 8, 6, 52), Color("8d6040"), true)
-		p.box(Rect2(2, 2, 16, 8), Color("c0392b"), true)
-		p.flat(Rect2(4, 4, 12, 1), Color("fdd835"))
-		p.flat(Rect2(4, 7, 12, 1), Color("fdd835"))
-		p.ellipse(Vector2(10, 32), Vector2(5, 5), Color("6cc048"), true)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 3
+		p.box(Rect2(4, 24, 12, 4), Color("d4b47a"))
+		_stones(p.image, Rect2i(4, 12, 12, 10), rng)
+		_stones(p.image, Rect2i(4, 58, 12, 11), rng)
+		p.box(Rect2(7, 8, 6, 52), LOG[1], true)
+		p.flat(Rect2(8, 9, 1, 50), LOG[2])
+		p.box(Rect2(1, 1, 18, 9), LOG[2], true)
+		p.flat(Rect2(2, 4, 16, 1), LOG[1])
+		p.flat(Rect2(2, 7, 16, 1), LOG[1])
+		p.ellipse(Vector2(10, 32), Vector2(5, 5), Color("5a9a38"), true)
 		p.dot(Vector2(11, 31), EYE_DARK)
+		_moss(p.image, Rect2i(4, 58, 12, 4), 2, rng)
 		return p.finish())
 
 
@@ -803,60 +907,86 @@ const EYE_DARK := Color("181818")
 
 # --- People and vehicles --------------------------------------------------------
 
-const PERSON := {
-	"down": [
-		["....oooo....", "..oohhhhoo..", ".ohhhhhhhho.", ".ohhhhhhhho.", ".ohssssssho.", ".ossessesso.",
-		"..osssssso..", ".occcccccco.", "osccccccccso", "osccccccccso", ".oCCCCCCCCo.", "..oppppppo..",
-		"..opp..ppo..", "..opo..opo..", "..obo..obo..", "..ooo..ooo.."],
-		["....oooo....", "..oohhhhoo..", ".ohhhhhhhho.", ".ohhhhhhhho.", ".ohssssssho.", ".ossessesso.",
-		"..osssssso..", ".occcccccco.", "osccccccccso", "osccccccccso", ".oCCCCCCCCo.", "..oppppppo..",
-		"..opp..ppo..", "..obo..opo..", "..ooo..obo..", ".......ooo.."],
-	],
-	"up": [
-		["....oooo....", "..oohhhhoo..", ".ohhhhhhhho.", ".ohhhhhhhho.", ".ohhhhhhhho.", ".ohhhhhhhho.",
-		"..ohhhhhho..", ".occcccccco.", "osccccccccso", "osccccccccso", ".oCCCCCCCCo.", "..oppppppo..",
-		"..opp..ppo..", "..opo..opo..", "..obo..obo..", "..ooo..ooo.."],
-		["....oooo....", "..oohhhhoo..", ".ohhhhhhhho.", ".ohhhhhhhho.", ".ohhhhhhhho.", ".ohhhhhhhho.",
-		"..ohhhhhho..", ".occcccccco.", "osccccccccso", "osccccccccso", ".oCCCCCCCCo.", "..oppppppo..",
-		"..opp..ppo..", "..opo..obo..", "..obo..ooo..", "..ooo......."],
-	],
-	"side": [
-		["....oooo....", "...ohhhhoo..", "..ohhhhhhho.", "..ohhhhhhhho", "..ohhhsssso.", "..ohhssesso.",
-		"...osssssso.", "..occcccco..", "..occcscco..", "..occcscco..", "..oCCCsCCo..", "...oppppo...",
-		"...oppppo...", "..opo..opo..", "..obo..obo..", "..ooo..ooo.."],
-		["....oooo....", "...ohhhhoo..", "..ohhhhhhho.", "..ohhhhhhhho", "..ohhhsssso.", "..ohhssesso.",
-		"...osssssso.", "..occcccco..", "..occcscco..", "..occcscco..", "..oCCCsCCo..", "...oppppo...",
-		"...oppppo...", "....oppo....", "....obbo....", "....oooo...."],
-	],
-}
-
-
-# Extra hair for the "long" style, drawn over the base drawing ("." keeps what is there).
-const LONG_HAIR := {
-	"down": ["oh........ho", "oh........ho", "oh........ho", "oh........ho", "oh........ho"],
-	"up": ["oh........ho", "oh........ho", "oh.hhhhhh.ho", "oh.hhhhhh.ho", "oh.hhhhhh.ho", "...hhhhhh..."],
-	"side": [".oh.........", ".ohh........", ".ohh........", ".oh.........", ".oh........."],
-}
-
-
-# colors: hair, skin, shirt, pants, optionally hat (a cap) and style ("long" hair).
-# Feet at the bottom center (6, 16).
+# People of the park (visitors, the ranger): drawn like the hero, with a bush hat only when
+# `colors` has a "hat". colors: hair, skin, shirt, pants, optionally hat and style ("long").
 static func person(direction: String, frame: int, colors: Dictionary) -> Texture2D:
-	var key := "person:%s:%d:%s" % [direction, frame, colors.values()]
+	return hero(direction, frame, colors)
+
+
+# --- The dinosaurs of the village ----------------------------------------------------------
+# Villagers are dinosaurs in clothes, 12 x 18 pixels, feet at the bottom center: a head of
+# their kind ("trike", "raptor", "ptero" or "rex"), a tunic, scaly legs and a tail.
+# colors: skin, shirt, optionally crest; apron: true for craftsmen (seen from the front).
+# Letters: o outline, s/S skin, R crest or frill, L horns and beak, e eye, w white or teeth,
+# c/C tunic, a apron.
+const FOLK_KINDS := ["trike", "raptor", "ptero", "rex"]
+const FOLK_HEADS := {
+	"trike": {
+		"side": ["..o....o....", ".oRo..oLo...", "oRRRo.oLo.o.", "oRSssssssoLo", "oRSsssweesso", "oRSsssssssLo", ".oSssssssLo.", "..oossssoo..", "....oooo...."],
+		"down": [".ooooo", "oRRRRR", "oRoLRR", "oRsLss", "oRswes", "oRssss", ".oSsss", "..ossL", "...ooo"],
+		"up": [".ooooo", "oRRRRR", "oRRRRR", "oRRRRR", "oRSSSS", "oRSSSS", ".oSSSS", "..oSSS", "...ooo"],
+	},
+	"raptor": {
+		"side": ["............", "...oooo.....", "..oRRsso....", ".oRssssooo..", ".oRsswesssoo", ".oSsssssssso", "..oSsLLLLLo.", "...oossoooo.", "....oo......"],
+		"down": ["......", "...ooo", "..oRRs", ".oRsss", ".oswes", ".ossss", "..osss", "...osL", "....oo"],
+		"up": ["......", "...ooo", "..oRRS", ".oRSSS", ".oSSSS", ".oSSSS", "..oSSS", "...oSS", "....oo"],
+	},
+	"ptero": {
+		"side": ["oooo........", "oRRRoo......", ".ooRRso.....", "...oswesoo..", "...osssLLLoo", "...osssoLLLo", "....ossoooo.", ".....oo.....", "............"],
+		"down": ["....oo", "...oRR", "...oRR", "..osss", ".oswes", ".ossss", "..ossL", "...oLL", "....oo"],
+		"up": ["....oo", "...oRR", "...oRR", "..oSSS", ".oSSSS", ".oSSSS", "..oSSS", "...oSS", "....oo"],
+	},
+	"rex": {
+		"side": ["...ooooo....", "..oSssssoo..", ".oSsssweesoo", ".oSsssssssso", ".oSsssswwwwo", ".oSssssooooo", "..oSssLLLLo.", "...ooossooo.", "....ooo....."],
+		"down": ["..oooo", ".oSsss", "oSswes", "oSssss", "oSssss", "oSwwww", ".oSLLL", "..osss", "...ooo"],
+		"up": ["..oooo", ".oSSSS", "oSSSSS", "oSSSSS", "oSSSSS", "oSSSSS", ".oSSSS", "..oSSS", "...ooo"],
+	},
+}
+const FOLK_SIDE_BODY := {
+	"hang": ["...occcco...", "..occcccco..", "..occCcCco..", "..occcssco..", "..oCCCCCCo.."],
+	"front": ["...occcco...", "..occccccoo.", "..occccoCsso", "..occcco.oo.", "..oCCCCCo..."],
+	"back": ["...occcco...", ".oocccccco..", "osCoccccco..", ".oo.occcco..", "..oCCCCCCo.."],
+}
+const FOLK_SIDE_LEGS := {
+	"together": ["...oSo.oSo..", "...oSo.oSo..", "..oSSSoSSSSo", "..oooooooooo"],
+	"apart": ["..oSo..oSo..", ".oSo....oSo.", "oSSSo...oSSo", "ooooo...oooo"],
+}
+const FOLK_SIDE_TAIL := ["............", "............", "oo..........", "oSo.........", ".oSo........"]
+const FOLK_BODY := ["...occ", "..occc", ".oCccc", ".osccc", "..oCCC"]
+const FOLK_LEGS := ["...oSo", "...oSo", "..oSSS", "..oooo"]
+const FOLK_BACK_TAIL := ["....oSSo....", "....oSSo....", ".....oo....."]
+const FOLK_APRON := ["............", "....oaao....", "....oaao....", "....oaao....", "....oaao...."]
+
+
+static func dino_folk(kind: String, direction: String, frame: int, colors: Dictionary) -> Texture2D:
+	frame = frame % 4
+	var key := "folk:%s:%s:%d:%s" % [kind, direction, frame, colors.values()]
 	return cached(key, func() -> Texture2D:
-		var image := Image.create(12, 16, false, Image.FORMAT_RGBA8)
-		var rows: Array = PERSON[direction][frame].duplicate()
-		if colors.has("hat"):
-			for y in 3:
-				rows[y] = rows[y].replace("h", "k")
-		var shirt: Color = colors.shirt
+		var head: Dictionary = FOLK_HEADS[kind]
+		var rows: Array
+		if direction == "side":
+			rows = head.side + FOLK_SIDE_BODY[["hang", "front", "hang", "back"][frame]] \
+				+ FOLK_SIDE_LEGS["together" if frame % 2 == 0 else "apart"]
+			rows = _over(rows, 9, FOLK_SIDE_TAIL)
+		else:
+			var legs := _mirror(FOLK_LEGS)
+			if frame == 1:
+				legs = _lift(legs, 0)
+			elif frame == 3:
+				legs = _lift(legs, 6)
+			rows = _mirror(head[direction]) + _mirror(FOLK_BODY) + legs
+			if direction == "up":
+				rows = _over(rows, 13, FOLK_BACK_TAIL)
+			elif colors.get("apron", false):
+				rows = _over(rows, 9, FOLK_APRON)
+		var skin: Color = colors.skin
 		var palette := {
-			"o": OUTLINE, "h": colors.hair, "k": colors.get("hat", Color.BLACK), "s": colors.skin, "e": Color("202020"),
-			"c": shirt, "C": shirt.darkened(0.25), "p": colors.pants, "b": Color("3a3a40"),
+			"o": OUTLINE, "s": skin, "S": skin.darkened(0.22), "R": colors.get("crest", skin.darkened(0.35)),
+			"L": Color("f0e4c8"), "e": EYE_DARK, "w": Color.WHITE, "c": colors.shirt, "C": colors.shirt.darkened(0.22),
+			"a": Color("e6dcc8"),
 		}
+		var image := Image.create(12, 18, false, Image.FORMAT_RGBA8)
 		_stamp(image, Vector2i.ZERO, rows, palette)
-		if colors.get("style", "") == "long":
-			_stamp(image, Vector2i(0, 4), LONG_HAIR[direction], palette)
 		return ImageTexture.create_from_image(image))
 
 
@@ -897,6 +1027,9 @@ const HERO_SIDE_LEGS := {
 	"apart": ["..oso.oso...", "..oko..oko..", ".onnno.onnno", ".ooooo.ooooo"],
 }
 
+# The top of the head without a hat (people of the park), replacing rows 0 to 4.
+const HERO_SIDE_HAIR := ["............", "...ooooo....", "..oRRRRRo...", ".oRRRRRRRo..", ".oRRRRRRRRo."]
+const HERO_HAIR := ["......", "...ooo", "..oRRR", ".oRRRR", ".oRRRR"]
 # Seen from the front and the back: the left half, mirrored.
 
 const HERO_FRONT_HEAD := [
@@ -996,6 +1129,9 @@ static func hero(direction: String, frame: int, colors: Dictionary) -> Texture2D
 			rows = _mirror(HERO_FRONT_HEAD if front else HERO_BACK_HEAD) + _mirror(HERO_FRONT_BODY if front else HERO_BACK_BODY) + legs
 			if long:
 				rows = _over(rows, 5, HERO_FRONT_TAIL) if front else _over(rows, 7, HERO_BACK_TAIL)
+		if not colors.has("hat"):
+			# Bare head: hair instead of the hat.
+			rows = (HERO_SIDE_HAIR if direction == "side" else _mirror(HERO_HAIR)) + rows.slice(5)
 		var hat: Color = colors.get("hat", KHAKI)
 		var palette := {
 			"o": OUTLINE, "H": hat, "h": hat.darkened(0.12), "K": hat.darkened(0.55),
@@ -1378,7 +1514,7 @@ static func _dart() -> Texture2D:
 
 const VILLAGE_WALLS := [Color("f4e4c4"), Color("e8d0b0"), Color("dfe8f0")]
 const VILLAGE_ROOFS := [Color("c0503a"), Color("4a78b8"), Color("6a9a40")]
-const MERCHANT := {"hair": Color("b0b0b8"), "skin": Color("f1c27d"), "shirt": Color("3a8a5a"), "pants": Color("5a4a3a"), "hat": Color("8a5a2a")}
+const MERCHANT := {"skin": Color("c8a050"), "shirt": Color("3a8a5a"), "crest": Color("8a6a30"), "apron": true}
 const RUIN_STONE := Color("a8a098")
 
 
@@ -1655,12 +1791,16 @@ static func furniture(kind: String, look: int) -> Texture2D:
 					p.box(Rect2(x, 8, 2, 6), [Color("d84a3a"), Color("f0c830"), Color("4a78b8")][x % 3], true)
 				return p.finish()
 			"stove":
+				# A stone fireplace with a fire.
 				var p := _painter(Vector2i(16, 28))
-				p.box(Rect2(6, 0, 4, 12), Color("5a5a62"), true)
-				p.box(Rect2(1, 11, 14, 16), Color("4a4a52"), true)
-				p.box(Rect2(4, 16, 8, 8), Color("2a1a10"), true)
-				p.ellipse(Vector2(8, 21), Vector2(3, 3), Color("f09818"))
-				p.dot(Vector2(8, 22), Color("fff070"), 2)
+				for y in 27:
+					for x in range(1 if y > 8 else 4, 15 if y > 8 else 12):
+						_put(p.image, x, y, _stone_wall(x, y))
+				p.box(Rect2(0, 8, 16, 2), LOG[2], true)
+				p.box(Rect2(4, 16, 8, 10), Color("1a1008"), true)
+				p.ellipse(Vector2(8, 22), Vector2(3, 3.5), Color("f09818"))
+				p.ellipse(Vector2(8, 23), Vector2(1.5, 2), Color("fff070"))
+				p.flat(Rect2(4, 25, 8, 1), LOG[1])
 				return p.finish()
 			"plant":
 				var p := _painter(Vector2i(14, 20))
@@ -1679,41 +1819,73 @@ static func furniture(kind: String, look: int) -> Texture2D:
 		return null)
 
 
-# The market stall of the village with the merchant behind the counter: 4 x 2 cells, 64 x 56 pixels.
+# The market stall of the village in three quarters: posts, a patchwork awning, shelves of pots
+# and bottles at the back, the merchant behind a counter of goods, and a sign with a paw print.
+# 4 x 2 cells, 64 x 60 pixels.
 static func market_stall() -> Texture2D:
 	return cached("market_stall", func() -> Texture2D:
-		var p := _painter(Vector2i(64, 56))
-		p.box(Rect2(3, 10, 3, 30), WOOD, true)
-		p.box(Rect2(58, 10, 3, 30), WOOD, true)
-		p.image.blend_rect(person("down", 0, MERCHANT).get_image(), Rect2i(0, 0, 12, 16), Vector2i(26, 22))
-		p.box(Rect2(2, 35, 60, 20), WOOD, true)
-		p.flat(Rect2(2, 35, 60, 2), WOOD.lightened(0.3))
-		for x in range(6, 60, 12):
-			p.flat(Rect2(x, 40, 1, 14), WOOD.darkened(0.25))
-		p.ellipse(Vector2(10, 33), Vector2(3, 2.5), Color("d8243e"), true)
-		p.ellipse(Vector2(16, 33), Vector2(3, 2.5), Color("e86a2a"), true)
-		p.ellipse(Vector2(47, 32.5), Vector2(3, 3), Color("f4ecd8"), true)
-		p.dot(Vector2(47, 31), ORE_COLORS.gold[0], 2)
-		p.polygon(PackedVector2Array([Vector2(53, 35), Vector2(55, 29), Vector2(57, 35)]), ORE_COLORS.crystal[0], true)
-		p.box(Rect2(0, 4, 64, 10), Color.WHITE, true)
+		var p := _painter(Vector2i(64, 60))
+		var img := p.image
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 31
+		# Back wall of planks with two shelves of pots and bottles.
+		_planks(img, Rect2i(8, 16, 48, 28), rng)
+		for shelf in [26, 36]:
+			img.fill_rect(Rect2i(8, shelf, 48, 2), LOG[2])
+			img.fill_rect(Rect2i(8, shelf + 2, 48, 1), LOG[0])
+			for x in range(10, 54, 5):
+				var kind := rng.randi() % 3
+				if kind == 0:
+					p.ellipse(Vector2(x + 1.5, shelf - 2.5), Vector2(2, 2.5), Color("b0603a"), true)
+				elif kind == 1:
+					p.box(Rect2(x + 0.5, shelf - 5, 2, 5), [Color("8a50c0"), Color("40a060"), Color("d04050")][rng.randi() % 3], true)
+					p.dot(Vector2(x + 1, shelf - 4), Color.WHITE)
+				else:
+					p.ellipse(Vector2(x + 1.5, shelf - 2), Vector2(2.5, 2), Color("e0c090"), true)
+		img.blend_rect(dino_folk("trike", "down", 0, MERCHANT).get_image(), Rect2i(0, 0, 12, 18), Vector2i(26, 28))
+		# Posts.
+		for x in [3, 58]:
+			p.box(Rect2(x, 10, 4, 48), LOG[1], true)
+		# The counter with its goods: pumpkins, cloth, a basket.
+		p.box(Rect2(4, 42, 56, 16), LOG[1], true)
+		_planks(img, Rect2i(5, 46, 54, 11), rng)
+		img.fill_rect(Rect2i(4, 42, 56, 4), LOG[2])
+		p.ellipse(Vector2(12, 40), Vector2(3.5, 3), Color("e8902a"), true)
+		p.ellipse(Vector2(17, 40.5), Vector2(3, 2.5), Color("f0a838"), true)
+		p.box(Rect2(38, 38, 8, 4), Color("3a7ab8"), true)
+		p.box(Rect2(39, 35, 7, 3), Color("c04040"), true)
+		p.ellipse(Vector2(52, 39.5), Vector2(4, 2.5), Color("c8a060"), true)
+		p.dot(Vector2(51, 37.5), Color("d8243e"), 2)
+		# The patchwork awning with its scalloped edge.
+		var patches := [Color("d84a6a"), Color("f0a020"), Color("3a9ad0"), Color("6ab040"), Color("8a50c0")]
+		for y in range(2, 16):
+			for x in range(0, 64):
+				var c: Color = patches[(x / 11 + (y / 7) * 2) % patches.size()]
+				_put(img, x, y, c.darkened(0.15) if y > 12 else (c.lightened(0.15) if y < 4 else c))
 		for x in range(0, 64, 8):
-			p.flat(Rect2(x, 4, 4, 10), Color("d84a3a"))
-		for x in range(4, 64, 8):
-			p.ellipse(Vector2(x, 14), Vector2(4, 2.5), Color("d84a3a") if (x / 8) % 2 == 0 else Color.WHITE)
+			p.ellipse(Vector2(x + 4, 16), Vector2(4, 2.5), patches[(x / 8) % patches.size()].darkened(0.15))
+		# The sign with a paw print.
+		p.box(Rect2(22, 0, 20, 8), LOG[2], true)
+		for spot in [Vector2(30, 5), Vector2(28, 2.5), Vector2(31, 1.5), Vector2(34, 2.5)]:
+			p.dot(spot, LOG[0], 2 if spot.y > 4 else 1)
+		p.ellipse(Vector2(37, 4), Vector2(2.5, 1.5), LOG[0])
 		return p.finish())
 
 
-# A wall of an abandoned house, standing on its cell: 16 x 28 pixels, broken at different heights.
+# A wall of an abandoned house, standing on its cell: 16 x 28 pixels of stones, broken at different
+# heights, with moss.
 static func ruin_wall(variant: int) -> Texture2D:
 	return cached("ruin_wall:%d" % variant, func() -> Texture2D:
 		var p := _painter(Vector2i(16, 28))
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 60 + variant
 		var height: int = [20, 15, 24, 12][variant % 4]
-		p.box(Rect2(0, 27 - height, 16, height), RUIN_STONE, true)
-		for y in range(27 - height + 4, 27, 5):
-			p.flat(Rect2(1, y, 14, 1), RUIN_STONE.darkened(0.25))
-			p.flat(Rect2(4 + (y % 2) * 6, y - 4, 1, 4), RUIN_STONE.darkened(0.25))
-		p.dot(Vector2(3, 27 - height + 2), Color("6a9a40"), 2)
-		p.dot(Vector2(12, 24), Color("6a9a40"), 2)
+		_stones(p.image, Rect2i(0, 27 - height, 16, height + 1), rng)
+		# A broken top: a few stones missing.
+		for x in rng.randi_range(2, 5):
+			p.image.fill_rect(Rect2i(rng.randi_range(0, 13), 27 - height, 3, 2), Color(0, 0, 0, 0))
+		_moss(p.image, Rect2i(0, 27 - height, 16, 6), 3, rng)
+		_moss(p.image, Rect2i(0, 22, 16, 5), 2, rng)
 		return p.finish())
 
 
@@ -1747,28 +1919,41 @@ static func chest(open: bool) -> Texture2D:
 		return p.finish())
 
 
-# The well in the middle of the village square: 2 x 2 cells, 32 x 40 pixels.
+# The well in the middle of the village square: a round wall of stones with dark water, two posts,
+# a little straw roof and a bucket. 2 x 2 cells, 32 x 44 pixels.
 static func well() -> Texture2D:
 	return cached("well", func() -> Texture2D:
-		var p := _painter(Vector2i(32, 40))
-		p.box(Rect2(5, 9, 3, 20), WOOD, true)
-		p.box(Rect2(24, 9, 3, 20), WOOD, true)
-		p.polygon(PackedVector2Array([Vector2(1, 12), Vector2(16, 1), Vector2(31, 12)]), Color("c0503a"), true)
-		p.box(Rect2(3, 24, 26, 15), RUIN_STONE, true)
-		p.flat(Rect2(6, 24, 20, 3), Color("2a4a70"))
-		for x in range(5, 28, 6):
-			p.flat(Rect2(x, 30, 1, 9), RUIN_STONE.darkened(0.25))
-		p.box(Rect2(14, 15, 4, 5), Color("8a6a4a"), true)
+		var p := _painter(Vector2i(32, 44))
+		var img := p.image
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 12
+		p.box(Rect2(5, 12, 3, 20), LOG[1], true)
+		p.box(Rect2(24, 12, 3, 20), LOG[1], true)
+		p.limb(Vector2(6, 16), Vector2(26, 16), 1, 1, LOG[2], true)
+		p.line(Vector2(16, 17), Vector2(16, 22), Color("c8b080"))
+		p.box(Rect2(13.5, 22, 5, 5), LOG[2], true)
+		# The round wall: its top seen from above, its front face of stones.
+		_stones(img, Rect2i(2, 30, 28, 13), rng)
+		p.ellipse(Vector2(16, 30), Vector2(14, 5), STONES[2], true)
+		p.ellipse(Vector2(16, 30), Vector2(10.5, 3), Color("1a2a3a"))
+		p.ellipse(Vector2(14, 29.5), Vector2(3, 1), Color("3a5a7a"))
+		_moss(img, Rect2i(2, 36, 28, 6), 3, rng)
+		# The straw roof.
+		_thatch(img, PackedVector2Array([Vector2(0, 14), Vector2(16, 2), Vector2(32, 14), Vector2(28, 16), Vector2(4, 16)]), rng)
+		p.limb(Vector2(4, 13), Vector2(16, 3), 0.8, 0.8, LOG[0])
 		return p.finish())
 
 
-# A wooden sign by the road: 16 x 22 pixels.
+# A wooden sign by the road: a rough post and a plank arrow, 16 x 24 pixels.
 static func signpost() -> Texture2D:
 	return cached("signpost", func() -> Texture2D:
-		var p := _painter(Vector2i(16, 22))
-		p.box(Rect2(7, 8, 2, 13), WOOD, true)
-		p.polygon(PackedVector2Array([Vector2(1, 3), Vector2(12, 3), Vector2(15, 6.5), Vector2(12, 10), Vector2(1, 10)]), WOOD.lightened(0.25), true)
-		p.flat(Rect2(3, 6, 8, 1), WOOD.darkened(0.3))
+		var p := _painter(Vector2i(16, 24))
+		p.box(Rect2(6.5, 8, 3, 15), LOG[1], true)
+		p.flat(Rect2(7, 9, 1, 13), LOG[0])
+		p.polygon(PackedVector2Array([Vector2(1, 3), Vector2(12, 3), Vector2(15, 6.5), Vector2(12, 10), Vector2(1, 10)]), LOG[2], true)
+		p.flat(Rect2(2, 5, 10, 1), LOG[1])
+		p.flat(Rect2(2, 8, 10, 1), LOG[1])
+		p.dot(Vector2(3, 6.5), LOG[0])
 		return p.finish())
 
 

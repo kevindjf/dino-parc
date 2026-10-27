@@ -34,7 +34,7 @@ func setup(owner_park: Node2D, vehicle_kind: String, at: Vector2) -> void:
 		add_child(shadow)
 	match kind:
 		"walk":
-			sprite = Art.sprite(Art.person("down", 0, Art.RANGER), Vector2(6, 16))
+			sprite = Art.sprite(Art.person("down", 0, Art.RANGER))
 		"gyro":
 			sprite = Art.sprite(Art.gyro(0), Vector2(10, 19))
 		"jeep":

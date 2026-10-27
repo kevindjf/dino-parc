@@ -35,7 +35,7 @@ func setup(owner_park: Node2D, start: Vector2i) -> void:
 		"shirt": Color.from_hsv(randf(), 0.65, 0.95), "pants": [Color("37474f"), Color("3a5a9a"), Color("6d5a3a")].pick_random()}
 	if randf() < 0.3:
 		colors.hat = Color.from_hsv(randf(), 0.7, 0.85)
-	sprite = Art.sprite(Art.person("down", 0, colors), Vector2(6, 16))
+	sprite = Art.sprite(Art.person("down", 0, colors))
 	add_child(sprite)
 	ice_cream = Art.sprite(Art.ice_cream(), Vector2(2, 6))
 	ice_cream.position = Vector2(5, -6)

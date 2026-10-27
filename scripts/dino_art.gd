@@ -45,13 +45,29 @@ static func frames(id: String) -> Dictionary:
 	for pose in POSES:
 		painter.start(size, scale, origin)
 		_draw(painter, sp, pose)
-		textures.append(painter.finish())
+		textures.append(_scales(painter.finish()))
 	var result := {
 		"walk": [textures[0], textures[1]], "roar": textures[2], "sleep": textures[3],
 		"origin": origin, "size": size, "height": origin.y,
 	}
 	_cache[id] = result
 	return result
+
+
+# Little scales all over the skin: a few darker and lighter pixels in a regular pattern, so the
+# dinosaurs look hand drawn like the rest of the world. The outline, eyes and teeth are kept.
+static func _scales(texture: ImageTexture) -> ImageTexture:
+	var image := texture.get_image()
+	for y in image.get_height():
+		for x in image.get_width():
+			var c := image.get_pixel(x, y)
+			if c.a < 0.5 or c.get_luminance() < 0.15 or c.get_luminance() > 0.9 or c.s < 0.12:
+				continue
+			if (x * 7 + y * 13) % 11 == 0:
+				image.set_pixel(x, y, c.darkened(0.16))
+			elif (x * 5 + y * 3) % 17 == 0:
+				image.set_pixel(x, y, c.lightened(0.12))
+	return ImageTexture.create_from_image(image)
 
 
 static func _draw(p: Painter, sp: Dictionary, pose: Dictionary) -> void:

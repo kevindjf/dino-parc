@@ -1,6 +1,6 @@
 extends Node2D
 
-# The inside of a house of the village: one room with its furniture and the person who lives
+# The inside of a house of the village: one room with its furniture and the dinosaur who lives
 # there. Each one has something to say, and a present for the first visit.
 #
 # A zone like the village and the mines (same functions), entered with the action button in
@@ -16,38 +16,37 @@ const RESIDENTS := [
 	{"name": "Mamie Rose", "gift": {"berries": 8},
 		"first": "Bonjour mon petit ! Tiens, des baies de mon jardin.",
 		"talk": ["Les herbivores adorent les baies !", "Reviens me voir quand tu veux."],
-		"colors": {"hair": Color("e0e0e8"), "skin": Color("ffdbac"), "shirt": Color("c060a0"), "pants": Color("6a4a8a"), "style": "long"}},
+		"kind": "trike", "colors": {"skin": Color("b8a890"), "shirt": Color("c060a0"), "crest": Color("e0a0c0")}},
 	{"name": "Marcel le boucher", "gift": {"meat": 5},
 		"first": "Les carnivores adorent ma viande ! Prends-en un peu.",
 		"talk": ["Lance de la viande à un carnivore sauvage : 5 fois, et il te suit !",
 			"Tu trouveras de la viande à la boutique."],
-		"colors": {"hair": Color("2a1a10"), "skin": Color("e0ac69"), "shirt": Color("f0f0f0"), "pants": Color("37474f")}},
+		"kind": "rex", "colors": {"skin": Color("c05030"), "shirt": Color("f0f0f0"), "apron": true}},
 	{"name": "Léa l'exploratrice", "gift": {"arrow": 10},
 		"first": "J'ai vu un T-Rex près des montagnes ! Prends ces flèches.",
 		"talk": ["Les dinos sauvages vivent loin du parc.", "Une capsule en or attrape même un T-Rex !"],
-		"colors": {"hair": Color("a0602a"), "skin": Color("f1c27d"), "shirt": Color("4f7a2a"), "pants": Color("6d5a3a"), "style": "long"}},
+		"kind": "raptor", "colors": {"skin": Color("6a9a50"), "shirt": Color("4f7a2a"), "crest": Color("e8902a")}},
 	{"name": "Papi Jules", "gift": {"coins": 30},
-		"first": "Quand j'étais petit, il n'y avait pas de dinos ici ! Tiens, une pièce pour toi… ou trente !",
+		"first": "Quand j'étais petit, il n'y avait pas de parc ici ! Tiens, une pièce pour toi… ou trente !",
 		"talk": ["Ah, les dinosaures… quelle aventure !", "Les fossiles valent cher chez le marchand."],
-		"colors": {"hair": Color("b0b0b8"), "skin": Color("c68642"), "shirt": Color("8a5a2a"), "pants": Color("3a5a9a")}},
+		"kind": "trike", "colors": {"skin": Color("8a8a7a"), "shirt": Color("8a5a2a"), "crest": Color("6a6a5a")}},
 	{"name": "Zoé la mineuse", "gift": {"capsule_copper": 2},
 		"first": "Les mines cachent du cristal et de l'or. Voici deux capsules !",
 		"talk": ["Une pioche en fer creuse plus vite.", "Plus tu descends dans la mine, plus c'est précieux !"],
-		"colors": {"hair": Color("2a1a10"), "skin": Color("8d5524"), "shirt": Color("e86a2a"), "pants": Color("37474f"), "hat": Color("f0c830")}},
+		"kind": "raptor", "colors": {"skin": Color("9a70b0"), "shirt": Color("e86a2a"), "crest": Color("f0c830"), "apron": true}},
 	{"name": "Docteur Paul", "gift": {"brush": 1},
 		"first": "Je soigne les dinosaures. Une brosse les rend heureux, tiens !",
 		"talk": ["Brosse tes dinos : ils deviennent tes amis.", "Un dino qui a faim cherche sa mangeoire."],
-		"colors": {"hair": Color("5a3a1a"), "skin": Color("f1c27d"), "shirt": Color("e8f0f8"), "pants": Color("4a78b8")}},
+		"kind": "rex", "colors": {"skin": Color("d07050"), "shirt": Color("e8f0f8")}},
 	{"name": "Nina la fermière", "gift": {"bush": 2},
 		"first": "Plante ces buissons près de chez toi : ils donnent des baies !",
 		"talk": ["Les buissons repoussent tout seuls.", "Une mangeoire nourrit tes dinos quand tu n'es pas là."],
-		"colors": {"hair": Color("e0c060"), "skin": Color("ffdbac"), "shirt": Color("6a9a40"), "pants": Color("6d5a3a"), "style": "long"}},
+		"kind": "ptero", "colors": {"skin": Color("d0b060"), "shirt": Color("6a9a40"), "crest": Color("e05050")}},
 	{"name": "Tom le pilote", "gift": {"bolas": 2},
 		"first": "Un jour, j'aurai un hélicoptère ! En attendant, prends ces bolas.",
 		"talk": ["L'hélicoptère vole au-dessus de tout !", "Le vélo, c'est bien. La moto, c'est mieux !"],
-		"colors": {"hair": Color("2a1a10"), "skin": Color("e0ac69"), "shirt": Color("2860c0"), "pants": Color("37474f"), "hat": Color("c0503a")}},
+		"kind": "ptero", "colors": {"skin": Color("4a8ab0"), "shirt": Color("2860c0"), "crest": Color("c0503a")}},
 ]
-const WALLPAPERS := [Color("f0d8b0"), Color("c8dcc0"), Color("d0d8ec")]
 
 var index := 0
 var resident: Dictionary
@@ -136,7 +135,7 @@ func _process(delta: float) -> void:
 			direction = "side"
 		elif to_player.y < 0.0:
 			direction = "up"
-		resident_sprite.texture = Art.person(direction, 0, resident.colors)
+		resident_sprite.texture = Art.dino_folk(resident.kind, direction, 0, resident.colors)
 		resident_sprite.flip_h = direction == "side" and to_player.x < 0.0
 		if said <= 0.0 and player.position.distance_to(resident_sprite.position) < 26.0:
 			bubble.set_text("Appuie sur Action pour parler !")
@@ -165,11 +164,10 @@ func _paint(image: Image, cell: Vector2i, look: int) -> void:
 	var at := cell * T
 	var rect := Rect2i(at, Vector2i(T, T))
 	if cell.y < 2 and cell.x > 0 and cell.x < SIZE.x - 1:
-		# The back wall, seen from the front: wallpaper with stripes and a skirting board.
-		var paper: Color = WALLPAPERS[look % WALLPAPERS.size()]
-		image.fill_rect(rect, paper)
-		for x in range(2, T, 6):
-			image.fill_rect(Rect2i(at + Vector2i(x, 0), Vector2i(2, T)), paper.darkened(0.08))
+		# The back wall, seen from the front: logs like outside, or planks, and a skirting board.
+		for y in T:
+			for x in T:
+				image.set_pixel(at.x + x, at.y + y, Art._log_wall(x, y) if look % 3 != 0 else Art._plank_wall(x, y))
 		if cell.y == 1:
 			image.fill_rect(Rect2i(at + Vector2i(0, T - 4), Vector2i(T, 4)), Color("8a5a30"))
 		return
@@ -204,7 +202,7 @@ func _place_sprites(look: int) -> void:
 	for x in [2, 8]:
 		var window := _stand(Art.furniture("window", look), Vector2i(x, 0), Vector2i(2, 1))
 		window.z_index = -5
-	resident_sprite = Art.sprite(Art.person("down", 0, resident.colors), Vector2(6, 16))
+	resident_sprite = Art.sprite(Art.dino_folk(resident.kind, "down", 0, resident.colors))
 	resident_sprite.position = cell_center(resident_cell) + Vector2(0, T / 2.0 - 1)
 	add_child(resident_sprite)
 	WorldText.make(resident_sprite, Vector2(0, 6), resident.name, "bubble", Color("6a4a2a"))

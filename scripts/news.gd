@@ -12,6 +12,8 @@ const ENTRIES := [
 		"title": "Les maisons et la viande !",
 		"items": [
 			["dino:triceratops", "Ton personnage devient un explorateur, avec son chapeau ! Les filles ont une queue de cheval."],
+			["wood", "Tout le monde a changé de look : maisons en rondins et en chaume, arbres, puits, boutiques…"],
+			["dino:velociraptor", "Les habitants du village sont des dinosaures habillés ! Va leur dire bonjour."],
 			["dino:triceratops", "Entre dans les maisons du village : marche vers la porte, et tu es dedans !"],
 			["capsule_copper", "Chaque habitant te fait un cadeau à ta première visite. Va tous les voir !"],
 			["meat", "La boutique vend de la viande pour les carnivores."],
