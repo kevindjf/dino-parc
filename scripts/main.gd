@@ -136,6 +136,10 @@ var mine_states := {}  # entrance "x,y" -> {"seed", "dug"}, saved with the game
 var village: Node2D = null  # the village, while the player is in it
 var village_state := {}  # the chests already opened and the presents given, saved with the game
 var house: Node2D = null  # the inside of a village house, while the player is in it
+# Doors and ladders are taken just by walking into them. Right after arriving somewhere, they
+# wait until the player stops or changes direction, so holding the stick does not go back at once.
+var door_wait := false
+var door_wait_dir := Vector2i.ZERO
 var world_bounds := Rect2()
 var combat: Node2D = null
 var builder: Node2D = null
@@ -1265,6 +1269,8 @@ func stop_driving() -> void:
 # --- Adventure: harvesting and building with your own hands ----------------------
 
 func _process_adventure(delta: float) -> void:
+	if door_wait and player.pushing != door_wait_dir:
+		door_wait = false
 	if away != null:
 		if mine != null:
 			_process_mine()
@@ -1281,6 +1287,15 @@ func _process_adventure(delta: float) -> void:
 	if player.position.x < -1.5 * T:
 		enter_village()
 		return
+	# Walking up into a mine entrance goes down.
+	var entrance = occupied.get(player.cell() + Vector2i.UP) if player.pushing == Vector2i.UP else null
+	if entrance != null and entrance.kind == "mine" and _door_ready():
+		if player.vehicle == "" and player.mount == null:
+			enter_mine(entrance)
+			return
+		if clock > gate_warned:
+			gate_warned = clock + 3.0
+			_float_text(player.position, "Descends pour entrer dans la mine", Color("ffab91"))
 	_update_gates(player.position)
 	# A tamed dinosaur that followed us into an enclosure stays there.
 	for dino in dinos:
@@ -1431,6 +1446,7 @@ func _back_to_surface() -> void:
 	camera.bounds = world_bounds
 	camera.position = player.position
 	hud.refresh_build()
+	_arrived()
 
 
 # Builds a level of the mine and puts the player by the ladder it came from.
@@ -1454,6 +1470,7 @@ func _open_mine(key: String, level: int, from_above: bool) -> void:
 	camera.bounds = mine.bounds()
 	camera.position = player.position
 	hud.refresh_build()
+	_arrived()
 
 
 func _mine_action(cell: Vector2i) -> void:
@@ -1483,6 +1500,10 @@ func _mine_action(cell: Vector2i) -> void:
 
 
 func _process_mine() -> void:
+	# Stepping on a ladder climbs it.
+	if mine.kind_at(player.cell()) in ["up", "down"] and player.pushing != Vector2i.ZERO and _door_ready():
+		_mine_action(player.cell())
+		return
 	var target: Vector2i = player.front()
 	var kind: String = mine.kind_at(target)
 	_show_ghost(target, Vector2i.ONE, Color.WHITE if kind != "floor" else Color("90a0b0"))
@@ -1506,6 +1527,7 @@ func enter_village() -> void:
 	camera.bounds = village.bounds()
 	camera.position = player.position
 	hud.refresh_build()
+	_arrived()
 	hud.flash("Bienvenue au village !\nVa voir la boutique sur la place.", 3.0)
 
 
@@ -1522,6 +1544,15 @@ func _process_village() -> void:
 	if village.is_exit(player.cell()):
 		exit_village()
 		return
+	# Walking up into the door of a house goes in.
+	var door: int = village.house_door_below(player.cell()) if player.pushing == Vector2i.UP else -1
+	if door >= 0 and _door_ready():
+		if player.vehicle == "":
+			enter_house(door)
+			return
+		if clock > gate_warned:
+			gate_warned = clock + 3.0
+			_float_text(player.position, "Descends du véhicule pour entrer", Color("ffab91"))
 	village.show_shop_hint(village.near_shop(player.position) and not hud.shop.visible)
 	var target: Vector2i = player.front()
 	var kind: String = village.kind_at(target)
@@ -1571,6 +1602,7 @@ func enter_house(index: int) -> void:
 	player.facing = Vector2i.UP
 	camera.bounds = house.bounds()
 	camera.position = player.position
+	_arrived()
 	hud.flash("Toc toc ! Tu entres chez %s." % house.resident.name, 2.5)
 
 
@@ -1589,6 +1621,16 @@ func exit_house() -> void:
 	player.facing = Vector2i.DOWN
 	camera.bounds = village.bounds()
 	camera.position = player.position
+	_arrived()
+
+
+func _arrived() -> void:
+	door_wait = true
+	door_wait_dir = player.pushing
+
+
+func _door_ready() -> bool:
+	return not door_wait
 
 
 func _process_house() -> void:

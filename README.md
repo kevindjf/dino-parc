@@ -49,7 +49,7 @@ La carte fait 128 × 96 cases, organisée en régions :
 
 Une rivière descend vers la mer. L'eau bloque le passage : on fabrique des **ponts** (3 bois → 2) qu'on pose sur l'eau. Un lac ou la mer servent aussi de mur pour un enclos.
 
-Chaque massif de montagnes a une **entrée de mine** creusée dans sa falaise sud. Mets-toi devant et appuie sur Action pour descendre.
+Chaque massif de montagnes a une **entrée de mine** creusée dans sa falaise sud. Il suffit de marcher dedans (vers le haut) pour descendre. Les échelles se prennent pareil, en marchant dessus.
 
 - Sous terre, il fait sombre et ta lampe éclaire autour de toi.
 - On creuse les murs à la pioche, et ce qui est creusé le reste.
@@ -91,7 +91,7 @@ Sors du parc par le **portail, à gauche** (le panneau « ← Village ») : la r
   - L'**hélicoptère** décolle tout seul et vole au-dessus des arbres, de l'eau et des barrières. Action pour atterrir, sur une case libre.
 - Les **pièces** viennent des visiteurs du parc, de la vente à la boutique et des coffres.
 - Quatre **maisons abandonnées** cachent chacune un **coffre** : des pièces et un objet rare. Un coffre ne s'ouvre qu'une fois.
-- **On entre dans les huit maisons** : devant une maison, appuie sur Action. Chacune a son habitant (Mamie Rose, Marcel le boucher, Léa l'exploratrice…). Mets-toi devant lui et appuie sur Action pour parler : à la première visite, il te fait un **cadeau** (baies, viande, flèches, pièces…), ensuite il donne des conseils. Pour ressortir, passe la porte en bas. Les habitants et leurs cadeaux sont dans `scripts/house.gd` (`RESIDENTS`).
+- **On entre dans les huit maisons** : il suffit de marcher vers la porte (Action devant la maison marche aussi). Chacune a son habitant (Mamie Rose, Marcel le boucher, Léa l'exploratrice…). Mets-toi devant lui et appuie sur Action pour parler : à la première visite, il te fait un **cadeau** (baies, viande, flèches, pièces…), ensuite il donne des conseils. Pour ressortir, passe la porte en bas. En véhicule, il faut d'abord descendre. Les habitants et leurs cadeaux sont dans `scripts/house.gd` (`RESIDENTS`).
 - Pour rentrer, suis la route vers la droite (le panneau « Parc → »). Le parc continue de vivre pendant ce temps : les visiteurs paient leur billet.
 
 ### Une carte en zones

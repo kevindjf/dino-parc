@@ -115,6 +115,15 @@ func house_at(cell: Vector2i) -> int:
 	return -1
 
 
+# The house whose door is just above this cell (walking up there goes in), or -1.
+func house_door_below(cell: Vector2i) -> int:
+	for i in HOUSES.size():
+		var door: Vector2i = HOUSES[i][0] + Vector2i(1, HOUSE_SIZE.y)
+		if cell == door or cell == door + Vector2i.RIGHT:
+			return i
+	return -1
+
+
 # Where the player stands when coming out of a house: in front of its door.
 func house_door(index: int) -> Vector2:
 	return cell_center(HOUSES[index][0] + Vector2i(1, HOUSE_SIZE.y)) + Vector2(T / 2.0, 0)

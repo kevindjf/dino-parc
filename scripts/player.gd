@@ -33,6 +33,7 @@ var shadow: Sprite2D
 var altitude := 0.0  # of the helicopter
 var landing := false
 var rotor := 0.0
+var pushing := Vector2i.ZERO  # the direction the player is walking towards, ZERO when standing still
 
 
 func setup(owner_park: Node2D, player_look: Dictionary, at: Vector2) -> void:
@@ -74,6 +75,7 @@ func _process(delta: float) -> void:
 	# In the building mode, the character waits while the joystick moves the camera.
 	if park.builder != null and park.builder.active:
 		velocity = Vector2.ZERO
+		pushing = Vector2i.ZERO
 		_animate(delta, park.inventory.current())
 		return
 	var input := Vector2.ZERO
@@ -94,6 +96,7 @@ func _process(delta: float) -> void:
 			facing = Vector2i.RIGHT if input.x > 0.0 else Vector2i.LEFT
 		else:
 			facing = Vector2i.DOWN if input.y > 0.0 else Vector2i.UP
+	pushing = facing if input != Vector2.ZERO else Vector2i.ZERO
 	var speed: float = SPEED * park.inventory.walk_bonus()
 	if mount:
 		speed = ride_speed()

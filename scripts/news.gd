@@ -11,11 +11,12 @@ const ENTRIES := [
 		"version": 5,
 		"title": "Les maisons et la viande !",
 		"items": [
-			["dino:triceratops", "Entre dans les maisons du village : appuie sur Action devant la porte !"],
+			["dino:triceratops", "Entre dans les maisons du village : marche vers la porte, et tu es dedans !"],
 			["capsule_copper", "Chaque habitant te fait un cadeau à ta première visite. Va tous les voir !"],
 			["meat", "La boutique vend de la viande pour les carnivores."],
 			["dino:velociraptor", "Lance 5 viandes à un carnivore sauvage : il devient ton ami et te suit !"],
 			["feeder_meat", "Achète une mangeoire à viande pour les carnivores de ton parc."],
+			["pickaxe", "Plus besoin du bouton pour les portes et les échelles des mines : il suffit d'avancer."],
 			["car", "En vélo, en moto, en voiture ou en hélico, ton personnage se tourne dans le sens où il roule !"],
 		],
 	},
