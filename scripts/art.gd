@@ -518,22 +518,26 @@ static func _volcano() -> Texture2D:
 # out of it. 20 x 22 pixels, anchored at its bottom center.
 static func mine_entrance() -> Texture2D:
 	return cached("mine_entrance", func() -> Texture2D:
-		var p := _painter(Vector2i(20, 22))
-		p.ellipse(Vector2(10, 14), Vector2(8, 8), STONES[1])
-		p.box(Rect2(2, 7, 16, 15), STONES[1])
-		p.flat(Rect2(4, 8, 12, 14), Color("120c08"))
-		# The rails and their wooden ties.
+		var l := Layers.new(Vector2i(20, 22))
+		# A mound of rocks around a dark hole going down into the hill.
+		l.part([l.ellipse(10, 14, 9.5, 8.5), l.box(0.5, 14, 19, 8)], STONES[2], 1, 1)
+		for rock in [Vector2(2.5, 10), Vector2(17, 11), Vector2(1.5, 18), Vector2(18.5, 18)]:
+			l.part([l.ellipse(rock.x, rock.y, 2.5, 2)], STONES[3].darkened(0.08), 1, 1)
+		l.part([l.box(5, 8, 10, 14)], Color("120c08"), 0, 0, false)
+		l.part([l.box(6, 13, 8, 9)], Color("261a10"), 0, 0, false)
+		# The rails and their wooden ties, getting smaller toward the dark.
 		for y in [14, 17, 20]:
-			p.flat(Rect2(6, y, 8, 1), LOG[0])
-		p.line(Vector2(7, 12), Vector2(6, 21), Color("9a9aa2"))
-		p.line(Vector2(12, 12), Vector2(13, 21), Color("9a9aa2"))
-		# The frame: two posts, a lintel and a brace.
-		p.box(Rect2(2, 6, 3, 16), LOG[1], true)
-		p.box(Rect2(15, 6, 3, 16), LOG[1], true)
-		p.box(Rect2(0, 3, 20, 4), LOG[2], true)
-		p.flat(Rect2(1, 5, 18, 1), LOG[0])
-		return p.finish())
-
+			l.part([l.box(6 - (y - 14) / 6.0, y, 8 + (y - 14) / 3.0, 1)], LOG[1], 0, 0, false)
+		l.part([l.limb(Vector2(7.5, 12), Vector2(6.5, 21.5), 0.5, 0.6), l.limb(Vector2(12.5, 12), Vector2(13.5, 21.5), 0.5, 0.6)], Color("a8a8b0"), 0, 0, false)
+		# The frame: two posts, a lintel with its cut ends, and a lantern.
+		l.part([l.box(2.5, 7, 3, 15)], LOG[1], 1, 1)
+		l.part([l.box(14.5, 7, 3, 15)], LOG[1].darkened(0.12), 1, 1)
+		l.part([l.box(0.5, 4, 19, 3.5)], LOG[2], 1, 1)
+		for x in [1.5, 18]:
+			l.dot(x, 5.5, LOG[3])
+		l.part([l.box(15.5, 8.5, 2, 2.5)], Color("f0c040"), 1, 0)
+		l.dot(16, 9.5, Color("fff4c0"))
+		return _texture(l, 21))
 
 # --- Fences ------------------------------------------------------------------
 # 16 x 40 images: the cell is the bottom 16 rows, the fence stands on its center, pixel (8, 32).
@@ -731,92 +735,149 @@ static func _stone_wall(x: int, y: int) -> Color:
 	return STONES[3] if y % 4 == 0 else (STONES[2] if (brick + row) % 3 != 0 else STONES[1])
 
 
-# A stand of the park in three quarters: a wooden kiosk with a striped awning of its colour,
-# and what it sells on top. 1 cell, 22 x 32 pixels.
+# A stand of the park in three quarters: a wooden kiosk with its window and counter, a striped
+# awning of its colour, and a big model of what it sells on the roof. 1 cell, 22 x 32 pixels.
 static func shop(data: Dictionary) -> Texture2D:
 	return cached("shop:" + data.style, func() -> Texture2D:
-		var p := _painter(Vector2i(22, 32))
-		var img := p.image
+		var l := Layers.new(Vector2i(22, 32))
 		var color: Color = data.color
-		_block3q(img, Rect2i(2, 14, 14, 17), Vector2i(4, -3), _plank_wall)
-		img.fill_rect(Rect2i(3, 15, 12, 5), Color("2a1a10"))
-		img.fill_rect(Rect2i(2, 20, 14, 2), LOG[2])
-		p.box(Rect2(2, 9, 18, 6), Color.WHITE, true)
-		for x in range(2, 20, 4):
-			p.flat(Rect2(x, 9, 2, 6), color)
-		p.flat(Rect2(2, 14, 18, 1), color.darkened(0.3))
+		# The kiosk: its front of planks, its right side going back in the shade.
+		l.part([l.poly([Vector2(16, 17), Vector2(20, 14), Vector2(20, 28), Vector2(16, 31)])], LOG[1].darkened(0.3), 0, 1)
+		l.part([l.box(2, 17, 14, 14)], LOG[1], 1, 2)
+		for x in range(4, 16, 3):
+			l.part([l.box(x, 24, 1, 6)], LOG[0], 0, 0, false)
+		# The window, dark inside, with a few things for sale, and the counter.
+		l.part([l.box(3.5, 17.5, 11, 5)], Color("2a1a10"), 0, 0, false)
+		for i in 3:
+			l.part([l.ellipse(6 + i * 3.5, 21, 1.2, 1.2)], color.lightened(0.2 * i), 1, 0, false)
+		l.part([l.box(2, 22, 14, 2)], LOG[2], 1, 0)
+		# The awning: its roof going back, the stripes in front and the scalloped edge.
+		l.part([l.poly([Vector2(1, 12), Vector2(5, 9), Vector2(21, 9), Vector2(17, 12)])], color.lightened(0.15), 1, 0)
+		l.part([l.poly([Vector2(17, 12), Vector2(21, 9), Vector2(21, 13), Vector2(17, 16)])], color.darkened(0.25), 0, 1)
+		l.part([l.box(1, 12, 16, 3.5)], Color("f4ead0"), 1, 0)
+		for x in range(1, 17, 4):
+			l.part([l.box(x, 12, 2, 3.5)], color, 0, 0, false)
+		for i in 8:
+			var x := 1.0 + i * 2.0
+			l.part([l.poly([Vector2(x, 15.5), Vector2(x + 2, 15.5), Vector2(x + 1, 17)])], color if i % 2 == 0 else Color("f4ead0"), 0, 0, false)
 		match data.style:
 			"icecream":
-				p.polygon(PackedVector2Array([Vector2(7, 4), Vector2(13, 4), Vector2(10, 9)]), Color("d7a35c"), true)
-				p.ellipse(Vector2(10, 3.5), Vector2(3.5, 3), Color("f48fb1"), true)
+				# A cone with two scoops and a cherry.
+				l.part([l.poly([Vector2(8, 5), Vector2(14, 5), Vector2(11, 10)])], Color("d7a35c"), 1, 1)
+				for d in [Vector2(9.5, 6.5), Vector2(11.5, 7.5), Vector2(10.5, 5.5)]:
+					l.dot(d.x, d.y, Color("a87430"))
+				l.part([l.ellipse(9.5, 4, 2.6, 2.2)], Color("fff3d8"), 1, 1)
+				l.part([l.ellipse(12.5, 3.5, 2.6, 2.4)], Color("f48fb1"), 1, 1)
+				l.part([l.ellipse(11, 1.6, 1, 1)], Color("e53935"), 0, 0)
 			"burger":
-				p.ellipse(Vector2(10, 4), Vector2(5, 2.5), Color("e0a040"), true)
-				p.box(Rect2(5, 5, 10, 1), Color("5a8a2a"))
-				p.box(Rect2(5, 6, 10, 2), Color("7a3a20"), true)
+				# Bun, salad, cheese, meat and the bottom bun.
+				l.part([l.box(5.5, 7.5, 11, 2)], Color("d89038"), 1, 1)
+				l.part([l.box(5, 6.5, 12, 1.5)], Color("7a3a20"), 0, 1)
+				l.part([l.poly([Vector2(5, 6), Vector2(17, 6), Vector2(15, 7.5), Vector2(7, 7.5)])], Color("fdd835"), 0, 0, false)
+				l.part([l.box(4.5, 5, 13, 1.2)], Color("6aa83a"), 0, 0)
+				l.part([l.ellipse(11, 4.5, 6, 3)], Color("e8a040"), 1, 1)
+				for seed in [Vector2(9, 3), Vector2(12, 2.5), Vector2(14, 3.5)]:
+					l.dot(seed.x, seed.y, Color("fff3d8"))
 			"souvenir":
-				p.box(Rect2(6, 2, 8, 7), Color("7e57c2"), true)
-				p.flat(Rect2(9, 2, 2, 7), Color("fdd835"))
-				p.flat(Rect2(6, 5, 8, 1), Color("fdd835"))
-		return p.finish())
+				# A present with a ribbon and a bow.
+				l.part([l.box(6, 3.5, 10, 6.5)], color, 1, 1)
+				l.part([l.box(10, 3.5, 2, 6.5), l.box(6, 5.5, 10, 1.5)], Color("fdd835"), 0, 0, false)
+				l.part([l.ellipse(9, 2.5, 2, 1.3), l.ellipse(13, 2.5, 2, 1.3)], Color("fdd835"), 1, 0)
+		return _texture(l, 22))
 
 
 # A feeder: a wooden trough full of hay for the herbivores, a rack with meat for the carnivores.
 static func feeder(diet: String) -> Texture2D:
 	return cached("feeder:" + diet, func() -> Texture2D:
-		var p := _painter(Vector2i(18, 22))
-		var img := p.image
-		var rng := RandomNumberGenerator.new()
-		rng.seed = 5
+		var l := Layers.new(Vector2i(18, 22))
 		if diet == "herb":
-			_block3q(img, Rect2i(1, 14, 13, 7), Vector2i(3, -3), _plank_wall)
-			_thatch(img, PackedVector2Array([Vector2(1, 14), Vector2(4, 8), Vector2(10, 7), Vector2(16, 10), Vector2(14, 14)]), rng)
-			p.dot(Vector2(6, 10), Color("c0d040"), 2)
+			# A heap of hay in a trough of planks, a few flowers in the hay.
+			l.part([l.ellipse(8.5, 14, 7.5, 5)], THATCH[2], 1, 1)
+			for straw in [Vector2(4, 12), Vector2(7, 10), Vector2(10, 11), Vector2(13, 12), Vector2(6, 13), Vector2(11, 13)]:
+				l.part([l.limb(straw, straw + Vector2(1.5, -1.5), 0.4, 0.4)], THATCH[3], 0, 0, false)
+			l.dot(6, 11, Color("f4f0e0"))
+			l.dot(12, 10, Color("f0d040"))
+			l.part([l.poly([Vector2(14, 15), Vector2(17, 12.5), Vector2(17, 18.5), Vector2(14, 21)])], LOG[1].darkened(0.3), 0, 1)
+			l.part([l.box(1, 15, 13, 6)], LOG[1], 1, 2)
+			l.part([l.box(1, 17.5, 13, 1)], LOG[0], 0, 0, false)
+			for x in [1.5, 12.5]:
+				l.dot(x, 16, LOG[3])
 		else:
-			p.box(Rect2(2, 4, 3, 17), LOG[1], true)
-			p.box(Rect2(13, 4, 3, 17), LOG[1], true)
-			p.box(Rect2(1, 3, 16, 3), LOG[2], true)
-			for x in [6, 11]:
-				p.line(Vector2(x, 6), Vector2(x, 8), Color("c8b080"))
-				p.ellipse(Vector2(x, 11), Vector2(2.5, 3), Color("c0443a"), true)
-				p.dot(Vector2(x, 14.5), Color("f4ecd8"), 2)
-			p.box(Rect2(1, 17, 16, 4), STONES[2], true)
-		return p.finish())
+			# A rack of logs on a stone base, two pieces of meat hanging from it.
+			l.part([l.box(1, 17, 16, 4)], STONES[2], 1, 1)
+			l.part([l.box(2, 4, 3, 14)], LOG[1], 1, 1)
+			l.part([l.box(13, 4, 3, 14)], LOG[1].darkened(0.1), 1, 1)
+			l.part([l.box(1, 3, 16, 3)], LOG[2], 1, 1)
+			for x in [6.5, 11]:
+				l.part([l.box(x - 0.5, 6, 1, 2.5)], Color("c8b080"), 0, 0, false)
+				l.part([l.ellipse(x, 11, 2.5, 3)], Color("c0443a"), 1, 1)
+				l.part([l.limb(Vector2(x, 13), Vector2(x, 15.5), 0.8, 0.8)], Color("f4ecd8"), 1, 0)
+				l.dot(x - 1, 10, Color("e87a6a"))
+		return _texture(l, 18))
 
 
 # The station of the gyrospheres: a stone and wood building with a glass ball on its roof.
 # 2 x 2 cells, 36 x 42 pixels.
 static func gyro_station() -> Texture2D:
 	return cached("gyro_station", func() -> Texture2D:
-		var p := _painter(Vector2i(36, 42))
-		var img := p.image
-		_block3q(img, Rect2i(2, 20, 28, 21), Vector2i(5, -4), _stone_wall)
-		img.fill_rect(Rect2i(2, 20, 28, 3), LOG[2])
-		p.box(Rect2(12, 28, 8, 13), Color("2a3a4a"), true)
-		_window(img, Rect2i(5, 27, 5, 5))
-		_window(img, Rect2i(22, 27, 5, 5))
-		_fill_poly(img, PackedVector2Array([Vector2(0, 21), Vector2(5, 15), Vector2(34, 15), Vector2(35, 17), Vector2(31, 21)]), func(x: int, y: int) -> Color:
-			return Color("2f8fc8") if (x / 3) % 2 == 0 else Color("3aa0d8"))
-		p.ellipse(Vector2(17, 9), Vector2(7, 7), Color(0.7, 0.9, 1.0, 0.85), true)
-		p.box(Rect2(10, 8, 14, 2), Color("ff9800"))
-		p.dot(Vector2(14, 5), Color.WHITE, 2)
-		return p.finish())
+		var l := Layers.new(Vector2i(36, 42))
+		# Walls of stones: the front and the right side going back.
+		l.part([l.poly([Vector2(30, 21), Vector2(35, 17), Vector2(35, 37), Vector2(30, 41)])], STONES[1], 0, 1)
+		l.part([l.box(2, 21, 28, 20)], STONES[0], 0, 0)
+		for row in 5:
+			var y := 23.5 + row * 3.5
+			var shift := 3.0 if row % 2 == 1 else 0.0
+			for i in 6:
+				var x := 2.5 + shift + i * 5.5
+				var tone: Color = [STONES[2], STONES[3].darkened(0.1), STONES[2].darkened(0.08)][(i + row * 2) % 3]
+				l.part([l.box(x, y, minf(4.5, 29.5 - x), 2.8)], tone, 1, 1, false)
+		l.part([l.box(2, 21, 28, 2.5)], LOG[2], 1, 0)
+		# A glass door and two windows.
+		l.part([l.box(12, 28, 8, 13)], Color("2a4a6a"), 1, 0)
+		l.part([l.box(15.5, 28, 1, 13)], Color("1a2a3a"), 0, 0, false)
+		l.part([l.limb(Vector2(13, 31), Vector2(15, 29), 0.4, 0.4)], Color("8ac0e8"), 0, 0, false)
+		for x in [5, 22]:
+			l.part([l.box(x, 27, 5, 5)], Color("5aa0d8"), 1, 0)
+			l.part([l.box(x + 2, 27, 1, 5), l.box(x, 29, 5, 1)], LOG[1], 0, 0, false)
+		# The blue roof and the big glass ball with its orange belt.
+		l.part([l.poly([Vector2(0, 21), Vector2(5, 15), Vector2(35, 15), Vector2(35, 17), Vector2(31, 21)])], Color("2f8fc8"), 1, 1)
+		for x in range(6, 34, 4):
+			l.part([l.poly([Vector2(x - 4.5, 21), Vector2(x, 15), Vector2(x + 1.5, 15), Vector2(x - 3, 21)])], Color("3aa0d8"), 0, 0, false)
+		l.part([l.ellipse(17, 9, 7, 7)], Color(0.62, 0.86, 1.0), 1, 1)
+		l.part([l.ellipse(17, 9, 7, 1.2)], Color("ff9800"), 0, 0, false)
+		l.part([l.ellipse(14.5, 5.5, 1.5, 1.2)], Color.WHITE, 0, 0, false)
+		return _texture(l, 36))
 
 
-# The jeep garage: a wooden barn with a big plank door under a straw roof. 2 x 2 cells, 36 x 40.
+# The jeep garage: a log barn with a big plank door under a straw roof. 2 x 2 cells, 36 x 40.
 static func garage() -> Texture2D:
 	return cached("garage", func() -> Texture2D:
-		var p := _painter(Vector2i(36, 40))
-		var img := p.image
-		var rng := RandomNumberGenerator.new()
-		rng.seed = 8
-		_block3q(img, Rect2i(2, 18, 28, 21), Vector2i(5, -4), _log_wall)
-		_door(img, Rect2i(7, 24, 18, 15))
-		img.fill_rect(Rect2i(7, 31, 18, 1), LOG[0])
-		_thatch(img, PackedVector2Array([Vector2(0, 20), Vector2(6, 6), Vector2(36, 2), Vector2(36, 14), Vector2(32, 20)]), rng)
-		p.box(Rect2(10, 12, 12, 5), LOG[2], true)
-		p.flat(Rect2(12, 14, 8, 1), Color("6d8f3a"))
-		return p.finish())
-
+		var l := Layers.new(Vector2i(36, 40))
+		# The walls: logs lying one on the other, their cut ends showing at the corner.
+		l.part([l.poly([Vector2(30, 19), Vector2(35, 15), Vector2(35, 35), Vector2(30, 39)])], LOG[1].darkened(0.3), 0, 1)
+		for i in 7:
+			var y := 19.0 + i * 3.0
+			l.part([l.box(2, y, 28, 3)], LOG[1] if i % 2 == 0 else LOG[1].lightened(0.06), 1, 1)
+			l.part([l.ellipse(2.5, y + 1.5, 1.5, 1.4)], LOG[3], 0, 0)
+		# The big door, with a cross brace and its handle.
+		l.part([l.box(7, 24, 18, 15)], LOG[2], 1, 1)
+		for x in range(10, 25, 3):
+			l.part([l.box(x, 25, 1, 13)], LOG[1], 0, 0, false)
+		l.part([l.limb(Vector2(8, 25), Vector2(24, 37), 0.8, 0.8), l.limb(Vector2(24, 25), Vector2(8, 37), 0.8, 0.8)], LOG[1].darkened(0.1), 1, 0)
+		l.part([l.box(15.5, 24, 1, 15)], LOG[0], 0, 0, false)
+		l.dot(14, 31, Color("d0d0d8"))
+		l.dot(18, 31, Color("d0d0d8"))
+		# The straw roof and the sign with a little green jeep.
+		l.part([l.poly([Vector2(0, 20), Vector2(6, 6), Vector2(36, 2), Vector2(36, 14), Vector2(32, 20)])], THATCH[2], 1, 2)
+		for row in 4:
+			for x in range(4 + row * 2, 34, 3):
+				l.dot(x, 17 - row * 3 - x * 0.05 + (x % 2), THATCH[1])
+		l.part([l.box(10, 11, 13, 6)], LOG[2], 1, 1)
+		l.part([l.box(12.5, 13, 6, 2)], Color("6d8f3a"), 1, 0)
+		l.part([l.box(14, 12, 3, 1)], Color("6d8f3a"), 0, 0, false)
+		for x in [13.5, 18]:
+			l.part([l.ellipse(x, 15.2, 0.9, 0.9)], Color("2a2a2a"), 0, 0, false)
+		return _texture(l, 40))
 
 # The heliport, flat on the ground: a round pad of stones in a wooden ring, a big H and lights.
 static func heliport() -> Texture2D:
@@ -2070,48 +2131,67 @@ static func paint_planks(image: Image, at: Vector2i, seed: int) -> void:
 		image.fill_rect(Rect2i(at + Vector2i(rng.randi_range(1, 9), rng.randi_range(0, 2) * 4), Vector2i(5, 3)), Color("3a2a1a"))
 
 
-# A treasure chest, closed or opened: 16 x 16 pixels.
+# A treasure chest, closed or opened: 16 x 16 pixels. Planks of wood held by golden bands, a
+# rounded lid with a lock; opened, the lid stands back and the gold shines inside.
 static func chest(open: bool) -> Texture2D:
 	return cached("chest:%s" % open, func() -> Texture2D:
-		var p := _painter(Vector2i(16, 16))
+		var l := Layers.new(Vector2i(16, 16))
 		var gold: Color = ORE_COLORS.gold[0]
 		if open:
-			p.box(Rect2(1, 0, 14, 5), WOOD.darkened(0.15), true)
-			p.box(Rect2(1, 6, 14, 9), WOOD, true)
-			p.flat(Rect2(2, 6, 12, 3), Color("3a2a1a"))
+			l.part([l.box(1.5, 1, 13, 6)], WOOD.darkened(0.3), 0, 1)
+			l.part([l.box(2.5, 2, 11, 4)], Color("3a2414"), 0, 0, false)
+		l.part([l.box(1, 7, 14, 8)], WOOD, 1, 2)
+		l.part([l.box(1, 11, 14, 1)], WOOD.darkened(0.3), 0, 0, false)
+		if open:
+			l.part([l.ellipse(8, 7.5, 5.5, 1.8)], gold, 1, 0)
+			for spark in [Vector2(5, 7), Vector2(8, 6.5), Vector2(11, 7)]:
+				l.dot(spark.x, spark.y, ORE_COLORS.gold[1])
 		else:
-			p.box(Rect2(1, 6, 14, 9), WOOD, true)
-			p.box(Rect2(1, 3, 14, 5), WOOD.lightened(0.12), true)
-			p.dot(Vector2(8, 8), gold, 2)
-		for x in [3, 12]:
-			p.flat(Rect2(x, 3 if not open else 6, 1, 12 if not open else 9), gold)
-		return p.finish())
-
+			l.part([l.box(1, 5, 14, 3), l.ellipse(8, 5, 7, 2.5)], WOOD.lightened(0.1), 1, 1)
+		for x in [3, 11.5]:
+			l.part([l.box(x, 3 if not open else 7, 1.5, 12 if not open else 8)], gold, 1, 0, false)
+		if not open:
+			l.part([l.box(6.5, 6.5, 3, 3.5)], gold, 1, 1)
+			l.dot(8, 8, Color("3a2414"))
+		return _texture(l, 16))
 
 # The well in the middle of the village square: a round wall of stones with dark water, two posts,
-# a little straw roof and a bucket. 2 x 2 cells, 32 x 44 pixels.
+# a little straw roof, a rope and a bucket. 2 x 2 cells, 32 x 44 pixels.
 static func well() -> Texture2D:
 	return cached("well", func() -> Texture2D:
-		var p := _painter(Vector2i(32, 44))
-		var img := p.image
-		var rng := RandomNumberGenerator.new()
-		rng.seed = 12
-		p.box(Rect2(5, 12, 3, 20), LOG[1], true)
-		p.box(Rect2(24, 12, 3, 20), LOG[1], true)
-		p.limb(Vector2(6, 16), Vector2(26, 16), 1, 1, LOG[2], true)
-		p.line(Vector2(16, 17), Vector2(16, 22), Color("c8b080"))
-		p.box(Rect2(13.5, 22, 5, 5), LOG[2], true)
-		# The round wall: its top seen from above, its front face of stones.
-		_stones(img, Rect2i(2, 30, 28, 13), rng)
-		p.ellipse(Vector2(16, 30), Vector2(14, 5), STONES[2], true)
-		p.ellipse(Vector2(16, 30), Vector2(10.5, 3), Color("1a2a3a"))
-		p.ellipse(Vector2(14, 29.5), Vector2(3, 1), Color("3a5a7a"))
-		_moss(img, Rect2i(2, 36, 28, 6), 3, rng)
-		# The straw roof.
-		_thatch(img, PackedVector2Array([Vector2(0, 14), Vector2(16, 2), Vector2(32, 14), Vector2(28, 16), Vector2(4, 16)]), rng)
-		p.limb(Vector2(4, 13), Vector2(16, 3), 0.8, 0.8, LOG[0])
-		return p.finish())
-
+		var l := Layers.new(Vector2i(32, 44))
+		# The posts and the beam with its handle, the rope going down to the bucket.
+		l.part([l.box(5, 12, 3, 20)], LOG[1], 1, 1)
+		l.part([l.box(24, 12, 3, 20)], LOG[1].darkened(0.1), 1, 1)
+		l.part([l.limb(Vector2(5, 16.5), Vector2(28, 16.5), 1.3, 1.3)], LOG[2], 1, 1)
+		l.part([l.limb(Vector2(28.5, 16.5), Vector2(30, 20), 0.6, 0.6)], LOG[0], 0, 0)
+		l.part([l.box(14, 17, 4, 1.5)], Color("c8b080"), 0, 0, false)
+		l.part([l.box(15.5, 18, 1, 4)], Color("c8b080"), 0, 0, false)
+		l.part([l.poly([Vector2(13, 22), Vector2(19, 22), Vector2(18, 27), Vector2(14, 27)])], WOOD, 1, 1)
+		l.part([l.box(13, 23.5, 6, 1)], STONES[1], 0, 0, false)
+		# The round wall: its front face of stones, then its rim seen from above, and the water.
+		l.part([l.box(2, 30, 28, 13)], STONES[0], 0, 0)
+		for row in 3:
+			var y := 34.0 + row * 3.0
+			var shift := 3.0 if row % 2 == 1 else 0.0
+			for i in 6:
+				var x := 2.0 + shift + i * 6.0
+				var tone: Color = [STONES[2], STONES[3].darkened(0.1), STONES[2].darkened(0.08)][(i + row * 2) % 3]
+				l.part([l.box(maxf(x, 2.5), y, minf(x + 5, 29.5) - maxf(x, 2.5), 2.4)], tone, 1, 1, false)
+		l.part([l.ellipse(16, 30, 14, 5)], STONES[3], 1, 1)
+		l.part([l.ellipse(16, 30, 10.5, 3)], Color("1a2a3a"), 0, 0, false)
+		l.part([l.ellipse(14, 29.5, 3, 1)], Color("3a5a7a"), 0, 0, false)
+		l.dot(13, 29, Color("8ab0d0"))
+		for tuft in [Vector2(3, 40), Vector2(27, 38), Vector2(9, 41)]:
+			l.part([l.ellipse(tuft.x, tuft.y, 2, 1.3)], LEAVES[2], 1, 0, false)
+		# The straw roof: rows of straw, lighter on top, and the ridge beam.
+		l.part([l.poly([Vector2(0, 14), Vector2(16, 2), Vector2(32, 14), Vector2(28, 16.5), Vector2(4, 16.5)])], THATCH[2], 1, 2)
+		for row in 3:
+			var y := 7.0 + row * 3.0
+			for x in range(int(13 - row * 4), int(20 + row * 4), 2):
+				l.dot(x, y + (x % 4) * 0.25, THATCH[1])
+		l.part([l.limb(Vector2(3, 13.5), Vector2(16, 3), 0.9, 0.9), l.limb(Vector2(16, 3), Vector2(29, 13.5), 0.9, 0.9)], LOG[1], 1, 0)
+		return _texture(l, 12))
 
 # A wooden sign by the road, drawn in parts: a rough post planted in a tuft of grass and a plank
 # arrow nailed on it. 16 x 24 pixels.

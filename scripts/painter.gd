@@ -182,7 +182,14 @@ func _fill(rect: Rect2, inside: Callable, side: Callable, color: Color, outlined
 		for x in w:
 			var s := hits[y * w + x]
 			if s != INF:
-				image.set_pixel(from.x + x, from.y + y, shade if s > 0.45 else (light if s < -0.62 else color))
+				# A checker where the tones meet, like hand-shaded pixel art.
+				var checker := (from.x + x + from.y + y) % 2 == 0
+				var c := color
+				if s > 0.45 or (s > 0.3 and checker):
+					c = shade
+				elif s < -0.62 or (s < -0.48 and checker):
+					c = light
+				image.set_pixel(from.x + x, from.y + y, c)
 			elif outlined and _touches(hits, x, y, w, h):
 				image.set_pixel(from.x + x, from.y + y, edge)
 
