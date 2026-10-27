@@ -327,7 +327,7 @@ static func paint_mountain(image: Image, at: Vector2i, level: int, lower: Array,
 		for x in range(rng.randi_range(0, 2), T, 3):
 			var length := rng.randi_range(2, 5)
 			image.fill_rect(Rect2i(at + Vector2i(x, 10), Vector2i(1, length)), face.darkened(0.3))
-			if rng.randf() < 0.3:
+			if rng.randf() < 0.3 and x + 1 < T:
 				image.set_pixelv(at + Vector2i(x + 1, 10), face.lightened(0.2))
 		image.fill_rect(Rect2i(at + Vector2i(0, 15), Vector2i(T, 1)), face.darkened(0.45))
 
