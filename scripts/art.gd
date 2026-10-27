@@ -925,48 +925,101 @@ static func person(direction: String, frame: int, colors: Dictionary) -> Texture
 
 
 # --- The dinosaurs of the village ----------------------------------------------------------
-# Villagers are dinosaurs in clothes, 12 x 18 pixels, feet at the bottom center: a head of
-# their kind ("trike", "raptor", "ptero" or "rex"), a tunic, scaly legs and a tail.
+# Villagers are dinosaurs in clothes, drawn like the hero: 16 x 25 pixels, feet at the bottom
+# center, shaded by hand. A head of their kind ("trike", "raptor", "ptero" or "rex"), a tunic,
+# scaly legs with claws and a tail.
 # colors: skin, shirt, optionally crest; apron: true for craftsmen (seen from the front).
-# Letters: o outline, s/S skin, R crest or frill, L horns and beak, e eye, w white or teeth,
-# c/C tunic, a apron.
+# Letters: o outline, l/s/S skin light/base/shade, R/r crest or frill base/shade, L horns, beak,
+# claws, e eye, w white or teeth, m mouth, T/c/C tunic light/base/shade, a apron.
 const FOLK_KINDS := ["trike", "raptor", "ptero", "rex"]
 const FOLK_HEADS := {
 	"trike": {
-		"side": ["..o....o....", ".oRo..oLo...", "oRRRo.oLo.o.", "oRSssssssoLo", "oRSsssweesso", "oRSsssssssLo", ".oSssssssLo.", "..oossssoo..", "....oooo...."],
-		"down": [".ooooo", "oRRRRR", "oRoLRR", "oRsLss", "oRswes", "oRssss", ".oSsss", "..ossL", "...ooo"],
-		"up": [".ooooo", "oRRRRR", "oRRRRR", "oRRRRR", "oRSSSS", "oRSSSS", ".oSSSS", "..oSSS", "...ooo"],
+		"side": [
+			"..ooo...........",
+			".oRRRo....oo....",
+			"oRrRRRo..oLo....",
+			"oRrRRRRooLLo....",
+			"oRrRRoolllsoooo.",
+			"oRrRolsssssssLLo",
+			"oRrRosswessssLo.",
+			".oRRosseesssssoo",
+			"..oRoSsssssssoLo",
+			"...ooSSsssssoLLo",
+			".....ooSSSSoooo.",
+			".......oooo.....",
+		],
+		"down": ["..oo.ooo", ".oRRoRRR", "oRrRoLoR", "oRrRoLoR", "oRrolLll", "oRrossss", "oRoswess", "oRoSsess", ".ooSsssL", "..oSsssL", "..oSSoLL", "...ooooo"],
+		"up": ["..oo.ooo", ".oRRoRRR", "oRrRRRRR", "oRrRRRRR", "oRrRRRRR", "oRrRRRRR", "oRrrrrrr", "oRoSSSSS", ".ooSSSSS", "..oSSSSS", "..oSSSSS", "...ooooo"],
 	},
 	"raptor": {
-		"side": ["............", "...oooo.....", "..oRRsso....", ".oRssssooo..", ".oRsswesssoo", ".oSsssssssso", "..oSsLLLLLo.", "...oossoooo.", "....oo......"],
-		"down": ["......", "...ooo", "..oRRs", ".oRsss", ".oswes", ".ossss", "..osss", "...osL", "....oo"],
-		"up": ["......", "...ooo", "..oRRS", ".oRSSS", ".oSSSS", ".oSSSS", "..oSSS", "...oSS", "....oo"],
+		"side": [
+			"................",
+			"....oooo........",
+			"...oRRRRo.......",
+			"..oRrooRRoooo...",
+			"..oRolllssssoo..",
+			"..oRlssswessssoo",
+			"..oosssseessssso",
+			"...oSsssssssssso",
+			"...oSssmmmmmmmo.",
+			"...oSSswLwLwLo..",
+			"....ooSSSSoooo..",
+			"......oooo......",
+		],
+		"down": ["........", "....oooo", "...oRRRR", "..oRrRRo", "..oRolll", "..oolsss", "..oswess", "..oSsess", "..oSssss", "...oSsss", "....oSwL", ".....ooo"],
+		"up": ["........", "....oooo", "...oRRRR", "..oRrRRR", "..oRrRRR", "..oRrrrr", "..oSSSSS", "..oSSSSS", "..oSSSSS", "...oSSSS", "....oSSS", ".....ooo"],
 	},
 	"ptero": {
-		"side": ["oooo........", "oRRRoo......", ".ooRRso.....", "...oswesoo..", "...osssLLLoo", "...osssoLLLo", "....ossoooo.", ".....oo.....", "............"],
-		"down": ["....oo", "...oRR", "...oRR", "..osss", ".oswes", ".ossss", "..ossL", "...oLL", "....oo"],
-		"up": ["....oo", "...oRR", "...oRR", "..oSSS", ".oSSSS", ".oSSSS", "..oSSS", "...oSS", "....oo"],
+		"side": [
+			"oooo............",
+			"oRRRoo..........",
+			".oRrRRoooo......",
+			"..ooRRllsso.....",
+			"....olsssssoo...",
+			"....osswessLLoo.",
+			"....osseessLLLLo",
+			"....oSsssssoLLLo",
+			"....oSSsssoooooo",
+			".....oSSSso.....",
+			"......oooo......",
+			"................",
+		],
+		"down": ["......oo", ".....oRR", "....oRrR", "....oRrR", "...oolll", "..olssss", "..oswess", "..oSsesL", "..oSsssL", "...oSsLL", "....oSoL", ".....ooo"],
+		"up": ["......oo", ".....oRR", "....oRrR", "....oRrR", "...ooRrR", "..oSSSSS", "..oSSSSS", "..oSSSSS", "..oSSSSS", "...oSSSS", "....oSSS", ".....ooo"],
 	},
 	"rex": {
-		"side": ["...ooooo....", "..oSssssoo..", ".oSsssweesoo", ".oSsssssssso", ".oSsssswwwwo", ".oSssssooooo", "..oSssLLLLo.", "...ooossooo.", "....ooo....."],
-		"down": ["..oooo", ".oSsss", "oSswes", "oSssss", "oSssss", "oSwwww", ".oSLLL", "..osss", "...ooo"],
-		"up": ["..oooo", ".oSSSS", "oSSSSS", "oSSSSS", "oSSSSS", "oSSSSS", ".oSSSS", "..oSSS", "...ooo"],
+		"side": [
+			"................",
+			"....oooooo......",
+			"...olllllsoo....",
+			"..olssssssssoo..",
+			"..osssswesssssoo",
+			"..osssseesssssso",
+			"..oSsssssssssso.",
+			"..oSssmmmmmmmmo.",
+			"..oSSswwwwwwwo..",
+			"...oSSssssssso..",
+			"....ooSSSSoooo..",
+			"......oooo......",
+		],
+		"down": ["........", "...ooooo", "..olllll", ".olsssss", ".osswess", ".osSsess", ".oSsssss", ".oSsssss", ".oSsssss", ".oSswwww", "..oSmmmm", "...ooooo"],
+		"up": ["........", "...ooooo", "..oSSSSS", ".oSSSSSS", ".oSSSSSS", ".oSSSSSS", ".oSSSSSS", ".oSSSSSS", ".oSSSSSS", ".oSSSSSS", "..oSSSSS", "...ooooo"],
 	},
 }
 const FOLK_SIDE_BODY := {
-	"hang": ["...occcco...", "..occcccco..", "..occCcCco..", "..occcssco..", "..oCCCCCCo.."],
-	"front": ["...occcco...", "..occccccoo.", "..occccoCsso", "..occcco.oo.", "..oCCCCCo..."],
-	"back": ["...occcco...", ".oocccccco..", "osCoccccco..", ".oo.occcco..", "..oCCCCCCo.."],
+	"hang": ["......occco.....", ".....oTccccco...", ".....occcCcco...", ".....occcCcco...", ".....occcssco...", ".....occcssco...", "......oCCCCo...."],
+	"front": ["......occco.....", ".....oTcccccoo..", ".....occcccoCso.", ".....occcccoSso.", ".....occcccooo..", ".....occcccco...", "......oCCCCo...."],
+	"back": ["......occco.....", "....ooTccccco...", "...osCcccccco...", "...osSoccccco...", "....oooccccco...", ".....occcccco...", "......oCCCCo...."],
 }
 const FOLK_SIDE_LEGS := {
-	"together": ["...oSo.oSo..", "...oSo.oSo..", "..oSSSoSSSSo", "..oooooooooo"],
-	"apart": ["..oSo..oSo..", ".oSo....oSo.", "oSSSo...oSSo", "ooooo...oooo"],
+	"together": ["......osSSo.....", "......ossSo.....", "......osSSo.....", ".....osssSoo....", ".....osssssLo...", ".....oooooooo..."],
+	"apart": ["......osSSso....", ".....osSooSso...", "....osSo..oSso..", "...osSo....oSso.", "..ossLo....osssL", "..ooooo....ooooo"],
 }
-const FOLK_SIDE_TAIL := ["............", "............", "oo..........", "oSo.........", ".oSo........"]
-const FOLK_BODY := ["...occ", "..occc", ".oCccc", ".osccc", "..oCCC"]
-const FOLK_LEGS := ["...oSo", "...oSo", "..oSSS", "..oooo"]
-const FOLK_BACK_TAIL := ["....oSSo....", "....oSSo....", ".....oo....."]
-const FOLK_APRON := ["............", "....oaao....", "....oaao....", "....oaao....", "....oaao...."]
+const FOLK_SIDE_TAIL := ["...ooo..........", ".oossSo.........", "osssSSo.........", "oSSoo...........", "oo.............."]
+const FOLK_BODY := ["...ooccc", "..ocTccc", ".ocCcccc", ".ocCcccc", ".ocCcccc", ".osCcccc", ".ossoCCC"]
+const FOLK_LEGS := ["...ossSo", "...ossSo", "...osSSo", "..osssSo", "..oLsLSo", "..oooooo"]
+const FOLK_BACK_TAIL := ["......oSSo......", "......osSo......", ".....osSSSo.....", ".....osSSSo.....", "....osSSSSSo....", "....oooooooo...."]
+const FOLK_APRON := ["....oaaaaaao....", "....oaaaaaao....", "....oaaaaaao....", "....oaaaaaao....", ".....oooooo....."]
 
 
 static func dino_folk(kind: String, direction: String, frame: int, colors: Dictionary) -> Texture2D:
@@ -978,27 +1031,28 @@ static func dino_folk(kind: String, direction: String, frame: int, colors: Dicti
 		if direction == "side":
 			rows = head.side + FOLK_SIDE_BODY[["hang", "front", "hang", "back"][frame]] \
 				+ FOLK_SIDE_LEGS["together" if frame % 2 == 0 else "apart"]
-			rows = _over(rows, 9, FOLK_SIDE_TAIL)
+			rows = _over(rows, 17, FOLK_SIDE_TAIL)
 		else:
 			var legs := _mirror(FOLK_LEGS)
 			if frame == 1:
 				legs = _lift(legs, 0)
 			elif frame == 3:
-				legs = _lift(legs, 6)
+				legs = _lift(legs, 8)
 			rows = _mirror(head[direction]) + _mirror(FOLK_BODY) + legs
 			if direction == "up":
-				rows = _over(rows, 13, FOLK_BACK_TAIL)
+				rows = _over(rows, 18, FOLK_BACK_TAIL)
 			elif colors.get("apron", false):
-				rows = _over(rows, 9, FOLK_APRON)
+				rows = _over(rows, 14, FOLK_APRON)
 		var skin: Color = colors.skin
+		var crest: Color = colors.get("crest", skin.darkened(0.3))
+		var shirt: Color = colors.shirt
 		var palette := {
-			"o": OUTLINE, "s": skin, "S": skin.darkened(0.22), "R": colors.get("crest", skin.darkened(0.35)),
-			"L": Color("f0e4c8"), "e": EYE_DARK, "w": Color.WHITE, "c": colors.shirt, "C": colors.shirt.darkened(0.22),
-			"a": Color("e6dcc8"),
+			"o": Color("281e1e"), "l": skin.lightened(0.2), "s": skin, "S": skin.darkened(0.22),
+			"R": crest, "r": crest.darkened(0.25), "L": Color("f0e4c8"), "e": Color("281a14"), "w": Color.WHITE,
+			"m": Color("963232"), "T": shirt.lightened(0.15), "c": shirt, "C": shirt.darkened(0.22), "a": Color("e6dcc8"),
 		}
-		var image := Image.create(12, 18, false, Image.FORMAT_RGBA8)
+		var image := Image.create(16, 25, false, Image.FORMAT_RGBA8)
 		_stamp(image, Vector2i.ZERO, rows, palette)
-		_volume(image)
 		return ImageTexture.create_from_image(image))
 
 
@@ -1185,41 +1239,6 @@ static func hero(direction: String, frame: int, colors: Dictionary) -> Texture2D
 		var image := Image.create(16, 25, false, Image.FORMAT_RGBA8)
 		_stamp(image, Vector2i.ZERO, rows, palette)
 		return ImageTexture.create_from_image(image))
-
-
-# Gives volume to a flat pixel sprite, lit from the top left: every part (an arm, the body, the
-# head) becomes a little cylinder, light on its left, dark on its right, lit on top and darker at
-# the bottom. The outline, eyes, whites and tiny details are kept.
-static func _volume(image: Image) -> void:
-	var source: Image = image.duplicate()
-	var w := image.get_width()
-	var h := image.get_height()
-	var at := func(x: int, y: int) -> Color:
-		return source.get_pixel(x, y) if x >= 0 and y >= 0 and x < w and y < h else Color(0, 0, 0, 0)
-	var edge := func(c: Color) -> bool:
-		return c.a < 0.5 or c.is_equal_approx(OUTLINE)
-	for y in h:
-		var x := 0
-		while x < w:
-			var c: Color = at.call(x, y)
-			var length := 1
-			while x + length < w and at.call(x + length, y).is_equal_approx(c):
-				length += 1
-			if not edge.call(c) and c.get_luminance() > 0.12 and c.get_luminance() < 0.95 and length >= 3:
-				for i in length:
-					var shaded := c
-					if i == 0:
-						shaded = c.lightened(0.16)
-					elif i == length - 1:
-						shaded = c.darkened(0.24)
-					elif length >= 6 and i == length - 2:
-						shaded = c.darkened(0.1)
-					if edge.call(at.call(x + i, y - 1)):
-						shaded = shaded.lightened(0.1)
-					elif edge.call(at.call(x + i, y + 1)):
-						shaded = shaded.darkened(0.12)
-					image.set_pixel(x + i, y, shaded)
-			x += length
 
 
 static func _mirror(half: Array) -> Array:
@@ -1920,7 +1939,7 @@ static func market_stall() -> Texture2D:
 					p.dot(Vector2(x + 1, shelf - 4), Color.WHITE)
 				else:
 					p.ellipse(Vector2(x + 1.5, shelf - 2), Vector2(2.5, 2), Color("e0c090"), true)
-		img.blend_rect(dino_folk("trike", "down", 0, MERCHANT).get_image(), Rect2i(0, 0, 12, 18), Vector2i(26, 28))
+		img.blend_rect(dino_folk("trike", "down", 0, MERCHANT).get_image(), Rect2i(0, 0, 16, 25), Vector2i(24, 21))
 		# Posts.
 		for x in [3, 58]:
 			p.box(Rect2(x, 10, 4, 48), LOG[1], true)

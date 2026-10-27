@@ -202,7 +202,7 @@ func _place_sprites(look: int) -> void:
 	for x in [2, 8]:
 		var window := _stand(Art.furniture("window", look), Vector2i(x, 0), Vector2i(2, 1))
 		window.z_index = -5
-	var shadow := Art.sprite(Art.shadow(11))
+	var shadow := Art.sprite(Art.shadow(12))
 	shadow.centered = true
 	shadow.offset = Vector2.ZERO
 	shadow.position = cell_center(resident_cell) + Vector2(0, T / 2.0 - 1)
@@ -211,7 +211,7 @@ func _place_sprites(look: int) -> void:
 	resident_sprite.position = cell_center(resident_cell) + Vector2(0, T / 2.0 - 1)
 	add_child(resident_sprite)
 	WorldText.make(resident_sprite, Vector2(0, 6), resident.name, "bubble", Color("6a4a2a"))
-	bubble = WorldText.make(resident_sprite, Vector2(0, -20), "", "bubble")
+	bubble = WorldText.make(resident_sprite, Vector2(0, -27), "", "bubble")
 
 
 # A standing sprite, its bottom center at the bottom middle of its cells.

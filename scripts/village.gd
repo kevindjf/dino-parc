@@ -272,13 +272,13 @@ class Villager extends Node2D:
 			"crest": Color.from_hsv(rng.randf(), 0.6, 0.7)}
 		var spots: Array = village.paths.keys()
 		position = village.cell_center(spots[rng.randi() % spots.size()])
-		var shadow := Art.sprite(Art.shadow(11))
+		var shadow := Art.sprite(Art.shadow(12))
 		shadow.centered = true
 		shadow.offset = Vector2.ZERO
 		add_child(shadow)
 		sprite = Art.sprite(Art.dino_folk(kind, "down", 0, colors))
 		add_child(sprite)
-		bubble = WorldText.make(self, Vector2(0, -20), "", "bubble")
+		bubble = WorldText.make(self, Vector2(0, -27), "", "bubble")
 		_choose_target()
 
 	func _choose_target() -> void:
