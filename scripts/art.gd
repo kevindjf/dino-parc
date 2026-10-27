@@ -1934,57 +1934,98 @@ static func furniture(kind: String, look: int) -> Texture2D:
 		return null)
 
 
-# The market stall of the village in three quarters: posts, a patchwork awning, shelves of pots
-# and bottles at the back, the merchant behind a counter of goods, and a sign with a paw print.
-# 4 x 2 cells, 64 x 60 pixels.
+# The market stall of the village in three quarters, drawn in parts like the dinosaurs: a plank
+# booth going back on the right, shelves of pots and bottles, the merchant behind a counter of
+# goods, a striped awning with a scalloped edge, and a sign with a paw print. 4 x 2 cells,
+# 64 x 66 pixels.
 static func market_stall() -> Texture2D:
 	return cached("market_stall", func() -> Texture2D:
-		var p := _painter(Vector2i(64, 60))
-		var img := p.image
-		var rng := RandomNumberGenerator.new()
-		rng.seed = 31
-		# Back wall of planks with two shelves of pots and bottles.
-		_planks(img, Rect2i(8, 16, 48, 28), rng)
+		var size := Vector2i(64, 66)
+		var back := Layers.new(size)
+		# The booth: its back wall of planks and its right side going back, in the shade.
+		back.part([back.box(7, 16, 48, 30)], LOG[1], 1, 1)
+		back.part([back.poly([Vector2(55, 16), Vector2(61, 11), Vector2(61, 41), Vector2(55, 46)])], LOG[1].darkened(0.25), 0, 1)
+		for x in range(10, 55, 4):
+			back.part([back.box(x, 17, 1, 28)], LOG[0], 0, 0, false)
 		for shelf in [26, 36]:
-			img.fill_rect(Rect2i(8, shelf, 48, 2), LOG[2])
-			img.fill_rect(Rect2i(8, shelf + 2, 48, 1), LOG[0])
-			for x in range(10, 54, 5):
-				var kind := rng.randi() % 3
-				if kind == 0:
-					p.ellipse(Vector2(x + 1.5, shelf - 2.5), Vector2(2, 2.5), Color("b0603a"), true)
-				elif kind == 1:
-					p.box(Rect2(x + 0.5, shelf - 5, 2, 5), [Color("8a50c0"), Color("40a060"), Color("d04050")][rng.randi() % 3], true)
-					p.dot(Vector2(x + 1, shelf - 4), Color.WHITE)
-				else:
-					p.ellipse(Vector2(x + 1.5, shelf - 2), Vector2(2.5, 2), Color("e0c090"), true)
-		img.blend_rect(dino_folk("trike", "down", 0, MERCHANT).get_image(), Rect2i(0, 0, 16, 25), Vector2i(24, 21))
-		# Posts.
-		for x in [3, 58]:
-			p.box(Rect2(x, 10, 4, 48), LOG[1], true)
-		# The counter with its goods: pumpkins, cloth, a basket.
-		p.box(Rect2(4, 42, 56, 16), LOG[1], true)
-		_planks(img, Rect2i(5, 46, 54, 11), rng)
-		img.fill_rect(Rect2i(4, 42, 56, 4), LOG[2])
-		p.ellipse(Vector2(12, 40), Vector2(3.5, 3), Color("e8902a"), true)
-		p.ellipse(Vector2(17, 40.5), Vector2(3, 2.5), Color("f0a838"), true)
-		p.box(Rect2(38, 38, 8, 4), Color("3a7ab8"), true)
-		p.box(Rect2(39, 35, 7, 3), Color("c04040"), true)
-		p.ellipse(Vector2(52, 39.5), Vector2(4, 2.5), Color("c8a060"), true)
-		p.dot(Vector2(51, 37.5), Color("d8243e"), 2)
-		# The patchwork awning with its scalloped edge.
-		var patches := [Color("d84a6a"), Color("f0a020"), Color("3a9ad0"), Color("6ab040"), Color("8a50c0")]
-		for y in range(2, 16):
-			for x in range(0, 64):
-				var c: Color = patches[(x / 11 + (y / 7) * 2) % patches.size()]
-				_put(img, x, y, c.darkened(0.15) if y > 12 else (c.lightened(0.15) if y < 4 else c))
-		for x in range(0, 64, 8):
-			p.ellipse(Vector2(x + 4, 16), Vector2(4, 2.5), patches[(x / 8) % patches.size()].darkened(0.15))
-		# The sign with a paw print.
-		p.box(Rect2(22, 0, 20, 8), LOG[2], true)
-		for spot in [Vector2(30, 5), Vector2(28, 2.5), Vector2(31, 1.5), Vector2(34, 2.5)]:
-			p.dot(spot, LOG[0], 2 if spot.y > 4 else 1)
-		p.ellipse(Vector2(37, 4), Vector2(2.5, 1.5), LOG[0])
-		return p.finish())
+			back.part([back.box(8, shelf, 47, 2)], LOG[2], 1, 0)
+			var goods := [["pot", "b0603a"], ["bottle", "8a50c0"], ["jar", "e0c090"], ["bottle", "40a060"], ["pot", "c87840"],
+				["jar", "d8b0d0"], ["bottle", "d04050"], ["pot", "a05a30"], ["jar", "f0d070"]]
+			for i in goods.size():
+				var x := 11.0 + i * 5.0 + (2.0 if shelf == 36 else 0.0)
+				# Nothing behind the merchant's head and shoulders.
+				if x > 52 or (x > 21 and x < 43):
+					continue
+				var color := Color(goods[(i + (3 if shelf == 36 else 0)) % goods.size()][1])
+				match goods[(i + (3 if shelf == 36 else 0)) % goods.size()][0]:
+					"pot":
+						back.part([back.ellipse(x, shelf - 2.5, 2, 2.2)], color, 1, 1)
+					"bottle":
+						back.part([back.box(x - 1, shelf - 4, 2, 4), back.box(x - 0.5, shelf - 6, 1, 2)], color, 1, 0)
+						back.dot(x - 1, shelf - 3, Color.WHITE)
+					"jar":
+						back.part([back.box(x - 1.5, shelf - 4, 3, 4)], color, 1, 1)
+						back.part([back.box(x - 1.5, shelf - 5, 3, 1)], LOG[2], 0, 0, false)
+		var image := back.image
+		image.blend_rect(dino_folk("trike", "down", 0, MERCHANT).get_image(), Rect2i(0, 0, 16, 25), Vector2i(24, 22))
+
+		var front := Layers.new(size)
+		# Posts: two at the back on the right, two at the front.
+		front.part([front.box(59, 9, 3, 33)], LOG[1].darkened(0.2), 0, 1)
+		# The counter: its top seen from above, its front of planks and its right side.
+		front.part([front.poly([Vector2(2, 47), Vector2(7, 42), Vector2(62, 42), Vector2(57, 47)])], LOG[2], 1, 0)
+		front.part([front.poly([Vector2(57, 47), Vector2(62, 42), Vector2(62, 60), Vector2(57, 65)])], LOG[1].darkened(0.3), 0, 1)
+		front.part([front.box(2, 47, 55, 18)], LOG[1], 1, 2)
+		for x in range(5, 56, 4):
+			front.part([front.box(x, 48, 1, 16)], LOG[0], 0, 0, false)
+		front.part([front.box(2, 52, 55, 1)], LOG[0], 0, 0, false)
+		for x in [6, 54]:
+			front.dot(x - 1, 50, LOG[3])
+			front.dot(x - 1, 55, LOG[3])
+		# Goods on the counter: pumpkins, a basket of berries, rolls of cloth, a big jar of honey.
+		front.part([front.ellipse(11, 42, 4, 3.2)], Color("e8902a"), 1, 1)
+		front.part([front.ellipse(17, 42.5, 3.2, 2.8)], Color("f0a838"), 1, 1)
+		for x in [10, 12]:
+			front.dot(x, 41, Color("c06a18"))
+		front.part([front.box(10.5, 37.5, 1, 2), front.box(16.5, 38.5, 1, 2)], LEAVES[1], 0, 0, false)
+		front.part([front.ellipse(29, 43, 5, 2.5)], Color("c8a060"), 1, 1)
+		for b in [Vector2(26, 40.5), Vector2(28.5, 40), Vector2(31, 40.5), Vector2(27.5, 41.5), Vector2(30, 41.5), Vector2(32.5, 41.5)]:
+			front.part([front.box(b.x, b.y, 2, 2)], Color("d8243e"), 0, 1, false)
+		for x in range(25, 34, 2):
+			front.dot(x, 44, Color("8a6a30"))
+		front.part([front.box(38, 38, 9, 4)], Color("3a7ab8"), 1, 1)
+		front.part([front.box(39, 34, 8, 4)], Color("c04040"), 1, 1)
+		front.part([front.box(51, 36, 5, 7)], Color("f0b020"), 1, 1)
+		front.part([front.box(51, 35, 5, 1.5)], LOG[2], 0, 0)
+		front.dot(52, 38, Color.WHITE)
+		# The front posts, over the counter.
+		for x in [2, 55]:
+			front.part([front.box(x, 12, 3, 53)], LOG[1], 0, 1)
+		# A sack of grain leaning on the counter, tied with a rope.
+		front.part([front.ellipse(10, 61, 6, 4.5), front.ellipse(10, 57.5, 4, 3)], Color("c8a878"), 1, 2)
+		front.part([front.poly([Vector2(8, 54.5), Vector2(10, 52), Vector2(12, 54.5)])], Color("c8a878"), 1, 0)
+		front.part([front.box(8, 54, 4, 1)], Color("7a5a28"), 0, 0, false)
+		for spot in [Vector2(8, 59), Vector2(12, 61), Vector2(9, 63)]:
+			front.dot(spot.x, spot.y, Color("a08458"))
+		# The awning going back: stripes of red and cream, and the scalloped edge hanging in front.
+		var awning := [Vector2(1, 17), Vector2(7, 5), Vector2(63, 5), Vector2(60, 17)]
+		front.part([front.poly(awning)], Color("f4ead0"), 1, 1)
+		for i in 8:
+			if i % 2 == 0:
+				var a := 1.0 + i * 59.0 / 8.0
+				var b := 7.0 + i * 56.0 / 8.0
+				front.part([front.poly([Vector2(a, 17), Vector2(b, 5), Vector2(b + 7, 5), Vector2(a + 7.4, 17)])], Color("d84a4a"), 1, 1, false)
+		for i in 8:
+			var x := 4.7 + i * 7.4
+			front.part([front.ellipse(x, 18, 3.9, 3)], Color("d84a4a") if i % 2 == 0 else Color("f4ead0"), 0, 1)
+		# The sign over the awning with a paw print.
+		front.part([front.box(20, 1, 24, 9)], LOG[2], 1, 1)
+		front.part([front.box(20, 5, 24, 1)], LOG[1], 0, 0, false)
+		front.part([front.ellipse(32, 6.5, 2.2, 1.6)], LOG[0], 0, 0, false)
+		for toe in [Vector2(29, 3.8), Vector2(32, 3), Vector2(35, 3.8)]:
+			front.part([front.ellipse(toe.x, toe.y, 0.9, 0.9)], LOG[0], 0, 0, false)
+		image.blend_rect(front.image, Rect2i(Vector2i.ZERO, size), Vector2i.ZERO)
+		return ImageTexture.create_from_image(image))
 
 
 # A wall of an abandoned house, standing on its cell: 16 x 28 pixels of stones, broken at different
