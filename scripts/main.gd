@@ -691,6 +691,7 @@ func _demolish(cell: Vector2i) -> void:
 func _remove_building(building: Dictionary) -> void:
 	for c in _cells(building.origin, building.size):
 		occupied.erase(c)
+		fence_pushes.erase(c)
 	if building.root != null:
 		building.root.queue_free()
 	for node in building.nodes:
@@ -896,6 +897,10 @@ func feed_fish(dino: Node2D) -> void:
 	_float_text(dino.position, "Poisson !", Color("81d4fa"))
 
 
+const FENCE_PUSHES := 3  # pushes a weak fence holds before it breaks
+var fence_pushes := {}  # fence cell -> times a dinosaur pushed it
+
+
 func fence_to_attack(dino: Node2D) -> Vector2i:
 	var region: Dictionary = regions[dino.region]
 	if not region.enclosed:
@@ -910,11 +915,12 @@ func fence_to_attack(dino: Node2D) -> Vector2i:
 			weakest = f
 			weakest_strength = strength
 			weakest_distance = d
-	# In a storm, scared dinosaurs push even fences as strong as them; electric ones hold.
+	# A fence as strong as the dinosaur always holds, even in a storm: scared dinosaurs only push
+	# weak fences more often.
 	var storm: bool = weather != null and weather.storming()
-	if weakest_strength >= dino.species.strength + (1 if storm else 0) or weakest_strength >= 5:
+	if weakest_strength >= dino.species.strength:
 		return NONE
-	var chance := 0.8 if storm else (0.5 if dino.hunger < 30.0 else 0.2)
+	var chance := 0.7 if storm else (0.4 if dino.hunger < 30.0 else 0.15)
 	return weakest if randf() < chance else NONE
 
 
@@ -925,10 +931,18 @@ func cell_next_to(fence: Vector2i, region: int) -> Vector2i:
 	return NONE
 
 
+# A weak fence holds a few pushes before it breaks: time to come and put a stronger one.
 func break_fence(cell: Vector2i, dino: Node2D) -> void:
 	if not _is_fence(cell):
 		return
 	var name: String = Catalog.ITEMS[occupied[cell].id].name
+	fence_pushes[cell] = fence_pushes.get(cell, 0) + 1
+	if fence_pushes[cell] < FENCE_PUSHES:
+		_float_text(cell_center(cell), "BOUM !", Color("ffb74d"))
+		hud.flash("%s pousse une barrière en %s !\nMets vite une barrière %s." % [
+			dino.species.name, name, Catalog.fence_for_strength(dino.species.strength)], 3.5)
+		return
+	fence_pushes.erase(cell)
 	_float_text(cell_center(cell), "CRAC !", Color("ff7043"))
 	hud.flash("%s a cassé une barrière en %s !\nIl lui faut une barrière %s." % [
 		dino.species.name, name, Catalog.fence_for_strength(dino.species.strength)], 3.5)
@@ -2878,9 +2892,9 @@ func _rebuild_zone() -> void:
 
 func storm_started() -> void:
 	if zone != Wild.BASE:
-		hud.flash("Un orage ! Dans ton parc, tes dinos ont peur…\nVérifie tes barrières en rentrant.", 3.5)
+		hud.flash("Un orage gronde dans les Terres sauvages !", 3.5)
 	else:
-		hud.flash("Un orage arrive !\nTes dinos ont peur : ils poussent les barrières !", 3.5)
+		hud.flash("Un orage arrive !\nTes dinos ont peur : ils poussent les barrières trop faibles !", 3.5)
 	for dino in dinos:
 		if not dino.wild:
 			dino.escape_timer = randf_range(1.0, 10.0)
@@ -3145,6 +3159,7 @@ func _clear_land() -> void:
 				node.queue_free()
 	buildings.clear()
 	occupied.clear()
+	fence_pushes.clear()
 	for dino in dinos:
 		dino.queue_free()
 	dinos.clear()

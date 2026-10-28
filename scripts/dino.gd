@@ -99,7 +99,7 @@ func setup(owner_park: Node2D, id: String, start: Vector2i, building) -> void:
 	hunger = randf_range(70.0, 100.0)
 	energy = max_energy()
 	next_roar = randf_range(5.0, 15.0)
-	escape_timer = randf_range(20.0, 40.0)
+	escape_timer = randf_range(30.0, 60.0)
 	offset = Vector2(randf_range(-4, 4), randf_range(-4, 4))
 
 	shadow = Art.sprite(Art.shadow(int(frames.size.x * (0.4 if habitat == "air" else 0.7))))
@@ -389,7 +389,7 @@ func _choose_goal() -> void:
 		if feeder != null:
 			target = feeder.origin
 	if target == NONE and escape_timer <= 0.0:
-		escape_timer = randf_range(20.0, 40.0)
+		escape_timer = randf_range(30.0, 60.0)
 		attack_cell = park.fence_to_attack(self)
 		if attack_cell != NONE:
 			target = park.cell_next_to(attack_cell, region)
