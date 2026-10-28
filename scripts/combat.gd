@@ -310,6 +310,7 @@ func _catch(kind: String, dino: Node2D) -> void:
 
 
 func _draw() -> void:
+	_escape_arrows()
 	for dino in park.dinos:
 		if dino.stun_time > 0.0:
 			# Bolas wrapped around its legs.
@@ -345,6 +346,26 @@ func _draw() -> void:
 		var dot := center + Vector2(half.x + 7.0, -half.y)
 		draw_circle(dot, 5.0, Color("1a1a24"))
 		draw_circle(dot, 4.0, color)
+
+
+# A red arrow at the edge of the screen points to each escaped dinosaur out of sight.
+func _escape_arrows() -> void:
+	if park.away != null:
+		return
+	var view := get_canvas_transform().affine_inverse() * get_viewport_rect()
+	var inner := view.grow(-28.0 / get_canvas_transform().get_scale().x)
+	for dino in park.dinos:
+		if not dino.escaped or dino.wild or view.has_point(dino.position):
+			continue
+		var center := inner.get_center()
+		var to: Vector2 = dino.position - center
+		var scale_to_edge := minf(absf(inner.size.x / 2.0 / to.x) if to.x != 0.0 else INF, absf(inner.size.y / 2.0 / to.y) if to.y != 0.0 else INF)
+		var tip: Vector2 = center + to * scale_to_edge
+		var size := 10.0 / get_canvas_transform().get_scale().x
+		var dir := to.normalized()
+		var points := PackedVector2Array([tip, tip - dir * size * 1.6 + dir.orthogonal() * size, tip - dir * size * 1.6 - dir.orthogonal() * size])
+		draw_colored_polygon(points, Color("e53935"))
+		draw_polyline(points + PackedVector2Array([tip]), Color("2a1010"), 1.5 / get_canvas_transform().get_scale().x)
 
 
 func _energy_bar(dino: Node2D) -> void:

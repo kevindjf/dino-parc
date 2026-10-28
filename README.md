@@ -108,6 +108,14 @@ Ton parc gagne des **étoiles**, de 1 à 5, affichées en haut à gauche à côt
 
 Une étoile gagnée reste pour toujours, et chacune augmente le **prix du billet** de 5 pièces (10 sans étoile). Tout se règle dans `scripts/main.gd` (`STARS`) et `scripts/market.gd` (colonne `stars`).
 
+## Aventure : le jour, la nuit et les orages
+
+- Une journée dure **10 minutes**. La nuit, tout devient bleu sombre (jamais trop noir) : ta lampe éclaire autour de toi et les **feux de camp** brillent.
+- De temps en temps, un **orage** éclate pendant une minute : pluie, éclairs, « BOUM ! ». Tes dinos ont peur et **poussent leurs barrières** : pendant l'orage, seule une barrière plus forte qu'eux les retient (ou une barrière électrique). Prépare tes enclos !
+- Quand un dinosaure s'échappe, une **flèche rouge** au bord de l'écran montre où il est. Endors-le avec ton lance-pierre ou tes fléchettes : il est ramené dans son enclos.
+
+Le temps se règle dans `scripts/weather.gd` (`DAY`, `STORM_TIME`).
+
 ## Aventure : le laboratoire
 
 Le **laboratoire** se fabrique (10 bois + 8 pierres + 2 fer + 1 cristal) ou s'achète au village (600 pièces), et se pose dans le parc. Devant lui, Action ouvre sa fenêtre. Il couve **un œuf à la fois** :

@@ -29,6 +29,7 @@ const House := preload("res://scripts/house.gd")
 const Market := preload("res://scripts/market.gd")
 const Wild := preload("res://scripts/wild.gd")
 const Quests := preload("res://scripts/quests.gd")
+const Weather := preload("res://scripts/weather.gd")
 
 const T := 16
 const GRID := Vector2i(128, 96)
@@ -180,6 +181,7 @@ var base_exits := {}  # "up" / "down" / "left" / "right" -> where the trails out
 var border_nodes: Array[Node] = []  # the forest around the zone and the signs of its trails
 var stars := 0  # the stars of the park, kept for good (see STARS)
 var hatched := 0  # babies born in the laboratory
+var weather: Node2D = null  # day, night and storms of the adventure
 var rode := {}  # species id -> true: the dinosaurs the player has ridden
 var lab_state := {}  # {"egg": species, "ready": unix time}: the egg in the laboratory
 var respawn := {}  # {"zone", "x", "y"}: the last campfire the player rested by, where they wake up
@@ -291,6 +293,9 @@ func start_adventure(data: Dictionary) -> void:
 	builder = Builder.new()
 	add_child(builder)
 	builder.setup(self)
+	weather = Weather.new()
+	add_child(weather)
+	weather.setup(self)
 	hud.setup_builder(builder)
 	hud.set_hearts(hearts, MAX_HEARTS)
 	hud.set_stars(stars)
@@ -895,9 +900,11 @@ func fence_to_attack(dino: Node2D) -> Vector2i:
 			weakest = f
 			weakest_strength = strength
 			weakest_distance = d
-	if weakest_strength >= dino.species.strength:
+	# In a storm, scared dinosaurs push even fences as strong as them; electric ones hold.
+	var storm: bool = weather != null and weather.storming()
+	if weakest_strength >= dino.species.strength + (1 if storm else 0) or weakest_strength >= 5:
 		return NONE
-	var chance := 0.5 if dino.hunger < 30.0 else 0.2
+	var chance := 0.8 if storm else (0.5 if dino.hunger < 30.0 else 0.2)
 	return weakest if randf() < chance else NONE
 
 
@@ -2693,6 +2700,22 @@ func _rebuild_zone() -> void:
 			_set_fire(building, building.origin in lit)
 
 
+# --- Storms (see weather.gd) ------------------------------------------------------
+
+func storm_started() -> void:
+	if zone != Wild.BASE:
+		hud.flash("Un orage ! Dans ton parc, tes dinos ont peur…\nVérifie tes barrières en rentrant.", 3.5)
+	else:
+		hud.flash("Un orage arrive !\nTes dinos ont peur : ils poussent les barrières !", 3.5)
+	for dino in dinos:
+		if not dino.wild:
+			dino.escape_timer = randf_range(1.0, 10.0)
+
+
+func storm_ended() -> void:
+	hud.flash("L'orage est passé.", 2.0)
+
+
 # --- The laboratory: eggs and babies ---------------------------------------------
 
 const MYSTERY_EGG := {"fossil": 2, "amber": 1}
@@ -2824,6 +2847,14 @@ func _draw_fire(building: Dictionary) -> void:
 		flames.setup(frames, 6.0)
 		flames.position = foot - Vector2(9, 20)
 		building.root = flames
+		# It lights around it at night (see weather.gd).
+		var glow := PointLight2D.new()
+		glow.texture = Weather.glow(256)
+		glow.texture_scale = 0.7
+		glow.energy = 0.0
+		glow.position = Vector2(9, 12)
+		glow.add_to_group("fire_lights")
+		flames.add_child(glow)
 	else:
 		building.root = Art.sprite(Art.campfire(false, 0))
 		building.root.position = foot
