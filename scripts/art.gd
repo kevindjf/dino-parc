@@ -971,25 +971,43 @@ static func aviary(size: Vector2i) -> Texture2D:
 		return ImageTexture.create_from_image(image))
 
 
-# The park gate, standing outside the left edge of the map: two big log posts on stone bases
-# and a wooden sign with a green dinosaur head. 20 x 72 pixels.
+# The park gate, standing outside the left edge of the map and seen from above: a log beam on two
+# stone pillars, a roof plank, and a wooden sign with a green dinosaur head. 20 x 72 pixels.
 static func gate() -> Texture2D:
 	return cached("gate", func() -> Texture2D:
-		var p := _painter(Vector2i(20, 72))
-		var rng := RandomNumberGenerator.new()
-		rng.seed = 3
-		p.box(Rect2(4, 24, 12, 4), Color("d4b47a"))
-		_stones(p.image, Rect2i(4, 12, 12, 10), rng)
-		_stones(p.image, Rect2i(4, 58, 12, 11), rng)
-		p.box(Rect2(7, 8, 6, 52), LOG[1], true)
-		p.flat(Rect2(8, 9, 1, 50), LOG[2])
-		p.box(Rect2(1, 1, 18, 9), LOG[2], true)
-		p.flat(Rect2(2, 4, 16, 1), LOG[1])
-		p.flat(Rect2(2, 7, 16, 1), LOG[1])
-		p.ellipse(Vector2(10, 32), Vector2(5, 5), Color("5a9a38"), true)
-		p.dot(Vector2(11, 31), EYE_DARK)
-		_moss(p.image, Rect2i(4, 58, 12, 4), 2, rng)
-		return p.finish())
+		var l := Layers.new(Vector2i(20, 72))
+		_gate_pillar(l, 13)
+		l.part([l.box(7, 6, 6, 56)], LOG[1], 1, 1)
+		for y in range(12, 60, 6):
+			l.dot(9, y, LOG[0])
+			l.dot(11, y + 3, LOG[0])
+		l.part([l.box(1, 1, 18, 7)], LOG[2], 1, 1)
+		for x in [2, 17]:
+			l.dot(x, 4, LOG[3])
+		# The sign hangs from the beam by two ropes.
+		for x in [5, 15]:
+			l.dot(x, 25, Color("d8c090"))
+		l.part([l.box(3, 26, 14, 12)], Color("c8a060"), 1, 1)
+		l.part([l.ellipse(9, 31.5, 4, 3.5), l.ellipse(12.5, 33.5, 2.8, 1.8)], Color("5a9a38"), 1, 1)
+		l.dot(9, 30, Color.WHITE)
+		l.dot(10, 30, EYE_DARK)
+		l.dot(10, 31, EYE_DARK)
+		for x in [12, 14]:
+			l.dot(x, 35, Color.WHITE)
+		_gate_pillar(l, 59)
+		return ImageTexture.create_from_image(l.image))
+
+
+# A pillar of stones in rows, its top at `top`.
+static func _gate_pillar(l: Layers, top: float) -> void:
+	l.part([l.box(4, top, 12, 11)], STONES[0], 0, 0)
+	for row in 3:
+		for i in 2:
+			var x := 4.0 + i * 6.0 - (3.0 if row == 1 and i == 1 else 0.0)
+			var w := 6.0 if row != 1 else (3.0 if i == 0 else 9.0)
+			l.part([l.box(x + 0.5, top + 1 + row * 3.5, w - 1, 3)], [STONES[2], STONES[3].darkened(0.08)][(i + row) % 2], 1, 1, false)
+	l.part([l.ellipse(10, top, 6.5, 2.2)], STONES[3], 1, 1)
+	l.part([l.ellipse(5, top + 10.5, 1.5, 1)], LEAVES[2], 1, 0)
 
 
 const EYE_DARK := Color("181818")
@@ -1972,67 +1990,84 @@ static func village_house(variant: int) -> Texture2D:
 static func furniture(kind: String, look: int) -> Texture2D:
 	return cached("furniture:%s:%d" % [kind, look], func() -> Texture2D:
 		var cloth: Color = VILLAGE_ROOFS[look % VILLAGE_ROOFS.size()]
+		var l: Layers
 		match kind:
 			"bed":
-				var p := _painter(Vector2i(32, 36))
-				p.box(Rect2(1, 1, 30, 10), WOOD, true)
-				p.box(Rect2(2, 9, 28, 26), Color("f4f0e8"), true)
-				p.box(Rect2(6, 11, 20, 6), Color.WHITE, true)
-				p.box(Rect2(2, 18, 28, 17), cloth, true)
-				p.flat(Rect2(3, 19, 26, 2), cloth.lightened(0.3))
-				return p.finish()
+				# A wooden bed: a headboard with posts, a pillow and a quilt with a folded edge.
+				l = Layers.new(Vector2i(32, 36))
+				l.part([l.box(2, 4, 28, 7)], WOOD, 1, 1)
+				for x in [1.5, 27.5]:
+					l.part([l.box(x, 1, 3, 12), l.ellipse(x + 1.5, 1.5, 1.8, 1.2)], WOOD.darkened(0.12), 1, 1)
+				l.part([l.box(3, 10, 26, 24)], Color("f4f0e8"), 1, 1)
+				l.part([l.ellipse(16, 13.5, 9, 3)], Color.WHITE, 1, 1)
+				l.part([l.box(3, 18, 26, 16)], cloth, 1, 2)
+				l.part([l.box(3, 18, 26, 3)], Color("f4f0e8").darkened(0.05), 1, 1)
+				for at in [Vector2(8, 25), Vector2(16, 28), Vector2(24, 25), Vector2(12, 31), Vector2(20, 31)]:
+					l.dot(at.x, at.y, cloth.lightened(0.35))
 			"table":
-				var p := _painter(Vector2i(32, 22))
-				p.box(Rect2(3, 10, 3, 11), WOOD.darkened(0.2), true)
-				p.box(Rect2(26, 10, 3, 11), WOOD.darkened(0.2), true)
-				p.box(Rect2(0, 3, 32, 9), WOOD, true)
-				p.flat(Rect2(1, 4, 30, 2), WOOD.lightened(0.25))
-				p.ellipse(Vector2(10, 4), Vector2(4, 2), Color("f4ecd8"), true)
-				p.dot(Vector2(9, 3), Color("d8243e"), 2)
-				p.box(Rect2(21, 0, 4, 5), Color("a8d8f0"), true)
-				return p.finish()
+				# A table of planks with a plate, an apple and a glass of water.
+				l = Layers.new(Vector2i(32, 22))
+				for x in [3, 26]:
+					l.part([l.box(x, 10, 3, 11)], WOOD.darkened(0.2), 1, 1)
+				l.part([l.box(1, 3, 30, 9)], WOOD, 1, 2)
+				for x in [11, 21]:
+					for y in range(4, 10):
+						l.shade(x, y, 0.2)
+				l.part([l.ellipse(10, 5.5, 4.5, 2)], Color("f4ecd8"), 1, 1)
+				l.part([l.ellipse(10, 4.5, 1.6, 1.4)], Color("d8243e"), 1, 1)
+				l.dot(10, 2.5, LEAVES[2])
+				l.part([l.box(20.5, 1, 4, 5)], Color("a8d8f0"), 1, 1)
 			"chair":
-				var p := _painter(Vector2i(12, 14))
-				p.box(Rect2(1, 5, 10, 4), WOOD, true)
-				p.box(Rect2(2, 8, 2, 6), WOOD.darkened(0.2), true)
-				p.box(Rect2(8, 8, 2, 6), WOOD.darkened(0.2), true)
-				return p.finish()
+				l = Layers.new(Vector2i(12, 14))
+				for x in [2, 8]:
+					l.part([l.box(x, 7, 2, 6.5)], WOOD.darkened(0.2), 0, 1)
+				l.part([l.box(1, 0.5, 10, 3)], WOOD.darkened(0.08), 1, 1)
+				l.part([l.box(1, 5, 10, 3.5)], WOOD, 1, 1)
 			"cupboard":
-				var p := _painter(Vector2i(16, 30))
-				p.box(Rect2(0, 0, 16, 30), WOOD, true)
-				p.box(Rect2(2, 3, 12, 11), WOOD.darkened(0.25), true)
-				p.box(Rect2(2, 16, 12, 12), WOOD.lightened(0.1), true)
-				p.flat(Rect2(8, 16, 1, 12), WOOD.darkened(0.3))
-				for x in [4, 7, 10]:
-					p.box(Rect2(x, 8, 2, 6), [Color("d84a3a"), Color("f0c830"), Color("4a78b8")][x % 3], true)
-				return p.finish()
+				# A cupboard: a cornice, open shelves with books, two doors with knobs.
+				l = Layers.new(Vector2i(16, 30))
+				l.part([l.box(1, 2, 14, 27)], WOOD, 1, 1)
+				l.part([l.box(0.5, 0.5, 15, 3)], WOOD.lightened(0.08), 1, 1)
+				l.part([l.box(2.5, 5, 11, 9)], WOOD.darkened(0.4), 0, 0, false)
+				var books := [Color("d84a3a"), Color("f0c830"), Color("4a78b8"), Color("5a9a48")]
+				for i in 4:
+					l.part([l.box(3 + i * 2.5, 8 + (i % 2), 2, 6 - (i % 2))], books[i], 1, 1, false)
+				for x in [2.5, 8.5]:
+					l.part([l.box(x, 16, 5, 11)], WOOD.lightened(0.06), 1, 1)
+				l.dot(6.5, 21, Color("f0c040"))
+				l.dot(9.5, 21, Color("f0c040"))
 			"stove":
-				# A stone fireplace with a fire.
-				var p := _painter(Vector2i(16, 28))
-				for y in 27:
-					for x in range(1 if y > 8 else 4, 15 if y > 8 else 12):
-						_put(p.image, x, y, _stone_wall(x, y))
-				p.box(Rect2(0, 8, 16, 2), LOG[2], true)
-				p.box(Rect2(4, 16, 8, 10), Color("1a1008"), true)
-				p.ellipse(Vector2(8, 22), Vector2(3, 3.5), Color("f09818"))
-				p.ellipse(Vector2(8, 23), Vector2(1.5, 2), Color("fff070"))
-				p.flat(Rect2(4, 25, 8, 1), LOG[1])
-				return p.finish()
+				# A stone fireplace: a chimney, a wooden mantel, a fire on two logs.
+				l = Layers.new(Vector2i(16, 28))
+				l.part([l.box(4, 0.5, 8, 9)], STONES[2], 1, 1)
+				l.part([l.box(1, 9, 14, 18)], STONES[2], 1, 1)
+				for at in [Vector2(5, 3), Vector2(9, 6), Vector2(3, 13), Vector2(12, 12), Vector2(2.5, 20), Vector2(13, 22)]:
+					l.part([l.box(at.x - 1, at.y - 0.5, 2.5, 1.8)], STONES[3], 0, 1, false)
+				l.part([l.box(0.5, 8, 15, 2.5)], LOG[2], 1, 1)
+				l.part([l.box(4, 15, 8, 11), l.ellipse(8, 15, 4, 2.5)], Color("1a1008"), 0, 0, false)
+				l.part([l.ellipse(8, 21.5, 3, 4)], Color("f09818"), 1, 0, false)
+				l.part([l.ellipse(8, 23, 1.6, 2.2)], Color("fff070"), 0, 0, false)
+				l.part([l.limb(Vector2(5, 25.5), Vector2(11, 24.5), 0.9, 0.9)], LOG[1], 1, 0)
 			"plant":
-				var p := _painter(Vector2i(14, 20))
-				for leaf in [Vector2(4, 6), Vector2(10, 6), Vector2(7, 3), Vector2(7, 9)]:
-					p.ellipse(leaf, Vector2(3.5, 2.5), Color("4aa84c"), true)
-				p.box(Rect2(3, 11, 8, 8), Color("c06a3a"), true)
-				return p.finish()
+				# A green plant in a clay pot with a rim.
+				l = Layers.new(Vector2i(14, 20))
+				for leaf in [Vector3(4, 7, 0.5), Vector3(10, 7, -0.5), Vector3(7, 4, 0), Vector3(5.5, 10, 0.3), Vector3(8.5, 10, -0.3)]:
+					l.part([l.ellipse(leaf.x, leaf.y, 3, 2.3)], Color("4aa84c").darkened(0.1 if leaf.y > 8 else 0.0), 1, 1)
+				l.part([l.poly([Vector2(3.5, 13), Vector2(10.5, 13), Vector2(9.5, 19), Vector2(4.5, 19)])], Color("c06a3a"), 1, 1)
+				l.part([l.box(2.5, 11.5, 9, 2.5)], Color("d8804a"), 1, 1)
 			"window":
-				var p := _painter(Vector2i(24, 14))
-				p.box(Rect2(0, 0, 24, 14), Color("a8d8f0"), true)
-				p.flat(Rect2(12, 1, 1, 12), Color.WHITE)
-				p.flat(Rect2(1, 7, 22, 1), Color.WHITE)
-				p.box(Rect2(-1, 0, 4, 14), cloth, false)
-				p.box(Rect2(21, 0, 4, 14), cloth, false)
-				return p.finish()
-		return null)
+				# A window with four panes and curtains of the colour of the house.
+				l = Layers.new(Vector2i(24, 14))
+				l.part([l.box(1, 0.5, 22, 13)], WOOD, 1, 1)
+				l.part([l.box(3, 2, 18, 10)], Color("a8d8f0"), 0, 0, false)
+				l.part([l.box(11.5, 2, 1, 10), l.box(3, 6.5, 18, 1)], WOOD.lightened(0.1), 0, 0, false)
+				for at in [Vector2(5, 3), Vector2(6, 4), Vector2(14, 3), Vector2(15, 4)]:
+					l.dot(at.x, at.y, Color.WHITE)
+				l.part([l.poly([Vector2(0, 0), Vector2(5, 0), Vector2(3.5, 13), Vector2(0, 13)])], cloth, 1, 1)
+				l.part([l.poly([Vector2(19, 0), Vector2(24, 0), Vector2(24, 13), Vector2(20.5, 13)])], cloth, 1, 1)
+			_:
+				return null
+		return ImageTexture.create_from_image(l.image))
 
 
 # The market stall of the village in three quarters, drawn in parts like the dinosaurs: a plank
