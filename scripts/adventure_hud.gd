@@ -63,6 +63,8 @@ var map_grid: GridContainer
 var camp: PanelContainer  # the menu of a campfire
 var camp_buttons := {}  # "meat" / "pie" -> Button
 var stars_label: Label
+var quests: PanelContainer  # the quests of the people of the village
+var quest_rows: VBoxContainer
 var lab: PanelContainer  # the laboratory: eggs and clones
 var lab_status: Label
 var lab_hatch: Button
@@ -91,6 +93,7 @@ func setup(owner_park: Node2D, player_inventory: RefCounted, player_name: String
 	_build_map()
 	_build_camp()
 	_build_lab()
+	_build_quests()
 	_build_message()
 	inventory.changed.connect(_refresh)
 	_refresh()
@@ -140,7 +143,7 @@ func _build_top(player_name: String) -> void:
 	buttons.offset_top = 8
 	buttons.add_theme_constant_override("separation", 6)
 	root.add_child(buttons)
-	for entry in [["Sac", 64, toggle_bag], ["Mes dinos", 104, toggle_pocket], ["Carte", 72, toggle_map], ["Dinodex", 92, toggle_dex], ["Menu", 72, park.back_to_menu],
+	for entry in [["Sac", 64, toggle_bag], ["Mes dinos", 104, toggle_pocket], ["Carte", 72, toggle_map], ["Quêtes", 84, toggle_quests], ["Dinodex", 92, toggle_dex], ["Menu", 72, park.back_to_menu],
 			["−", 44, func() -> void: park.camera.zoom_step(-1)], ["+", 44, func() -> void: park.camera.zoom_step(1)]]:
 		var button := _button(buttons, entry[0], entry[1], entry[2])
 		button.custom_minimum_size.y = 44
@@ -754,6 +757,7 @@ func _hide_travel() -> void:
 		world_map.visible = false
 		camp.visible = false
 		lab.visible = false
+		quests.visible = false
 
 
 # A window in the middle of the screen, with a title and a "Fermer" button. Returns its column.
@@ -887,6 +891,50 @@ func _cook(what: String) -> void:
 	_fill_camp()
 
 
+# --- The quests of the village ------------------------------------------------------
+
+func _build_quests() -> void:
+	var column := _window("Quêtes", toggle_quests)
+	quests = column.get_parent()
+	quests.custom_minimum_size = Vector2(760, 0)
+	var hint := _label(column, "Ce que te demandent les habitants du village. Quand c'est fait, va les voir pour ta récompense !", 14)
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.add_theme_color_override("font_color", Color("7a6248"))
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 380)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	column.add_child(scroll)
+	quest_rows = VBoxContainer.new()
+	quest_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	quest_rows.add_theme_constant_override("separation", 10)
+	scroll.add_child(quest_rows)
+
+
+func toggle_quests() -> void:
+	var show := not quests.visible
+	if bag_open:
+		toggle_bag()
+	dex.visible = false
+	pocket.visible = false
+	shop.visible = false
+	_hide_travel()
+	quests.visible = show
+	if not show:
+		return
+	for child in quest_rows.get_children():
+		child.queue_free()
+	var list: Array = park.quest_list()
+	if list.is_empty():
+		_label(quest_rows, "Va rencontrer les habitants du village (à gauche du parc) : ils ont des choses à te demander !", 16).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	for quest in list:
+		var who := _label(quest_rows, quest.name + (" — c'est fait, va le voir !" if quest.done else ""), 17)
+		who.add_theme_color_override("font_color", Color("2a7a2a") if quest.done else Color("8a4a10"))
+		var ask := _label(quest_rows, quest.ask, 15)
+		ask.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		var progress := _label(quest_rows, quest.progress, 13)
+		progress.add_theme_color_override("font_color", Color("7a6248"))
+
+
 # --- The laboratory -------------------------------------------------------------
 
 func _build_lab() -> void:
@@ -1014,7 +1062,7 @@ func _tab_row(parent: Control, pick: Callable) -> Dictionary:
 
 # A window is open over the game: the character waits.
 func menu_open() -> bool:
-	return bag_open or dex.visible or pocket.visible or shop.visible or world_map.visible or camp.visible or lab.visible
+	return bag_open or dex.visible or pocket.visible or shop.visible or world_map.visible or camp.visible or lab.visible or quests.visible
 
 
 # --- What the park expects from a HUD ----------------------------------------------

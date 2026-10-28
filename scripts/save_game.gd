@@ -67,6 +67,7 @@ static func save(park: Node2D) -> void:
 		data.lab = park.lab_state
 		data.stars = park.stars
 		data.hatched = park.hatched
+		data.rode = park.rode
 	# Write to a temporary file first, keep the previous save as a backup, then swap:
 	# a crash in the middle of writing never loses the game.
 	var path := path_for(park.world_info.id)

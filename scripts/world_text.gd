@@ -88,6 +88,13 @@ func _process(_delta: float) -> void:
 	_sync()
 
 
+# Hidden with its zone (the village while the player is in a house): even when the zone is
+# paused, the label goes away at once.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_VISIBILITY_CHANGED and control != null:
+		_sync()
+
+
 func _sync() -> void:
 	control.visible = shown and is_visible_in_tree() and label.text != ""
 	if control.visible:

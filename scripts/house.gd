@@ -112,14 +112,18 @@ func is_exit(cell: Vector2i) -> bool:
 
 # The resident talks: the present on the first visit, then a few words.
 # Returns the present ({} once given).
+# The present of the first visit, or {} (then the park tells a quest, or something to say).
 func talk() -> Dictionary:
-	said = 4.0
 	if not index in state.gifts:
 		state.gifts.append(index)
-		bubble.set_text(resident.first)
+		say(resident.first)
 		return resident.gift
-	bubble.set_text(resident.talk.pick_random())
 	return {}
+
+
+func say(text: String) -> void:
+	said = 5.0
+	bubble.set_text(text)
 
 
 func _process(delta: float) -> void:

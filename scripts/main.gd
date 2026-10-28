@@ -28,6 +28,7 @@ const Village := preload("res://scripts/village.gd")
 const House := preload("res://scripts/house.gd")
 const Market := preload("res://scripts/market.gd")
 const Wild := preload("res://scripts/wild.gd")
+const Quests := preload("res://scripts/quests.gd")
 
 const T := 16
 const GRID := Vector2i(128, 96)
@@ -179,6 +180,7 @@ var base_exits := {}  # "up" / "down" / "left" / "right" -> where the trails out
 var border_nodes: Array[Node] = []  # the forest around the zone and the signs of its trails
 var stars := 0  # the stars of the park, kept for good (see STARS)
 var hatched := 0  # babies born in the laboratory
+var rode := {}  # species id -> true: the dinosaurs the player has ridden
 var lab_state := {}  # {"egg": species, "ready": unix time}: the egg in the laboratory
 var respawn := {}  # {"zone", "x", "y"}: the last campfire the player rested by, where they wake up
 
@@ -256,6 +258,7 @@ func start_adventure(data: Dictionary) -> void:
 	lab_state = data.get("lab", {})
 	stars = int(data.get("stars", 0))
 	hatched = int(data.get("hatched", 0))
+	rode = data.get("rode", {})
 	base_exits = data.get("exits", {})
 	if data.is_empty():
 		loading = true
@@ -1784,7 +1787,13 @@ func _house_action(cell: Vector2i) -> void:
 		return
 	var gift: Dictionary = house.talk()
 	if gift.is_empty():
+		_quest_talk(house)
 		return
+	_give(gift)
+
+
+# Gives coins and things to the player, shown over their head.
+func _give(gift: Dictionary) -> void:
 	var gained := PackedStringArray()
 	for id in gift:
 		if id == "coins":
@@ -1795,6 +1804,120 @@ func _house_action(cell: Vector2i) -> void:
 			gained.append("+%d %s" % [gift[id], Items.name_of(id)])
 	_float_text(player.position + Vector2(0, -16), "  ".join(gained), Color("fff59d"))
 	save_game()
+
+
+# --- Quests of the village (see quests.gd) ---------------------------------------
+
+func quest_step(resident: int) -> int:
+	return int(village_state.get("quests", {}).get(str(resident), 0))
+
+
+# Where the player is with a quest: [have, need], and a short text for the quest list.
+func quest_progress(quest: Dictionary) -> Dictionary:
+	var need: Dictionary = quest.need
+	var kind: String = need.keys()[0]
+	var have := 0
+	var goal := 1
+	var text := ""
+	if kind in ["show", "shown", "hearts"] and zone != Wild.BASE:
+		return {"done": false, "text": "à vérifier dans ton parc"}
+	match kind:
+		"bring":
+			var parts := PackedStringArray()
+			var all := true
+			for id in need.bring:
+				parts.append("%s : %d / %d" % [Items.name_of(id), mini(inventory.count(id), need.bring[id]), need.bring[id]])
+				all = all and inventory.count(id) >= need.bring[id]
+			return {"done": all, "text": ", ".join(parts)}
+		"show":
+			have = 1 if _shown_ids().has(need.show) else 0
+			text = "%s dans ton parc : %s" % [Catalog.DINOS[need.show].name, "oui" if have else "pas encore"]
+			return {"done": have == 1, "text": text}
+		"shown":
+			have = shown_species()
+			goal = need.shown
+			text = "Espèces montrées"
+		"dex":
+			have = caught.size()
+			goal = need.dex
+			text = "Espèces dans le Dinodex"
+		"far":
+			for key in zone_states:
+				have = maxi(have, Wild.level(Wild.from_key(key)))
+			goal = need.far
+			text = "Zone la plus loin visitée (étoiles)"
+		"zones":
+			have = zone_states.size()
+			goal = need.zones
+			text = "Zones visitées"
+		"fires":
+			for key in lit_fires():
+				have += lit_fires()[key].size()
+			goal = need.fires
+			text = "Feux de camp allumés"
+		"hatch":
+			have = hatched
+			goal = need.hatch
+			text = "Bébés nés au laboratoire"
+		"stars":
+			have = stars
+			goal = need.stars
+			text = "Étoiles du parc"
+		"hearts":
+			for dino in dinos:
+				if not dino.wild:
+					have = maxi(have, dino.hearts())
+			goal = need.hearts
+			text = "Le plus de cœurs d'un de tes dinos"
+		"ride":
+			var carn: bool = need.ride == "carn"
+			have = 1 if rode.keys().any(func(id: String) -> bool: return not carn or Catalog.DINOS[id].diet == "carn") else 0
+			return {"done": have == 1, "text": "Monter sur %s : %s" % ["un carnivore" if carn else "un dino", "fait !" if have else "pas encore"]}
+	return {"done": have >= goal, "text": "%s : %d / %d" % [text, mini(have, goal), goal]}
+
+
+func _shown_ids() -> Dictionary:
+	var shown := {}
+	for dino in dinos:
+		if not dino.wild and not dino.escaped and dino.following == null and dino.habitat == "land" \
+				and dino.region >= 0 and dino.region < regions.size() and regions[dino.region].enclosed and regions[dino.region].visible:
+			shown[dino.species_id] = true
+	return shown
+
+
+# Talking to someone who already gave their present: the reward of the quest if it is done
+# (then the next quest), or what they ask for.
+func _quest_talk(home: Node2D) -> void:
+	var resident: int = home.index
+	var quest := Quests.current(resident, quest_step(resident))
+	if quest.is_empty():
+		home.say(home.resident.talk.pick_random())
+		return
+	var progress := quest_progress(quest)
+	if not progress.done:
+		home.say("%s\n(%s)" % [quest.ask, progress.text])
+		return
+	for id in quest.need.get("bring", {}):
+		inventory.remove(id, quest.need.bring[id])
+	var steps: Dictionary = village_state.get("quests", {})
+	steps[str(resident)] = quest_step(resident) + 1
+	village_state.quests = steps
+	_give(quest.reward)
+	var next := Quests.current(resident, quest_step(resident))
+	home.say(quest.thanks + ("\nMaintenant : " + next.ask if not next.is_empty() else ""))
+	save_game()
+
+
+# The quests in progress, for the "Quêtes" window: [{name, ask, progress, done}].
+func quest_list() -> Array:
+	var list := []
+	for resident in village_state.get("gifts", []):
+		var quest := Quests.current(int(resident), quest_step(int(resident)))
+		if quest.is_empty():
+			continue
+		var progress := quest_progress(quest)
+		list.append({"name": House.RESIDENTS[int(resident)].name, "ask": quest.ask, "progress": progress.text, "done": progress.done})
+	return list
 
 
 # Buys a line of Market.BUY. Returns false when there are not enough coins.
@@ -1928,6 +2051,7 @@ func _try_mount(dino: Node2D) -> void:
 	elif not dino.saddled:
 		_float_text(at, "Il lui faut une selle ! Prends-la en main et appuie sur Action devant lui.", Color("ffab91"))
 	else:
+		rode[dino.species_id] = true
 		player.mount_on(dino)
 		hud.set_riding(true)
 		hud.flash("En selle sur %s !\nUtilise le joystick pour avancer.\nBouton Action pour descendre." % dino.species.name, 3.0)
@@ -3178,14 +3302,15 @@ func _build_border() -> void:
 			WorldText.make(sign, Vector2(0, -24), "%s Terres sauvages" % arrows[dir], "sign")
 
 
-# A strip of dirt under the forest, for a road or a trail.
+# A strip of dirt under the forest, for a road or a trail. On the floor of the park, hidden with it
+# while the player is in a mine, the village or a house.
 func _add_trail(rect: Rect2) -> void:
 	var trail := ColorRect.new()
 	trail.color = Color("e8d4a0")
 	trail.position = rect.position
 	trail.size = rect.size
 	trail.z_index = -9
-	add_child(trail)
+	floor_layer.add_child(trail)
 	border_nodes.append(trail)
 
 
