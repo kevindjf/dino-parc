@@ -57,6 +57,7 @@ const ITEMS := {
 	"campfire": {"name": "Feu de camp", "kind": "campfire", "cost": 30, "color": Color("f07818")},
 	"lab": {"name": "Laboratoire", "kind": "lab", "cost": 1500, "size": Vector2i(2, 2), "color": Color("9ad8e8")},
 	"nest": {"name": "Nid", "kind": "nest", "cost": 0, "color": Color("d8b060")},
+	"wreck": {"name": "Épave", "kind": "wreck", "cost": 0, "color": Color("4a3a2a")},
 	"tree": {"name": "Arbre", "kind": "decor", "style": "tree", "cost": 20, "attraction": 1, "color": Color("388e3c")},
 	"pine": {"name": "Sapin", "kind": "decor", "style": "pine", "cost": 20, "attraction": 1, "color": Color("1b5e20")},
 	"palm": {"name": "Palmier", "kind": "decor", "style": "palm", "cost": 30, "attraction": 1, "color": Color("7cb342")},

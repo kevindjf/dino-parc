@@ -64,7 +64,10 @@ const ITEMS := {
 	"moto": {"name": "Moto", "kind": "vehicle"},
 	"car": {"name": "Voiture", "kind": "vehicle"},
 	"heli": {"name": "Hélicoptère", "kind": "vehicle"},
-	"boat": {"name": "Bateau", "kind": "vehicle"},
+	"boat": {"name": "Barque", "kind": "vehicle"},
+	"sailboat": {"name": "Voilier", "kind": "vehicle"},
+	"speedboat": {"name": "Hors-bord", "kind": "vehicle"},
+	"submarine": {"name": "Sous-marin", "kind": "vehicle"},
 }
 
 # The bag, the workbench and the shop sort things in these tabs (see tab_of()).
@@ -89,7 +92,10 @@ const TIPS := {
 	"campfire": "Pose le feu de camp où tu veux : tu pourras y revenir depuis la carte.",
 	"lab": "Pose le laboratoire dans ton parc. Devant lui, Action : avec des fossiles et de l'ambre, il fait naître des bébés dinos !",
 	"rod": "La canne à pêche : mets-toi face à l'eau et appuie sur Action. Les dinos volants et marins adorent les poissons !",
-	"boat": "Le bateau : face à l'eau, Action pour monter dedans. Action face à la rive pour descendre. La mer est tout à l'est du monde !",
+	"boat": "La barque : face à l'eau, Action pour monter dedans. Action face à la rive pour descendre. La mer est tout à l'est du monde !",
+	"sailboat": "Le voilier va plus vite que la barque. Face à l'eau, Action pour monter dedans.",
+	"speedboat": "Le hors-bord file sur la mer ! Face à l'eau, Action pour monter dedans.",
+	"submarine": "Le sous-marin navigue sous l'eau : tu vois les reptiles marins en couleurs, et les épaves englouties ! Action au-dessus d'une épave pour la fouiller.",
 	"aviary": "Pose la volière dans ton parc (8 × 8 cases), puis relâche-y tes dinos volants.",
 	"lagoon": "Pose le lagon dans ton parc (12 × 8 cases), puis relâche-y tes reptiles marins.",
 	"egg": "Un œuf trouvé dans la nature ! Porte-le au laboratoire de ton parc pour le faire éclore.",
@@ -104,7 +110,10 @@ const VEHICLES := {
 	"moto": {"speed": 11.0},
 	"car": {"speed": 14.0},
 	"heli": {"speed": 16.0, "flies": true},
-	"boat": {"speed": 9.0, "sails": true},
+	"boat": {"speed": 7.0, "sails": true},
+	"sailboat": {"speed": 10.0, "sails": true},
+	"speedboat": {"speed": 14.0, "sails": true},
+	"submarine": {"speed": 9.0, "sails": true, "dives": true},
 }
 # A caught dinosaur travels in the bag as "dino:<species>" (kind "dino").
 
@@ -156,6 +165,9 @@ const RECIPES := [
 	{"make": "lab", "count": 1, "needs": {"wood": 10, "stone": 8, "iron": 2, "crystal": 1}},
 	{"make": "rod", "count": 1, "needs": {"wood": 2, "berries": 1}},
 	{"make": "boat", "count": 1, "needs": {"wood": 15}},
+	{"make": "sailboat", "count": 1, "needs": {"wood": 25, "iron": 3}},
+	{"make": "speedboat", "count": 1, "needs": {"iron": 10, "copper": 6, "gold": 2}},
+	{"make": "submarine", "count": 1, "needs": {"iron": 15, "crystal": 6, "gold": 3}},
 	{"make": "aviary", "count": 1, "needs": {"wood": 20, "iron": 8}},
 	{"make": "lagoon", "count": 1, "needs": {"stone": 25, "crystal": 4}},
 	{"make": "path", "count": 4, "needs": {"stone": 1}},
@@ -210,6 +222,11 @@ static func tab_of(id: String) -> String:
 	if id == "saddle":
 		return "tools"
 	return TAB_OF_KIND.get(kind_of(id), "")
+
+
+# A vehicle that goes on water (boats and the submarine).
+static func sails(id: String) -> bool:
+	return VEHICLES.get(id, {}).get("sails", false)
 
 
 static func exists(id: String) -> bool:

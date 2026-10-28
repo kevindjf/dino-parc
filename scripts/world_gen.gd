@@ -110,6 +110,15 @@ static func generate_zone(park: Node2D, zone: Vector2i, world_seed: int) -> void
 		total += 1.0
 	if Wild.is_ocean(zone):
 		_ocean(park, rng, warp)
+		# Wrecks at the bottom of the sea, for the submarine.
+		var wrecks := 0
+		for attempt in 60:
+			if wrecks >= 2 + seed % 2:
+				break
+			var cell := Vector2i(_inside(park, rng, 6))
+			if park.is_water(cell) and not park.occupied.has(cell) and cell.x > 20:
+				park.add_wreck(cell)
+				wrecks += 1
 	else:
 		var share := func(biome: String) -> float: return weights.get(biome, 0.0) / total
 		for i in int(round(share.call("marais") * 8.0)) + rng.randi_range(0, 1):

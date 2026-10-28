@@ -708,6 +708,8 @@ static func item(id: String) -> Texture2D:
 			return lab()
 		"nest":
 			return nest()
+		"wreck":
+			return wreck()
 		"fence":
 			return fence(data.style, [Vector2i.LEFT, Vector2i.RIGHT])
 	return null
@@ -1709,6 +1711,22 @@ static func lab(incubating := false) -> Texture2D:
 		return ImageTexture.create_from_image(l.image))
 
 
+# A wreck at the bottom of the sea, seen from the submarine: the ribs of an old hull with
+# seaweed, and a chest shining in it. 22 x 16 pixels.
+static func wreck() -> Texture2D:
+	return cached("wreck", func() -> Texture2D:
+		var l := Layers.new(Vector2i(22, 16))
+		l.part([l.ellipse(11, 11, 10, 4)], Color("4a3a2a"), 1, 1)
+		for x in [4, 8, 12, 16]:
+			l.part([l.limb(Vector2(x, 11), Vector2(x + 1, 3 + absf(x - 10) * 0.3), 0.8, 0.6)], LOG[1].darkened(0.2), 0, 0)
+		l.part([l.box(8, 9, 6, 4)], LOG[2], 1, 1)
+		l.part([l.box(8, 9, 6, 1.5)], Color("f0c040"), 0, 0)
+		l.dot(11, 11, Color("fff4c0"))
+		for x in [2, 19]:
+			l.part([l.limb(Vector2(x, 14), Vector2(x + 1, 6), 0.8, 0.4)], Color("3a9a5a"), 0, 0, false)
+		return ImageTexture.create_from_image(l.image))
+
+
 # A nest of straw in the wild with an egg in it. 16 x 14 pixels.
 static func nest() -> Texture2D:
 	return cached("nest", func() -> Texture2D:
@@ -2428,15 +2446,15 @@ static func vehicle(id: String, frame: int, direction := "side") -> Texture2D:
 			return _moto(frame % 4)
 		"car":
 			return _car(frame % 4)
-		"boat":
-			return _boat(frame % 4, "side")
+		"boat", "sailboat", "speedboat", "submarine":
+			return _boat(id, frame % 4, "side")
 	return helicopter(frame % 2)
 
 
 # A vehicle seen from the front (coming towards us) or from the back.
 static func _vehicle_end(id: String, frame: int, front: bool) -> Texture2D:
-	if id == "boat":
-		return _boat(frame % 4, "down" if front else "up")
+	if Items.sails(id):
+		return _boat(id, frame % 4, "down" if front else "up")
 	return cached("vehicle_end:%s:%d:%s" % [id, frame % 4, front], func() -> Texture2D:
 		var light := Color("fff176") if front else Color("e53935")
 		match id:
@@ -2534,27 +2552,60 @@ static func _moto(frame: int) -> Texture2D:
 		return p.finish())
 
 
-# A wooden rowboat on the water, with little waves along its hull that move as it goes.
-# direction: "side" (32 x 16), or "down" / "up" (20 x 16).
-static func _boat(frame: int, direction: String) -> Texture2D:
-	return cached("boat:%d:%s" % [frame, direction], func() -> Texture2D:
+# The boats on the water, with little waves along the hull that move as they go:
+# "boat" a wooden rowboat, "sailboat" with a white sail, "speedboat" a white and red hull with a
+# wake, "submarine" a yellow submarine, its back just out of the water with a periscope and
+# bubbles. direction: "side" (32 x 22), or "down" / "up" (20 x 22).
+static func _boat(kind: String, frame: int, direction: String) -> Texture2D:
+	return cached("boat:%s:%d:%s" % [kind, frame, direction], func() -> Texture2D:
 		var side := direction == "side"
-		var l := Layers.new(Vector2i(32, 16) if side else Vector2i(20, 16))
-		if side:
-			l.part([l.poly([Vector2(1, 6), Vector2(31, 6), Vector2(27, 13), Vector2(5, 13)])], LOG[2], 1, 2)
-			l.part([l.box(1, 5, 30, 2)], LOG[3], 0, 1)
-			for x in [9, 16, 23]:
-				l.shade(x, 9, 0.25)
-				l.shade(x, 10, 0.25)
-			l.part([l.limb(Vector2(22, 7), Vector2(30, 14), 0.6, 0.9)], LOG[1], 0, 0)
-		else:
-			l.part([l.ellipse(10, 9, 9, 5)], LOG[2], 1, 2)
-			l.part([l.ellipse(10, 8, 6.5, 3)], LOG[0], 0, 0, false)
-			l.part([l.box(1, 6.5, 18, 1.5)], LOG[3], 0, 0, false)
 		var width := 32 if side else 20
-		for i in 4:
-			var x := (i * 9 + frame * 2) % width
-			l.part([l.box(x, 14, 3, 1)], Color(1, 1, 1, 0.8), 0, 0, false)
+		var l := Layers.new(Vector2i(width, 22))
+		var hull: Color = {"boat": LOG[2], "sailboat": Color("f0ece0"), "speedboat": Color("f4f4f4"), "submarine": Color("f0c030")}[kind]
+		var trim: Color = {"boat": LOG[3], "sailboat": Color("2a6ab0"), "speedboat": Color("d83030"), "submarine": Color("c08a10")}[kind]
+		if kind == "submarine":
+			if side:
+				l.part([l.ellipse(16, 17, 15, 4.5)], hull, 1, 1)
+				l.part([l.box(13, 10, 7, 6), l.ellipse(16.5, 10.5, 3.5, 1.5)], hull, 1, 1)
+				l.part([l.limb(Vector2(18, 10), Vector2(18, 5), 0.6, 0.6), l.limb(Vector2(18, 5), Vector2(20.5, 5), 0.6, 0.6)], Color("707880"), 0, 0)
+				for x in [7, 23]:
+					l.part([l.ellipse(x, 16, 1.6, 1.6)], Color("70c8f0"), 0, 1)
+				l.part([l.limb(Vector2(1, 15), Vector2(1, 19), 0.8, 0.8)], trim, 0, 0)
+			else:
+				l.part([l.ellipse(10, 17, 8.5, 4.5)], hull, 1, 1)
+				l.part([l.box(7, 10, 6, 6), l.ellipse(10, 10.5, 3, 1.5)], hull, 1, 1)
+				l.part([l.limb(Vector2(11, 10), Vector2(11, 5), 0.6, 0.6)], Color("707880"), 0, 0)
+				l.part([l.ellipse(10, 13, 1.6, 1.6)], Color("70c8f0"), 0, 1)
+			# Bubbles rising, and the water line over the hull.
+			l.dot([3, 6, 9, 5][frame], [9, 6, 3, 1][frame], Color(1, 1, 1, 0.7))
+			l.part([l.box(0, 18.5, width, 3.5)], Color(0.25, 0.5, 0.85, 0.55), 0, 0, false)
+		else:
+			if kind == "sailboat":
+				var mast := 14.0 if side else 10.0
+				l.part([l.limb(Vector2(mast, 13), Vector2(mast, 1), 0.6, 0.6)], LOG[1], 0, 0)
+				var sail := [Vector2(mast + 1, 0.5), Vector2(mast + 1, 12), Vector2(mast + 13, 12)] if side else [Vector2(3, 11), Vector2(10, 0.5), Vector2(17, 11)]
+				l.part([l.poly(sail)], Color("fafafa"), 1, 1)
+				l.part([l.box(sail[0].x, 7, 3 if side else 12, 1)], trim, 0, 0, false)
+			if side:
+				var nose := 31.0 if kind == "speedboat" else 31.0
+				l.part([l.poly([Vector2(1, 12), Vector2(nose, 12 if kind != "speedboat" else 10), Vector2(27, 19), Vector2(5, 19)])], hull, 1, 2)
+				l.part([l.box(1, 11, 30, 2)], trim, 0, 1)
+				if kind == "boat":
+					for x in [9, 16, 23]:
+						l.shade(x, 15, 0.25)
+						l.shade(x, 16, 0.25)
+					l.part([l.limb(Vector2(22, 13), Vector2(30, 20), 0.6, 0.9)], LOG[1], 0, 0)
+				elif kind == "speedboat":
+					l.part([l.poly([Vector2(17, 11), Vector2(21, 7), Vector2(24, 7), Vector2(23, 11)])], Color("a8e0f8"), 1, 0)
+					l.part([l.box(0, 13, 3, 5)], Color("404048"), 0, 1)
+			else:
+				l.part([l.ellipse(10, 15, 9, 5)], hull, 1, 2)
+				l.part([l.ellipse(10, 14, 6.5, 3)], hull.darkened(0.45), 0, 0, false)
+				l.part([l.box(1, 12.5, 18, 1.5)], trim, 0, 0, false)
+			var waves := 6 if kind == "speedboat" else 4
+			for i in waves:
+				var x := (i * 9 + frame * (4 if kind == "speedboat" else 2)) % width
+				l.part([l.box(x, 20, 3, 1)], Color(1, 1, 1, 0.8), 0, 0, false)
 		return ImageTexture.create_from_image(l.image))
 
 

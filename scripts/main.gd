@@ -600,7 +600,7 @@ func _add_building(id: String, origin: Vector2i, fixed := false) -> Dictionary:
 			world.add_child(building.root)
 			if not loading:
 				_rebuild_fences_around(origin)
-		"feeder", "shop", "decor", "aviary", "gyro_station", "garage", "lab", "nest":
+		"feeder", "shop", "decor", "aviary", "gyro_station", "garage", "lab", "nest", "wreck":
 			building.root = Art.sprite(Art.item(id))
 			building.root.position = foot
 			Art.ground_shadow(building.root, int(building.root.texture.get_width() * 0.8))
@@ -613,6 +613,10 @@ func _add_building(id: String, origin: Vector2i, fixed := false) -> Dictionary:
 					building.label = WorldText.make(building.root, Vector2(0, -44), "Colle-moi contre la barrière d'un enclos !", "bubble", Color("d03030"))
 				"garage":
 					building.label = WorldText.make(building.root, Vector2(0, -40), "Il faut une route à côté !", "bubble", Color("d03030"))
+			if item.kind == "wreck":
+				# Only seen from the submarine (see weather.gd).
+				building.root.visible = false
+				building.root.add_to_group("wrecks")
 			if item.kind == "lab" and not lab_state.is_empty():
 				building.root.texture = Art.lab(true)
 			if item.get("style", "") == "volcano":
@@ -1521,7 +1525,7 @@ func player_action(cell: Vector2i) -> void:
 func player_blocked(cell: Vector2i) -> bool:
 	if away != null:
 		return away.is_solid(cell)
-	if mode == "adventure" and player.vehicle == "boat" and in_grid(cell):
+	if mode == "adventure" and Items.sails(player.vehicle) and in_grid(cell):
 		return not is_water(cell)
 	if not in_grid(cell) and mode == "adventure":
 		var dir := _edge_of(cell)
@@ -2082,7 +2086,7 @@ func _rideable_names() -> String:
 
 # Gets on the bike, the moto, the car or the helicopter held in hand.
 func board_vehicle(id: String) -> void:
-	if id == "boat":
+	if Items.sails(id):
 		var water: Vector2i = player.front()
 		if away != null or not in_grid(water) or not is_water(water) or occupied.has(water):
 			_float_text(player.position, "Mets-toi face à l'eau pour mettre le bateau à l'eau !", Color("ffab91"))
@@ -2103,7 +2107,7 @@ func board_vehicle(id: String) -> void:
 
 # Off the vehicle: it goes back in the bag.
 func player_leave_vehicle() -> void:
-	if player.vehicle == "boat":
+	if Items.sails(player.vehicle):
 		# Out of the boat onto the shore: in front first, else any side.
 		var shore := NONE
 		for dir in [player.facing, Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
@@ -2125,6 +2129,12 @@ func player_leave_vehicle() -> void:
 # Action in the boat: shoot or throw what is in hand, fish with the rod, or get out.
 func boat_action() -> void:
 	var holding: String = inventory.current()
+	if player.vehicle == "submarine":
+		for dir in [Vector2i.ZERO, player.facing, Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var wreck = occupied.get(player.cell() + dir)
+			if wreck != null and wreck.kind == "wreck":
+				_search_wreck(wreck)
+				return
 	if holding == "rod":
 		fish_at(player.front())
 	elif combat.weapon != "":
@@ -2698,7 +2708,7 @@ func _edge_open(dir: Vector2i, cell: Vector2i) -> bool:
 	if not Wild.open_edge(zone, dir):
 		return false
 	# A boat sails on to the next zone only on the open sea.
-	if player.vehicle == "boat":
+	if Items.sails(player.vehicle):
 		return Wild.is_ocean(zone + dir)
 	if zone == Wild.BASE and player.vehicle != "heli":
 		return _on_trail(dir, _along(dir, cell))
@@ -2770,10 +2780,10 @@ func travel(to: Vector2i, at: Vector2) -> void:
 	world_bounds = _zone_bounds()
 	camera.bounds = world_bounds
 	natural_target = _count_nature()
-	var cell := _arrival_cell(Vector2i((at / T).floor()), player.vehicle == "boat")
+	var cell := _arrival_cell(Vector2i((at / T).floor()), Items.sails(player.vehicle))
 	player.position = cell_center(cell) if not in_grid(Vector2i((at / T).floor())) or player_blocked(Vector2i((at / T).floor())) else at
 	player.velocity = Vector2.ZERO
-	if player.vehicle == "boat" and not is_water(player.cell()):
+	if Items.sails(player.vehicle) and not is_water(player.cell()):
 		player.leave_vehicle()
 		hud.set_riding(false)
 	camera.position = player.position
@@ -2853,10 +2863,10 @@ func _rebuild_zone() -> void:
 		elif entry[0] != "path":
 			set_water(cell, false)
 		_add_building(entry[0], cell)
-	for at in state.get("nests", []):
+	for at in state.get("nests", []) + state.get("wrecks", []):
 		var cell := Vector2i(int(at[0]), int(at[1]))
-		var nest = occupied.get(cell)
-		if nest != null and nest.kind == "nest":
+		var found = occupied.get(cell)
+		if found != null and found.kind in ["nest", "wreck"]:
 			remove_natural(cell)
 	var lit: Array = state.get("fires", []).map(func(at: Array) -> Vector2i: return Vector2i(int(at[0]), int(at[1])))
 	for building in buildings:
@@ -2883,6 +2893,27 @@ func storm_ended() -> void:
 # --- The laboratory: eggs and babies ---------------------------------------------
 
 const MYSTERY_EGG := {"fossil": 2, "amber": 1}
+
+
+# A wreck at the bottom of the sea, with a treasure, until the player searches it.
+func add_wreck(cell: Vector2i) -> void:
+	_add_building("wreck", cell)
+
+
+const WRECK_TREASURES := [{"gold": 2}, {"crystal": 2}, {"amber": 1}, {"fossil": 2}, {"capsule_gold": 1}, {"syringe": 5}]
+
+
+func _search_wreck(building: Dictionary) -> void:
+	var state: Dictionary = zone_states.get(Wild.key(zone), {})
+	var taken: Array = state.get("wrecks", [])
+	taken.append([building.origin.x, building.origin.y])
+	state.wrecks = taken
+	zone_states[Wild.key(zone)] = state
+	remove_natural(building.origin)
+	var treasure: Dictionary = WRECK_TREASURES.pick_random().duplicate()
+	treasure.coins = randi_range(100, 300)
+	_give(treasure)
+	hud.flash("Un trésor dans l'épave !", 2.5)
 
 
 # A nest in the wild with an egg in it, until the player takes the egg.

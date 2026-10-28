@@ -560,7 +560,9 @@ func _process_sea(delta: float) -> bool:
 	else:
 		sprite.position.y = 0.0
 		sprite.rotation = 0.0
-		sprite.modulate = Color.WHITE if surface_time > 0.0 else UNDERWATER
+		# From the submarine, the swimmers are seen in full colour.
+		var diving: bool = park.player != null and park.player.vehicle == "submarine"
+		sprite.modulate = Color.WHITE if surface_time > 0.0 or diving else UNDERWATER
 	return true
 
 

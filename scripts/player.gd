@@ -117,7 +117,7 @@ func _process(delta: float) -> void:
 		_drive()
 		if acting and cooldown <= 0.0 and not landing:
 			cooldown = 0.5
-			if vehicle == "boat":
+			if Items.sails(vehicle):
 				park.boat_action()
 			elif vehicle != "heli":
 				park.player_leave_vehicle()
@@ -277,7 +277,8 @@ func _drive() -> void:
 	vehicle_sprite.position = Vector2(0, -altitude)
 	sprite.texture = Art.hero(direction, 0, look)
 	sprite.flip_h = left
-	sprite.visible = vehicle != "heli"
+	# In the helicopter and the submarine, the explorer is inside.
+	sprite.visible = vehicle != "heli" and vehicle != "submarine"
 	var back := 0.0 if direction != "side" else (2.0 if left else -2.0)
 	match vehicle:
 		"bike":
@@ -286,9 +287,11 @@ func _drive() -> void:
 		"moto":
 			sprite.position = Vector2(back, -5)
 			sprite.z_index = 1
-		"boat":
-			# Sitting in the boat: the hull hides the legs.
-			sprite.position = Vector2(back * 0.5, -6 if direction == "side" else -7)
+		"boat", "sailboat", "speedboat":
+			# Sitting in the boat: the hull hides the legs. In the sailboat, at the back, behind
+			# the sail.
+			var stern := back * 4.0 if vehicle == "sailboat" else back * 0.5
+			sprite.position = Vector2(stern, -6 if direction == "side" else -7)
 			sprite.z_index = -1
 		"car":
 			# Drawn behind the car: only the head shows over the door.

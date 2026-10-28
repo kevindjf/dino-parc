@@ -109,8 +109,15 @@ func _process(delta: float) -> void:
 	if storming():
 		color = color * STORM_COLOR
 		color.a = 1.0
+	if park.player.vehicle == "submarine":
+		# Under the water, everything turns blue.
+		color = color * Color(0.55, 0.75, 1.0)
+		color.a = 1.0
 	tint.color = color
 	tint.visible = outside
+	var diving: bool = park.player.vehicle == "submarine"
+	for wreck in get_tree().get_nodes_in_group("wrecks"):
+		wreck.visible = diving
 	lamp.position = park.player.global_position + Vector2(0, -8)
 	# The light adds to the dark tint: around the lamp, things look about as in the day.
 	lamp.energy = (1.0 - light) * 0.55 if outside else 0.0

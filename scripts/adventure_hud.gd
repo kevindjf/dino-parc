@@ -301,7 +301,7 @@ func _refresh() -> void:
 		var driven: String = park.player.vehicle if park.player != null else ""
 		action.caption = "Atterrir" if driven == "heli" else "Descendre"
 		action.set_icon(Art.bag_icon(driven) if driven != "" else Art.resource("saddle"))
-		if driven == "boat" and (Items.WEAPONS.has(current) or current == "rod"):
+		if Items.sails(driven) and (Items.WEAPONS.has(current) or current == "rod"):
 			# In the boat, Action uses what is in hand (see Park.boat_action).
 			action.caption = Items.name_of(current)
 			action.set_icon(Art.bag_icon(current))

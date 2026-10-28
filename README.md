@@ -79,7 +79,16 @@ Ton parc n'est que le début : il est au milieu d'un monde de **7 × 7 zones**, 
 
 ### La mer et le ciel
 
-- **Tout à l'est du monde, c'est la mer** : une côte de sable, puis le large avec des îles. Le **bateau** (15 bois, ou 500 pièces à la boutique avec un parc ★★) se met à l'eau face à l'eau avec Action ; face à la rive, Action pour descendre. En bateau, on passe d'une zone de mer à l'autre.
+- **Tout à l'est du monde, c'est la mer** : une côte de sable, puis le large avec des îles. Les bateaux se mettent à l'eau face à l'eau avec Action ; face à la rive, Action pour descendre. En bateau, on passe d'une zone de mer à l'autre.
+
+| Bateau | Vitesse | Fabriquer | Boutique |
+|---|---|---|---|
+| Barque | 7 | 15 bois | 300 pièces |
+| Voilier | 10 | 25 bois + 3 fer | 700 pièces, parc ★★ |
+| Hors-bord | 14 | 10 fer + 6 cuivre + 2 or | 1500 pièces, parc ★★★ |
+| Sous-marin | 9 | 15 fer + 6 cristal + 3 or | 2500 pièces, parc ★★★★ |
+
+- Le **sous-marin** navigue sous l'eau : tout devient bleu, les reptiles marins se voient en couleurs, et les **épaves englouties** apparaissent (2 ou 3 par zone de mer). Action à côté d'une épave pour la fouiller : des pièces et un trésor (or, cristal, ambre, fossiles, capsule en or…).
 - La **canne à pêche** (2 bois + 1 baie) : face à l'eau, Action pour pêcher des **poissons** (et parfois un fossile !). Ça marche aussi depuis le bateau. On peut griller les poissons au feu de camp.
 - Les **dinos volants** tournent dans le ciel des zones sauvages, chacun au-dessus de son biome (le Ptérodactyle dans la neige, le Quetzalcoatlus dans les plaines…). Les **reptiles marins** nagent là où l'eau est assez large pour eux : le Plésiosaure dans les lacs, les géants (Mosasaure, Liopleurodon…) seulement dans la mer.
 - Pour les avoir : **lance-leur des poissons** (le poisson grillé compte double) jusqu'à ce qu'ils te fassent confiance (plus ils sont gros, plus il en faut), ou fatigue-les avec une arme puis lance une capsule. Un volant épuisé se pose par terre, un marin flotte à la surface.
