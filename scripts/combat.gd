@@ -162,10 +162,11 @@ func fire() -> void:
 				hint = park.food_refused(target, weapon)
 			park.float_text(player.position, hint, Color("e0e0e0"))
 		return
-	if park.inventory.count(stats.ammo) <= 0:
-		park.float_text(player.position, "Plus de %s !" % Items.name_of(stats.ammo).to_lower(), Color("ffab91"))
-		return
-	park.inventory.remove(stats.ammo)
+	if stats.ammo != "":
+		if park.inventory.count(stats.ammo) <= 0:
+			park.float_text(player.position, "Plus de %s !" % Items.name_of(stats.ammo).to_lower(), Color("ffab91"))
+			return
+		park.inventory.remove(stats.ammo)
 	ready_at = time + stats.every
 	var kind := weapon
 	var shot := target
@@ -224,13 +225,38 @@ func _land(kind: String, shot: Node2D) -> void:
 		shot.sleep(6.0)
 		park.float_text(shot.position, "Zzz…", Color("b3e5fc"))
 		return
-	shot.hurt(stats.tire, stats.get("stun", 0.0))
+	if shot.species.strength > stats.get("biggest", 5):
+		park.float_text(shot.position, "Trop gros pour ça !", Color("ffab91"))
+		return
+	var power := shot_power(kind, shot)
+	shot.hurt(stats.tire * power, stats.get("stun", 0.0), stats.get("quiet", false))
 	if shot.state == "sleep":
 		park.float_text(shot.position, "Épuisé ! Lance une capsule !", Color("b3e5fc"))
 	elif stats.has("stun"):
 		park.float_text(shot.position, "Coincé !", Color("d7ccc8"))
+	elif armored(shot) and not stats.get("pierce", false):
+		park.float_text(shot.position, "Ça rebondit sur sa carapace !", Color("d7ccc8"))
+	elif power < 0.3:
+		park.float_text(shot.position, "Ça le chatouille… Prends une arme plus forte !", Color("d7ccc8"))
 	else:
-		park.float_text(shot.position, "Paf !", Color("fff59d"))
+		park.float_text(shot.position, "Paf !" if power < 1.2 else "Super coup !", Color("fff59d"))
+
+
+# The ankylosaurus has an armour and the stegosaurus its plates.
+static func armored(dino: Node2D) -> bool:
+	var features: Array = dino.species.get("features", [])
+	return "armor" in features or "plates" in features
+
+
+# How much of its `tire` a weapon takes from this dinosaur: some are made for the small ones,
+# others for the giants, and only some go through an armour.
+static func shot_power(kind: String, dino: Node2D) -> float:
+	var stats: Dictionary = Items.WEAPONS[kind]
+	var strength := clampi(int(dino.species.strength), 1, 5)
+	var power: float = stats.power[strength - 1] if stats.has("power") else 1.0
+	if armored(dino) and not stats.get("pierce", false):
+		power *= 0.3
+	return power
 
 
 # The dinosaur goes into the capsule, which shakes on the ground: it holds, or it opens.
@@ -293,6 +319,10 @@ func _draw() -> void:
 			_energy_bar(dino)
 	if target == null or not is_instance_valid(target):
 		return
+	if weapon == "sniper":
+		# The red line of the scope, from the gun to the dinosaur.
+		var from: Vector2 = park.player.position + Vector2(0, -8)
+		draw_dashed_line(from, _aim_point(target), Color(1, 0.2, 0.15, 0.55), 1.0, 4.0)
 	var size: Vector2 = target.frames.size
 	var height: float = target.frames.height
 	var center := _aim_point(target)

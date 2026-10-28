@@ -127,10 +127,16 @@ Des dinosaures sauvages vivent dans le parc, chacun dans son biome préféré : 
 
 | Arme | Effet | Munitions |
 |---|---|---|
-| Lance-pierre | fatigue un peu | les pierres du sac |
-| Arc | fatigue plus, de plus loin | les flèches |
-| Fléchettes endormantes | fatiguent beaucoup | elles-mêmes |
+| Lance-pierre | bon sur les petits, chatouille les gros | les pierres du sac |
+| Arc | moyen partout, de loin (8 cases) | les flèches |
+| Lance | très forte, mais il faut être tout près (2 cases) | aucune |
+| Sarbacane | fatigue sans que le dinosaure s'enfuie ni ne fonce | les fléchettes |
+| Fléchettes endormantes | fatiguent beaucoup, lancées à la main | elles-mêmes |
+| Fusil à lunette | tire de très loin (20 cases), fait pour les géants | les seringues |
 | Bolas | bloquent le dinosaure 4 secondes | elles-mêmes |
+| Filet | bloque 7 secondes, jusqu'à la force 3 | lui-même |
+
+Chaque arme a sa force selon la taille du dinosaure : il faut 3 tirs de fusil pour endormir un T-Rex, mais des dizaines de cailloux. L'**ankylosaure** et le **stégosaure** ont une carapace : les cailloux, les flèches et la sarbacane rebondissent dessus, il faut la lance, les fléchettes ou le fusil. Tout se règle dans `scripts/items.gd` (`WEAPONS`, colonne `power`).
 
 Les petits herbivores s'enfuient quand on les touche ; les carnivores et les gros herbivores (force 3 et plus) foncent sur toi. S'ils te touchent, tu perds un **cœur** (en haut de l'écran, il y en a 5, ils reviennent tout seuls). Sans cœur, tu te réveilles à l'entrée du parc, sans rien perdre. Si on le laisse tranquille 8 secondes, un dinosaure reprend des forces.
 
@@ -159,7 +165,7 @@ Chaque dinosaure du parc a de l'**amitié pour toi, de 0 à 5 cœurs**. Elle dé
 
 Le **Dinodex** (bouton en haut) montre les 21 espèces : les ombres noires sont celles qu'il reste à attraper. Les volants et les reptiles marins arriveront plus tard.
 
-Recettes : Hache (3 bois), Pioche (4 bois), Barrières en bambou (1 bois → 2), en bois (2 bois → 2), en pierre (2 pierres → 2), Portail (3 bois), Chemin (1 pierre → 4), Mangeoire à plantes (4 bois + 3 baies), Mangeoire à viande (4 bois + 3 viandes), Lance-pierre (3 bois), Arc (5 bois), Flèches (1 bois + 1 pierre → 5), Fléchettes endormantes (1 bois + 2 baies → 3), Bolas (2 pierres + 1 bois → 2), Cage (4 bois + 2 pierres), Capsules en cuivre (2 cuivre + 1 pierre → 2), en fer (2 fer + 1 cuivre → 2), en or (1 or + 1 fer + 1 cristal), Brosse (2 bois + 1 baie), Selle (4 bois + 2 pierres + 2 baies). On les modifie dans `scripts/items.gd`.
+Recettes : Hache (3 bois), Pioche (4 bois), Barrières en bambou (1 bois → 2), en bois (2 bois → 2), en pierre (2 pierres → 2), Portail (3 bois), Chemin (1 pierre → 4), Mangeoire à plantes (4 bois + 3 baies), Mangeoire à viande (4 bois + 3 viandes), Lance-pierre (3 bois), Arc (5 bois), Flèches (1 bois + 1 pierre → 5), Fléchettes endormantes (1 bois + 2 baies → 3), Bolas (2 pierres + 1 bois → 2), Lance (3 bois + 2 pierres), Sarbacane (4 bois), Filet (2 bois + 2 baies → 2), Fusil à lunette (4 fer + 2 cristal + 2 bois), Seringues (1 fer + 2 baies → 3), Cage (4 bois + 2 pierres), Capsules en cuivre (2 cuivre + 1 pierre → 2), en fer (2 fer + 1 cuivre → 2), en or (1 or + 1 fer + 1 cristal), Brosse (2 bois + 1 baie), Selle (4 bois + 2 pierres + 2 baies). On les modifie dans `scripts/items.gd`.
 
 ## Bac à sable : les commandes
 

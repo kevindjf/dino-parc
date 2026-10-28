@@ -35,6 +35,11 @@ const ITEMS := {
 	"slingshot": {"name": "Lance-pierre", "kind": "weapon"},
 	"bow": {"name": "Arc", "kind": "weapon"},
 	"arrow": {"name": "Flèches", "kind": "ammo"},
+	"spear": {"name": "Lance", "kind": "weapon"},
+	"blowpipe": {"name": "Sarbacane", "kind": "weapon"},
+	"sniper": {"name": "Fusil à lunette", "kind": "weapon"},
+	"syringe": {"name": "Seringues", "kind": "ammo"},
+	"net": {"name": "Filet", "kind": "catch"},
 	"dart": {"name": "Fléchettes endormantes", "kind": "catch"},
 	"bolas": {"name": "Bolas", "kind": "catch"},
 	"cage": {"name": "Cage", "kind": "catch"},
@@ -79,16 +84,25 @@ const VEHICLES := {
 
 # What can be shot or thrown at a wild dinosaur, from afar. Nobody gets hurt: a dinosaur hit
 # loses energy, and once out of energy it falls asleep, ready to be caught.
-#   ammo: what each shot uses up (itself for things thrown by hand)
+#   ammo: what each shot uses up (itself for things thrown by hand, "" for nothing)
 #   tire: energy taken, stun: seconds it cannot move, range: in cells, every: seconds between shots
+#   power: how much of `tire` it takes from a dinosaur of strength 1 to 5 (1 for all if absent):
+#     a pebble bothers a small one but only tickles a T-Rex
+#   pierce: goes through the armour of the ankylosaurus and the plates of the stegosaurus,
+#     which other shots bounce off; quiet: the dinosaur neither runs away nor charges;
+#   biggest: the strongest dinosaur it works on
 #   flight: how it flies (straight, arc or spin), capture: biggest strength a capsule can hold,
 #   feed: thrown to make friends with the dinosaurs of that diet (berries for herbivores,
 #   meat for carnivores)
 const WEAPONS := {
-	"slingshot": {"ammo": "stone", "tire": 8, "range": 6.0, "every": 0.45, "flight": "arc", "speed": 220.0},
-	"bow": {"ammo": "arrow", "tire": 16, "range": 8.0, "every": 0.6, "flight": "straight", "speed": 300.0},
-	"dart": {"ammo": "dart", "tire": 30, "range": 6.0, "every": 0.8, "flight": "straight", "speed": 260.0},
+	"slingshot": {"ammo": "stone", "tire": 10, "power": [1.5, 1.0, 0.5, 0.25, 0.1], "range": 6.0, "every": 0.45, "flight": "arc", "speed": 220.0},
+	"bow": {"ammo": "arrow", "tire": 16, "power": [1.0, 1.0, 1.0, 0.75, 0.5], "range": 8.0, "every": 0.6, "flight": "straight", "speed": 300.0},
+	"spear": {"ammo": "", "tire": 30, "pierce": true, "range": 2.5, "every": 0.7, "flight": "straight", "speed": 240.0},
+	"blowpipe": {"ammo": "dart", "tire": 14, "power": [1.2, 1.0, 0.8, 0.6, 0.4], "quiet": true, "range": 7.0, "every": 0.9, "flight": "straight", "speed": 280.0},
+	"dart": {"ammo": "dart", "tire": 30, "pierce": true, "range": 6.0, "every": 0.8, "flight": "straight", "speed": 260.0},
+	"sniper": {"ammo": "syringe", "tire": 40, "power": [0.5, 0.7, 0.9, 1.0, 1.0], "pierce": true, "range": 20.0, "every": 1.5, "flight": "straight", "speed": 900.0},
 	"bolas": {"ammo": "bolas", "tire": 4, "stun": 4.0, "range": 5.0, "every": 0.8, "flight": "spin", "speed": 180.0},
+	"net": {"ammo": "net", "tire": 0, "stun": 7.0, "biggest": 3, "range": 4.0, "every": 1.0, "flight": "spin", "speed": 160.0},
 	"berries": {"ammo": "berries", "feed": "herb", "range": 5.0, "every": 0.6, "flight": "arc", "speed": 160.0},
 	"meat": {"ammo": "meat", "feed": "carn", "range": 5.0, "every": 0.6, "flight": "arc", "speed": 160.0},
 	"capsule_copper": {"ammo": "capsule_copper", "capture": 3, "range": 5.0, "every": 1.0, "flight": "arc", "speed": 170.0},
@@ -116,6 +130,11 @@ const RECIPES := [
 	{"make": "arrow", "count": 5, "needs": {"wood": 1, "stone": 1}},
 	{"make": "dart", "count": 3, "needs": {"wood": 1, "berries": 2}},
 	{"make": "bolas", "count": 2, "needs": {"stone": 2, "wood": 1}},
+	{"make": "spear", "count": 1, "needs": {"wood": 3, "stone": 2}},
+	{"make": "blowpipe", "count": 1, "needs": {"wood": 4}},
+	{"make": "net", "count": 2, "needs": {"wood": 2, "berries": 2}},
+	{"make": "sniper", "count": 1, "needs": {"iron": 4, "crystal": 2, "wood": 2}},
+	{"make": "syringe", "count": 3, "needs": {"iron": 1, "berries": 2}},
 	{"make": "cage", "count": 1, "needs": {"wood": 4, "stone": 2}},
 	{"make": "capsule_copper", "count": 2, "needs": {"copper": 2, "stone": 1}},
 	{"make": "capsule_iron", "count": 2, "needs": {"iron": 2, "copper": 1}},

@@ -144,7 +144,8 @@ func temper() -> String:
 	return "fierce" if species.diet == "carn" or species.strength >= 3 else "shy"
 
 
-func hurt(amount: float, stun: float) -> void:
+# quiet: hit from a hiding place, it neither runs away nor charges.
+func hurt(amount: float, stun: float, quiet := false) -> void:
 	if state == "sleep" or captured:
 		return
 	last_hit = time
@@ -157,6 +158,8 @@ func hurt(amount: float, stun: float) -> void:
 		angry_time = 0.0
 		flee_time = 0.0
 		sleep(TIRED_SLEEP)
+		return
+	if quiet:
 		return
 	if temper() == "fierce":
 		angry_time = 10.0

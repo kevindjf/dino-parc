@@ -265,7 +265,8 @@ func _refresh() -> void:
 		elif Items.kind_of(id) in ["tool", "vehicle", "gear"]:
 			slot.text = ""
 		elif Items.kind_of(id) == "weapon":
-			slot.text = "×%d" % inventory.count(Items.WEAPONS[id].ammo)
+			var ammo: String = Items.WEAPONS[id].ammo
+			slot.text = "×%d" % inventory.count(ammo) if ammo != "" else ""
 		else:
 			slot.text = "×%d" % inventory.count(id)
 		slot.modulate.a = 0.45 if id != "" and inventory.count(id) == 0 else 1.0

@@ -1569,6 +1569,35 @@ static func resource(id: String) -> Texture2D:
 				l.part([l.limb(Vector2(3, 13), Vector2(12, 4), 0.7, 0.7)], Color("c09060"), 0, 0)
 				l.part([l.poly([Vector2(15, 1), Vector2(10, 2.5), Vector2(13.5, 6)])], STEEL, 1, 0)
 				l.part([l.poly([Vector2(1, 15), Vector2(1, 11), Vector2(4, 12), Vector2(5, 15)])], Color("e8e0f0"), 1, 0)
+			"spear":
+				l.part([l.limb(Vector2(1.5, 14.5), Vector2(11, 5), 0.8, 0.8)], LOG[2], 0, 1)
+				l.part([l.poly([Vector2(15, 1), Vector2(9.5, 3.5), Vector2(12.5, 6.5)])], STEEL, 1, 1)
+				l.part([l.limb(Vector2(9, 6.5), Vector2(10, 7.5), 1, 1)], Color("d84a3a"), 0, 0)
+			"blowpipe":
+				l.part([l.limb(Vector2(1.5, 14), Vector2(14.5, 2), 1.2, 1.1)], Color("c5b358"), 1, 1)
+				for at in [Vector2(5, 10.5), Vector2(9, 7), Vector2(12.5, 4)]:
+					l.part([l.limb(at - Vector2(0.4, -0.4), at + Vector2(0.4, -0.4), 1.4, 1.4)], Color("8a7a30"), 0, 0)
+			"sniper":
+				# A long gun with a wooden stock and a scope.
+				l.part([l.poly([Vector2(0.5, 12), Vector2(6, 8.5), Vector2(7.5, 11), Vector2(2.5, 15)])], LOG[1], 1, 1)
+				l.part([l.limb(Vector2(5.5, 9.5), Vector2(15, 3.5), 0.9, 0.6)], Color("50545c"), 1, 1)
+				l.part([l.limb(Vector2(6.5, 6.5), Vector2(10.5, 4), 1.4, 1.4)], Color("2a2a30"), 1, 1)
+				l.dot(11, 3.5, Color("70c0f0"))
+				l.part([l.limb(Vector2(7, 10.5), Vector2(7.5, 12.5), 0.5, 0.5)], Color("2a2a30"), 0, 0, false)
+			"syringe":
+				l.part([l.limb(Vector2(2.5, 13.5), Vector2(4, 12), 1.4, 1.4)], STEEL, 0, 1)
+				l.part([l.limb(Vector2(4, 12), Vector2(10.5, 5.5), 2, 2)], Color("d8ecf4"), 1, 1)
+				l.part([l.limb(Vector2(6.5, 9.5), Vector2(10, 6), 1.3, 1.3)], Color("9a6ae0"), 0, 0, false)
+				l.part([l.limb(Vector2(11.5, 4.5), Vector2(14.8, 1.2), 0.35, 0.35)], STEEL, 0, 0, false)
+			"net":
+				# A round net of rope with little stones on its edge.
+				l.part([l.ellipse(8, 8, 6.8, 6.3)], Color("c8b080"), 1, 1)
+				for y in range(3, 14, 3):
+					for x in range(3, 14, 3):
+						if Vector2(x + 0.5, y + 0.5).distance_to(Vector2(8, 8)) < 5.6:
+							l.part([l.box(x, y, 2, 2)], Color("6a5a3a"), 0, 0, false)
+				for at in [Vector2(1.5, 8), Vector2(14.5, 8), Vector2(8, 1.8), Vector2(8, 14.2)]:
+					l.part([l.ellipse(at.x, at.y, 1.3, 1.3)], STONES[2], 0, 1)
 			"bolas":
 				for end in [Vector2(3.5, 4), Vector2(12.5, 4.5), Vector2(8, 12.5)]:
 					l.part([l.limb(Vector2(8, 8), end, 0.45, 0.45)], Color("a07848"), 0, 0, false)
@@ -1631,8 +1660,13 @@ static func projectile(weapon: String) -> Texture2D:
 				p.polygon(PackedVector2Array([Vector2(15, 3), Vector2(11, 0.5), Vector2(11, 5.5)]), Color("b0b4bc"), true)
 				p.polygon(PackedVector2Array([Vector2(0, 0.5), Vector2(4, 3), Vector2(0, 5.5)]), Color("e8e0f0"), true)
 				return p.finish()
-			"dart":
+			"dart", "blowpipe", "sniper":
 				return _dart()
+			"spear":
+				var p := _painter(Vector2i(20, 6))
+				p.limb(Vector2(1, 3), Vector2(15, 3), 0.6, 0.6, LOG[2], true)
+				p.polygon(PackedVector2Array([Vector2(19.5, 3), Vector2(14.5, 0.5), Vector2(14.5, 5.5)]), STEEL, true)
+				return p.finish()
 		var image: Image = resource(weapon).get_image()
 		image.resize(10, 10, Image.INTERPOLATE_NEAREST)
 		return ImageTexture.create_from_image(image))
