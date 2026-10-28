@@ -225,9 +225,23 @@ Chaque dinosaure du parc a de l'**amitié pour toi, de 0 à 5 cœurs**. Elle dé
 
 **La selle** : dès qu'un dinosaure de ton parc a **3 cœurs**, prends la selle en main et appuie sur Action devant lui : la selle est posée et tu montes tout de suite. Ensuite, Action devant lui (mains vides ou selle en main) pour remonter. Quand on prend la selle en main dans le sac, le jeu explique ces étapes. Il faut un dinosaure d'au moins 6 m : à partir du Gallimimus, du Tricératops ou du Dilophosaure. Sa vitesse dépend de l'espèce. Action fait descendre. Si tu descends hors de son enclos, il te suit jusqu'à ce que tu le ramènes. Sur un dinosaure au moins aussi fort qu'eux, les carnivores sauvages n'osent plus te foncer dessus.
 
-Le **Dinodex** (bouton en haut) montre les 21 espèces : les ombres noires sont celles qu'il reste à attraper. Les volants et les reptiles marins arriveront plus tard.
+Le **Dinodex** (bouton en haut) montre les 44 espèces : les ombres noires sont celles qu'il reste à attraper. Les volants et les reptiles marins arriveront plus tard.
 
 Recettes : Feu de camp (3 bois + 3 pierres), Hache (3 bois), Pioche (4 bois), Barrières en bambou (1 bois → 2), en bois (2 bois → 2), en pierre (2 pierres → 2), Portail (3 bois), Chemin (1 pierre → 4), Mangeoire à plantes (4 bois + 3 baies), Mangeoire à viande (4 bois + 3 viandes), Lance-pierre (3 bois), Arc (5 bois), Flèches (1 bois + 1 pierre → 5), Fléchettes endormantes (1 bois + 2 baies → 3), Bolas (2 pierres + 1 bois → 2), Lance (3 bois + 2 pierres), Sarbacane (4 bois), Filet (2 bois + 2 baies → 2), Fusil à lunette (4 fer + 2 cristal + 2 bois), Seringues (1 fer + 2 baies → 3), Cage (4 bois + 2 pierres), Capsules en cuivre (2 cuivre + 1 pierre → 2), en fer (2 fer + 1 cuivre → 2), en or (1 or + 1 fer + 1 cristal), Brosse (2 bois + 1 baie), Selle (4 bois + 2 pierres + 2 baies). On les modifie dans `scripts/items.gd`.
+
+## Le bestiaire : 44 espèces
+
+| Biome | Herbivores | Carnivores |
+|---|---|---|
+| Prairie | Tricératops, Styracosaure, Pachycéphalosaure, Maiasaura, Diplodocus, Apatosaure | T-Rex, Allosaure |
+| Jungle | Stégosaure, Kentrosaure, Iguanodon, Brachiosaure | Vélociraptor, Deinonychus, Microraptor, Dilophosaure |
+| Désert | Ankylosaure, Protocératops, Gallimimus, Oviraptor, Argentinosaure | Carnotaure, Cératosaure, Giganotosaure |
+| Marais | Parasaurolophus, Corythosaure | Spinosaure, Baryonyx |
+| Neige | Pachyrhinosaure, Nodosaure, Stygimoloch | Yutyrannus, Utahraptor |
+
+Volants (volière) : Ptéranodon, Quetzalcoatlus, Dimorphodon, Tapejara, Rhamphorhynchus, Ptérodactyle. Marins (lagon) : Mosasaure, Plésiosaure, Ichthyosaure, Liopleurodon, Elasmosaure.
+
+Pour ajouter une espèce : une ligne dans `Catalog.DINOS` (nom, régime, biome, force, prix, taille, couleurs, particularités), une ligne dans `DinoHand.SPECIES` (la famille de dessin et sa taille), et son id dans `Catalog.CATEGORIES` pour le bac à sable. Les particularités qu'on peut combiner : collerette, collerette à pointes, cornes, corne sur le nez, plaques, pointes de queue, armure, massue, voile, double crête, plumes, rayures, museau de crocodile ; têtes de petits bipèdes : raptor, dôme, bec, bec de canard avec tube, avec casque ou sans crête.
 
 ## Bac à sable : les commandes
 

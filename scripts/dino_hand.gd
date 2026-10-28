@@ -37,6 +37,29 @@ const SPECIES := {
 	"tapejara": {"plan": "flyer", "k": 0.85, "crest": "sail"},
 	"mosasaurus": {"plan": "mosasaur", "k": 1.0},
 	"plesiosaurus": {"plan": "plesio", "k": 1.0, "pattern": "spots"},
+	"styracosaurus": {"plan": "quad", "k": 0.92, "top": 6, "accent": Color("d8a060"), "pattern": "spots"},
+	"protoceratops": {"plan": "quad", "k": 0.7, "pattern": "spots"},
+	"kentrosaurus": {"plan": "quad", "k": 0.82, "pattern": "bands"},
+	"nodosaurus": {"plan": "quad", "k": 0.85},
+	"maiasaura": {"plan": "small", "k": 1.4, "head": "bill", "pattern": "spots"},
+	"corythosaurus": {"plan": "small", "k": 1.4, "head": "helmet", "top": 3, "pattern": "stripes"},
+	"iguanodon": {"plan": "small", "k": 1.55, "head": "beak", "neck": 2, "pattern": "bands"},
+	"stygimoloch": {"plan": "small", "k": 1.0, "head": "dome", "pattern": "stripes"},
+	"oviraptor": {"plan": "small", "k": 0.95, "head": "beak", "neck": 3, "top": 3, "pattern": "stripes"},
+	"deinonychus": {"plan": "small", "k": 1.2, "head": "raptor", "pattern": "stripes"},
+	"utahraptor": {"plan": "small", "k": 1.55, "head": "raptor", "pattern": "stripes"},
+	"microraptor": {"plan": "small", "k": 0.88, "head": "raptor", "pattern": "stripes"},
+	"allosaurus": {"plan": "theropod", "k": 0.9, "pattern": "bands"},
+	"ceratosaurus": {"plan": "theropod", "k": 0.76, "pattern": "bands"},
+	"baryonyx": {"plan": "theropod", "k": 0.82, "pattern": "spots"},
+	"giganotosaurus": {"plan": "theropod", "k": 1.12, "pattern": "bands"},
+	"apatosaurus": {"plan": "sauropod", "k": 0.95, "pattern": "spots"},
+	"argentinosaurus": {"plan": "sauropod", "k": 1.25, "pattern": "bands"},
+	"rhamphorhynchus": {"plan": "flyer", "k": 0.7, "crest": "none"},
+	"pterodactylus": {"plan": "flyer", "k": 0.66, "crest": "short"},
+	"ichthyosaurus": {"plan": "mosasaur", "k": 0.55},
+	"liopleurodon": {"plan": "mosasaur", "k": 0.75},
+	"elasmosaurus": {"plan": "plesio", "k": 1.25, "pattern": "spots"},
 }
 # side / front: design size seen from the side / from the front and the back. feet: x of the
 # feet on the side drawing. anchor: for flyers and swimmers, the middle of the body.
@@ -256,6 +279,11 @@ static func _quad(l: Layers, sp: Dictionary, info: Dictionary, f: Array, directi
 			if "nose_boss" in f:
 				for spike in [Vector2(30, 1), Vector2(34, 0), Vector2(37, 2)]:
 					l.part([l.limb(Vector2(spike.x, spike.y + 3 + y), Vector2(spike.x, spike.y + y), 1, 0.4)], HORN, 0, 1)
+			if "spiky_frill" in f:
+				# Long spikes all around the frill, like a crown.
+				for angle in [-170.0, -135.0, -100.0, -70.0]:
+					var out := Vector2(6.5 * cos(deg_to_rad(angle)), 9 * sin(deg_to_rad(angle)))
+					l.part([l.limb(Vector2(34, 9 + y) + out * 0.8, Vector2(34, 9 + y) + out * 1.6, 1.3, 0.4)], HORN, 0, 1)
 			l.part([l.poly([Vector2(35, 10 + y), Vector2(42, 9 + y), Vector2(48, 14 + y), Vector2(47, 20 + y), Vector2(39, 21 + y), Vector2(35, 18 + y)])], skin)
 			l.part([l.poly([Vector2(46, 13 + y), Vector2(51, 17 + y), Vector2(47, 21 + y), Vector2(45, 19 + y)])], BEAK, 0, 1)
 			if roar:
@@ -265,6 +293,8 @@ static func _quad(l: Layers, sp: Dictionary, info: Dictionary, f: Array, directi
 				l.part([l.limb(Vector2(46, 13 + y), Vector2(47, 10 + y), 1.1, 0.4)], HORN, 0, 1)
 			if "nose_boss" in f:
 				l.part([l.ellipse(44, 12 + y, 3, 2)], accent.darkened(0.1), 1, 1)
+			if "nose_horn" in f:
+				l.part([l.limb(Vector2(45, 13 + y), Vector2(47, 3 + y), 1.7, 0.5)], HORN, 0, 1)
 			_eye(l, 39, 12 + y, sleep)
 			if not roar:
 				for x in range(42, 46):
@@ -333,6 +363,9 @@ static func _quad(l: Layers, sp: Dictionary, info: Dictionary, f: Array, directi
 		if "nose_boss" in f:
 			for dx in [-8, -3, 3, 8]:
 				l.part([l.limb(Vector2(cx + dx, 3 + y), Vector2(cx + dx * 1.15, y), 1, 0.4)], HORN, 0, 1)
+		if "spiky_frill" in f:
+			for dx in [-13, -8, -3, 3, 8, 13]:
+				l.part([l.limb(Vector2(cx + dx * 0.8, 4 + y), Vector2(cx + dx * 1.1, -5 + y + absf(dx) * 0.3), 1.2, 0.4)], HORN, 0, 1)
 		l.part([l.ellipse(cx, 15 + y, 6.5, 7.5)], skin)
 		l.part([l.poly([Vector2(cx - 3, 19 + y), Vector2(cx + 3, 19 + y), Vector2(cx + 1.5, 25 + y), Vector2(cx - 1.5, 25 + y)])], BEAK, 0, 1)
 		if "three_horns" in f:
@@ -340,6 +373,8 @@ static func _quad(l: Layers, sp: Dictionary, info: Dictionary, f: Array, directi
 			l.part([l.limb(Vector2(cx, 19 + y), Vector2(cx, 16 + y), 1.1, 0.4)], HORN, 0, 1)
 		if "nose_boss" in f:
 			l.part([l.ellipse(cx, 17 + y, 3, 2.2)], accent.darkened(0.1), 1, 1)
+		if "nose_horn" in f:
+			l.part([l.limb(Vector2(cx, 19 + y), Vector2(cx, 10 + y), 1.6, 0.5)], HORN, 0, 1)
 		if roar:
 			l.part([l.ellipse(cx, 24 + y, 2.5, 1.5)], MOUTH, 0, 0)
 		for x in [cx - 5, cx + 3]:
@@ -402,7 +437,7 @@ static func _theropod(l: Layers, sp: Dictionary, f: Array, direction: String, fr
 			for dx in [0, 3]:
 				l.part([l.poly([Vector2(43 + dx, 8 + y + up), Vector2(53 + dx, 0 + y + up), Vector2(56 + dx, 6 + y + up)])], accent, 1, 1)
 		var head := [Vector2(40, 7), Vector2(55, 5), Vector2(64, 9), Vector2(64, 15), Vector2(56, 17), Vector2(44, 19), Vector2(39, 14)]
-		if "sail" in f:
+		if "sail" in f or "long_snout" in f:
 			# A long thin snout, like a crocodile.
 			head = [Vector2(40, 8), Vector2(52, 8), Vector2(65, 11), Vector2(65, 15), Vector2(52, 16), Vector2(44, 19), Vector2(39, 14)]
 		l.part([l.poly(head.map(func(p: Vector2) -> Vector2: return p + Vector2(0, y + up)))], skin)
@@ -415,6 +450,8 @@ static func _theropod(l: Layers, sp: Dictionary, f: Array, direction: String, fr
 		l.part([l.limb(Vector2(46, 8 + y + up), Vector2(52, 7 + y + up), 1.2, 1.0)], skin.darkened(0.25), 0, 0, false)
 		if "horns" in f:
 			l.part([l.poly([Vector2(45, 7 + y + up), Vector2(47, 1 + y + up), Vector2(50, 6 + y + up)])], skin.darkened(0.1), 1, 1)
+		if "nose_horn" in f:
+			l.part([l.poly([Vector2(56, 6 + y + up), Vector2(58, 0 + y + up), Vector2(60, 7 + y + up)])], HORN, 1, 1)
 		_eye(l, 49, 9 + y + up, sleep)
 		l.dot(62, 9 + y + up, skin.darkened(0.6))
 		l.part([l.limb(Vector2(42, 25 + y), Vector2(46, 29 + y), 1.6, 1.1)], skin)
@@ -477,6 +514,8 @@ static func _theropod(l: Layers, sp: Dictionary, f: Array, direction: String, fr
 		if "horns" in f:
 			for dx in [-6, 1]:
 				l.part([l.poly([Vector2(cx + dx, 5 + y), Vector2(cx + dx + 2, -1 + y), Vector2(cx + dx + 4, 5 + y)])], skin.darkened(0.1), 1, 1)
+		if "nose_horn" in f:
+			l.part([l.poly([Vector2(cx + 8, 8 + y), Vector2(cx + 10, 2 + y), Vector2(cx + 12, 9 + y)])], HORN, 1, 1)
 		_eye(l, cx + 2, 7 + y, sleep)
 		l.dot(cx - 7, 8 + y, EYE)
 		l.dot(cx + 14, 10 + y, skin.darkened(0.6))
@@ -594,8 +633,13 @@ static func _small_head_side(l: Layers, kind: String, h: Vector2, skin: Color, a
 			l.part([l.poly(at.call([Vector2(24, 4), Vector2(30, 3), Vector2(33, 6), Vector2(30, 9), Vector2(25, 8)]))], skin)
 			l.part([l.poly(at.call([Vector2(31, 5), Vector2(38, 7), Vector2(31, 8)]))], BEAK if not roar else MOUTH, 0, 1)
 			_eye(l, 27 + h.x, 4 + h.y, sleep)
-		"duck":
-			l.part([l.limb(Vector2(27, 4) + h, Vector2(15, -2) + h, 2, 1.6)], accent, 1, 1)
+		"duck", "bill", "helmet":
+			# A duck bill; the parasaurolophus has a long tube on the head, the corythosaurus
+			# a round helmet, the maiasaura nothing.
+			if kind == "duck":
+				l.part([l.limb(Vector2(27, 4) + h, Vector2(15, -2) + h, 2, 1.6)], accent, 1, 1)
+			elif kind == "helmet":
+				l.part([l.ellipse(27 + h.x, 1 + h.y, 4.5, 4)], accent, 1, 1)
 			l.part([l.poly(at.call([Vector2(24, 4), Vector2(31, 3), Vector2(38, 6), Vector2(39, 9), Vector2(30, 10), Vector2(25, 9)]))], skin)
 			l.part([l.poly(at.call([Vector2(34, 6), Vector2(40, 7), Vector2(40, 10), Vector2(34, 10)]))], BEAK if not roar else MOUTH, 0, 1)
 			_eye(l, 29 + h.x, 5 + h.y, sleep)
@@ -642,8 +686,11 @@ static func _small_head_front(l: Layers, kind: String, h: Vector2, skin: Color, 
 			if front:
 				_eye(l, cx, 4 + y, sleep)
 				l.dot(cx - 3, 5 + y, EYE)
-		"duck":
-			l.part([l.limb(Vector2(cx - 1, 3 + y), Vector2(cx - 9, -3 + y), 2, 1.6)], accent, 1, 1)
+		"duck", "bill", "helmet":
+			if kind == "duck":
+				l.part([l.limb(Vector2(cx - 1, 3 + y), Vector2(cx - 9, -3 + y), 2, 1.6)], accent, 1, 1)
+			elif kind == "helmet":
+				l.part([l.ellipse(cx - 1, 1.5 + y, 4.5, 3.5)], accent, 1, 1)
 			l.part([l.ellipse(cx, 6 + y, 4.5, 4), l.poly([Vector2(cx + 1, 4 + y), Vector2(cx + 8, 6 + y), Vector2(cx + 8, 9 + y), Vector2(cx, 10 + y)])], skin)
 			l.part([l.poly([Vector2(cx + 4, 6 + y), Vector2(cx + 10, 7 + y), Vector2(cx + 10, 10 + y), Vector2(cx + 4, 10 + y)])], BEAK if not roar else MOUTH, 0, 1)
 			if front:

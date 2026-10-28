@@ -384,11 +384,16 @@ func _build_dex() -> void:
 	dex_title = _label(header, "", 24)
 	dex_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_button(header, "Fermer", 110, toggle_dex)
+	# Many species: the grid scrolls.
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(8 * 116, 470)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	column.add_child(scroll)
 	dex_grid = GridContainer.new()
-	dex_grid.columns = 7
+	dex_grid.columns = 8
 	dex_grid.add_theme_constant_override("h_separation", 8)
 	dex_grid.add_theme_constant_override("v_separation", 8)
-	column.add_child(dex_grid)
+	scroll.add_child(dex_grid)
 
 
 func toggle_dex() -> void:
