@@ -44,6 +44,8 @@ const NOT_CONNECTED := 99999
 const DINO_BLOCKERS := ["aviary", "lagoon", "shop", "gyro_station", "garage", "heliport", "campfire"]
 const VEHICLE_BLOCKERS := ["aviary", "lagoon", "shop", "gyro_station", "garage", "feeder", "heliport", "campfire"]
 # What can be built in the Wild Lands: enclosures are made in the park.
+# Trunks stop the dinosaurs; they walk through bushes and ferns, which are low.
+const DINO_TREES := ["tree", "pine", "palm", "cactus"]
 const RIDE_HEARTS := 3  # friendship needed to put a saddle on a dinosaur and ride it
 const WILD_BUILDS := ["campfire", "bridge", "path", "sapling", "bush"]
 const MAX_MOUNTAIN_LEVEL := 5
@@ -1045,7 +1047,7 @@ func is_walkable_for_dino(cell: Vector2i, region: int) -> bool:
 	var building = occupied.get(cell)
 	if building == null:
 		return true
-	return not (building.kind in DINO_BLOCKERS or Catalog.ITEMS[building.id].get("solid", false))
+	return not (building.kind in DINO_BLOCKERS or building.id in DINO_TREES or Catalog.ITEMS[building.id].get("solid", false))
 
 
 func random_cell_in_region(region: int) -> Vector2i:
