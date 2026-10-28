@@ -67,6 +67,33 @@ Chaque massif de montagnes a une **entrée de mine** creusée dans sa falaise su
 
 Une partie commencée sur l'ancienne petite carte est replacée telle quelle près de l'entrée, avec la nouvelle carte autour.
 
+## Aventure : les Terres sauvages
+
+Ton parc n'est que le début : il est au milieu d'un monde de **7 × 7 zones**, chacune aussi grande que le parc. Sors par les sentiers **en haut** et **en bas** du parc (panneaux « Terres sauvages ») ; dans les zones sauvages, il suffit de marcher jusqu'au bord pour passer à la suivante. L'hélicoptère passe d'une zone à l'autre en volant.
+
+- Plus on va **au nord**, plus il fait froid (neige, sapins) ; **au sud**, la jungle ; **à l'ouest**, les marais ; **à l'est**, le désert. Les zones se raccordent entre elles.
+- Les **étoiles** à côté du nom de la zone disent si elle est loin du parc : plus il y en a, plus les **gros dinosaures et les espèces rares** sont fréquents.
+- Certaines zones ont des **montagnes avec une mine**.
+- Dans les zones sauvages, on peut poser des **feux de camp, des ponts et des chemins**. Les enclos se construisent seulement dans le parc.
+- Pendant que tu explores, le parc continue : en rentrant, les visiteurs venus entre-temps ont payé leur billet.
+
+### Les feux de camp
+
+Chaque zone sauvage cache un ou deux **vieux feux de camp éteints**. Mets-toi devant et appuie sur Action pour l'allumer. On peut aussi en fabriquer (3 bois + 3 pierres) et les poser où on veut.
+
+Devant un feu allumé, Action ouvre son menu :
+- **Se reposer** : tous tes cœurs reviennent ;
+- **Griller une viande** → viande grillée, et **faire une tarte** avec 2 baies → tarte aux baies. Les dinosaures les aiment **deux fois plus** : elles comptent double pour les apprivoiser et pour l'amitié ;
+- **Voyager avec la carte**.
+
+Si un dinosaure te fait trop peur, tu te réveilles **près du dernier feu de camp** où tu t'es arrêté.
+
+### La carte
+
+Le bouton **Carte** (en haut) montre le monde : les zones visitées en couleur, les autres en gris avec « ? », le parc, l'endroit où tu es, et les feux allumés. **Touche le parc pour rentrer**, ou une zone avec un feu allumé pour y aller tout de suite (pas depuis une mine ni le village).
+
+Le monde se règle dans `scripts/wild.gd` (taille, climat, noms des zones) et `scripts/world_gen.gd` (`generate_zone`).
+
 ## Aventure : le village et la boutique
 
 Sors du parc par le **portail, à gauche** (le panneau « ← Village ») : la route mène au village. On y va à pied, pas sur le dos d'un dinosaure.
@@ -97,7 +124,7 @@ Sors du parc par le **portail, à gauche** (le panneau « ← Village ») : la r
 
 ### Une carte en zones
 
-Le monde grandit **zone par zone**, comme les mines : le village est construit quand on y entre et oublié quand on en sort. Seule la zone où se trouve le joueur est en mémoire, donc le monde peut devenir très grand et tourner quand même sur une tablette. Chaque zone garde ce qui a changé (mines creusées, coffres ouverts) dans la sauvegarde.
+Le monde grandit **zone par zone**, comme les mines : le village, une mine ou une zone des Terres sauvages est construit quand on y entre et oublié quand on en sort. Seule la zone où se trouve le joueur est en mémoire, donc le monde peut devenir très grand et tourner quand même sur une tablette. Chaque zone garde ce qui a changé (mines creusées, coffres ouverts) dans la sauvegarde.
 
 ## Aventure : le mode Construction
 
@@ -165,7 +192,7 @@ Chaque dinosaure du parc a de l'**amitié pour toi, de 0 à 5 cœurs**. Elle dé
 
 Le **Dinodex** (bouton en haut) montre les 21 espèces : les ombres noires sont celles qu'il reste à attraper. Les volants et les reptiles marins arriveront plus tard.
 
-Recettes : Hache (3 bois), Pioche (4 bois), Barrières en bambou (1 bois → 2), en bois (2 bois → 2), en pierre (2 pierres → 2), Portail (3 bois), Chemin (1 pierre → 4), Mangeoire à plantes (4 bois + 3 baies), Mangeoire à viande (4 bois + 3 viandes), Lance-pierre (3 bois), Arc (5 bois), Flèches (1 bois + 1 pierre → 5), Fléchettes endormantes (1 bois + 2 baies → 3), Bolas (2 pierres + 1 bois → 2), Lance (3 bois + 2 pierres), Sarbacane (4 bois), Filet (2 bois + 2 baies → 2), Fusil à lunette (4 fer + 2 cristal + 2 bois), Seringues (1 fer + 2 baies → 3), Cage (4 bois + 2 pierres), Capsules en cuivre (2 cuivre + 1 pierre → 2), en fer (2 fer + 1 cuivre → 2), en or (1 or + 1 fer + 1 cristal), Brosse (2 bois + 1 baie), Selle (4 bois + 2 pierres + 2 baies). On les modifie dans `scripts/items.gd`.
+Recettes : Feu de camp (3 bois + 3 pierres), Hache (3 bois), Pioche (4 bois), Barrières en bambou (1 bois → 2), en bois (2 bois → 2), en pierre (2 pierres → 2), Portail (3 bois), Chemin (1 pierre → 4), Mangeoire à plantes (4 bois + 3 baies), Mangeoire à viande (4 bois + 3 viandes), Lance-pierre (3 bois), Arc (5 bois), Flèches (1 bois + 1 pierre → 5), Fléchettes endormantes (1 bois + 2 baies → 3), Bolas (2 pierres + 1 bois → 2), Lance (3 bois + 2 pierres), Sarbacane (4 bois), Filet (2 bois + 2 baies → 2), Fusil à lunette (4 fer + 2 cristal + 2 bois), Seringues (1 fer + 2 baies → 3), Cage (4 bois + 2 pierres), Capsules en cuivre (2 cuivre + 1 pierre → 2), en fer (2 fer + 1 cuivre → 2), en or (1 or + 1 fer + 1 cristal), Brosse (2 bois + 1 baie), Selle (4 bois + 2 pierres + 2 baies). On les modifie dans `scripts/items.gd`.
 
 ## Bac à sable : les commandes
 
