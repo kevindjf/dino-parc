@@ -2330,6 +2330,16 @@ func _edge_crossed() -> Vector2i:
 	return dir
 
 
+# What the camera may show: the zone and its forest, but not past a side open on the next zone,
+# where there is nothing to see.
+func _zone_bounds() -> Rect2:
+	var rect := Rect2(Vector2.ZERO, Vector2(GRID * T))
+	for dir: Vector2i in DIRS:
+		if zone == Wild.BASE or not Wild.open_edge(zone, dir):
+			rect = rect.grow_side([SIDE_LEFT, SIDE_RIGHT, SIDE_TOP, SIDE_BOTTOM][DIRS.find(dir)], BORDER * T)
+	return rect
+
+
 # Goes into the next zone, at the same place on its opposite side.
 func _cross_edge(dir: Vector2i) -> void:
 	var at := player.position
@@ -2374,6 +2384,8 @@ func travel(to: Vector2i, at: Vector2) -> void:
 		_rebuild_zone()
 		_finish_loading()
 	_build_border()
+	world_bounds = _zone_bounds()
+	camera.bounds = world_bounds
 	natural_target = _count_nature()
 	var cell := _arrival_cell(Vector2i((at / T).floor()))
 	player.position = cell_center(cell) if not in_grid(Vector2i((at / T).floor())) or player_blocked(Vector2i((at / T).floor())) else at
