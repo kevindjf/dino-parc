@@ -8,6 +8,26 @@ extends RefCounted
 
 const ENTRIES := [
 	{
+		"version": 6,
+		"title": "Les Terres sauvages, la mer et le laboratoire !",
+		"items": [
+			["heli", "Ton parc est au milieu d'un monde immense ! Sors par les sentiers tout autour du parc."],
+			["campfire", "Allume les feux de camp : repose-toi, fais griller ta viande, et reviens-y avec la Carte."],
+			["dino:argentinosaurus", "23 nouveaux dinos : 44 espèces à attraper ! Les plus gros vivent loin du parc."],
+			["sniper", "Nouvelles armes : la lance, la sarbacane, le filet et le fusil à lunette qui tire de très loin."],
+			["saddle", "La selle, c'est plus simple : à 3 cœurs, selle en main, Action, et tu montes !"],
+			["egg", "Construis un laboratoire : avec des fossiles et de l'ambre, fais naître des bébés dinos !"],
+			["boat", "Tout à l'est, la mer ! Barque, voilier, hors-bord et sous-marin pour l'explorer."],
+			["fish", "Pêche des poissons pour apprivoiser les dinos volants et les reptiles marins."],
+			["submarine", "En sous-marin, cherche les épaves englouties : elles cachent des trésors !"],
+			["capsule_gold", "Ton parc gagne des étoiles : chacune ouvre de nouvelles choses à la boutique."],
+			["pie", "Les habitants du village te demandent de l'aide : regarde le bouton Quêtes."],
+			["bolas", "Attention aux orages : tes dinos ont peur et poussent les barrières ! La nuit, tout devient bleu."],
+			["wood", "Ton sac est rangé en onglets : outils, chasse, nourriture, construction…"],
+			["dino:triceratops", "Les habitants et les meubles sont redessinés, et les dinos ne traversent plus les arbres."],
+		],
+	},
+	{
 		"version": 5,
 		"title": "Les maisons et la viande !",
 		"items": [
