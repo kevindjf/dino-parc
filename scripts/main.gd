@@ -41,8 +41,8 @@ const DIRS := [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
 const NONE := Vector2i(-1, -1)
 const NOT_CONNECTED := 99999
 # Land dinosaurs cannot walk through these.
-const DINO_BLOCKERS := ["aviary", "lagoon", "shop", "gyro_station", "garage", "heliport", "campfire"]
-const VEHICLE_BLOCKERS := ["aviary", "lagoon", "shop", "gyro_station", "garage", "feeder", "heliport", "campfire"]
+const DINO_BLOCKERS := ["aviary", "lagoon", "shop", "gyro_station", "garage", "heliport", "campfire", "lab"]
+const VEHICLE_BLOCKERS := ["aviary", "lagoon", "shop", "gyro_station", "garage", "feeder", "heliport", "campfire", "lab"]
 # What can be built in the Wild Lands: enclosures are made in the park.
 # Trunks stop the dinosaurs; they walk through bushes and ferns, which are low.
 const DINO_TREES := ["tree", "pine", "palm", "cactus"]
@@ -160,6 +160,7 @@ var left_base_at := 0.0  # when the player left the park, to pay the visitors wh
 var zone_states := {}  # zone key -> what the player changed there, saved with the game
 var base_exits := {}  # "up" / "down" / "left" / "right" -> where the trails out of the park are
 var border_nodes: Array[Node] = []  # the forest around the zone and the signs of its trails
+var lab_state := {}  # {"egg": species, "ready": unix time}: the egg in the laboratory
 var respawn := {}  # {"zone", "x", "y"}: the last campfire the player rested by, where they wake up
 
 
@@ -233,6 +234,7 @@ func start_adventure(data: Dictionary) -> void:
 	world_seed = int(data.get("seed", randi() % 1000000000))
 	zone_states = data.get("zones", {})
 	respawn = data.get("respawn", {})
+	lab_state = data.get("lab", {})
 	base_exits = data.get("exits", {})
 	if data.is_empty():
 		loading = true
@@ -351,6 +353,7 @@ func _load_park(data: Dictionary) -> Vector2i:
 		if dino:
 			dino.friendship = int(entry.get("friendship", 0))
 			dino.set_saddled(entry.get("saddled", false))
+			dino.age = float(entry.get("age", 1.0))
 	return offset
 
 
@@ -564,7 +567,7 @@ func _add_building(id: String, origin: Vector2i, fixed := false) -> Dictionary:
 			world.add_child(building.root)
 			if not loading:
 				_rebuild_fences_around(origin)
-		"feeder", "shop", "decor", "aviary", "gyro_station", "garage":
+		"feeder", "shop", "decor", "aviary", "gyro_station", "garage", "lab", "nest":
 			building.root = Art.sprite(Art.item(id))
 			building.root.position = foot
 			Art.ground_shadow(building.root, int(building.root.texture.get_width() * 0.8))
@@ -577,6 +580,8 @@ func _add_building(id: String, origin: Vector2i, fixed := false) -> Dictionary:
 					building.label = WorldText.make(building.root, Vector2(0, -44), "Colle-moi contre la barrière d'un enclos !", "bubble", Color("d03030"))
 				"garage":
 					building.label = WorldText.make(building.root, Vector2(0, -40), "Il faut une route à côté !", "bubble", Color("d03030"))
+			if item.kind == "lab" and not lab_state.is_empty():
+				building.root.texture = Art.lab(true)
 			if item.get("style", "") == "volcano":
 				_add_smoke(building.root)
 		"lagoon":
@@ -1382,6 +1387,12 @@ func player_action(cell: Vector2i) -> void:
 		enter_mine(entrance)
 		return
 	var holding: String = inventory.current()
+	if entrance != null and entrance.kind == "lab" and not holding in ["axe", "pickaxe", "pickaxe_iron"]:
+		hud.open_lab()
+		return
+	if entrance != null and entrance.kind == "nest":
+		_take_nest(entrance)
+		return
 	if entrance != null and entrance.kind == "campfire" and not (holding in ["axe", "pickaxe", "pickaxe_iron"] and not entrance.get("found", false)):
 		use_campfire(entrance)
 		return
@@ -2447,7 +2458,10 @@ func remember_zone() -> void:
 				fires.append([building.origin.x, building.origin.y])
 		elif Items.item_for_building(building.id) != "" and not Items.HARVEST.has(building.id):
 			built.append([building.id, building.origin.x, building.origin.y])
-	zone_states[Wild.key(zone)] = {"built": built, "fires": fires}
+	var state: Dictionary = zone_states.get(Wild.key(zone), {})
+	state.built = built
+	state.fires = fires
+	zone_states[Wild.key(zone)] = state
 
 
 # Puts back what the player built in this zone and lights again the fires they lit.
@@ -2464,10 +2478,121 @@ func _rebuild_zone() -> void:
 		elif entry[0] != "path":
 			set_water(cell, false)
 		_add_building(entry[0], cell)
+	for at in state.get("nests", []):
+		var cell := Vector2i(int(at[0]), int(at[1]))
+		var nest = occupied.get(cell)
+		if nest != null and nest.kind == "nest":
+			remove_natural(cell)
 	var lit: Array = state.get("fires", []).map(func(at: Array) -> Vector2i: return Vector2i(int(at[0]), int(at[1])))
 	for building in buildings:
 		if building.get("found", false):
 			_set_fire(building, building.origin in lit)
+
+
+# --- The laboratory: eggs and babies ---------------------------------------------
+
+const MYSTERY_EGG := {"fossil": 2, "amber": 1}
+
+
+# A nest in the wild with an egg in it, until the player takes the egg.
+func add_nest(cell: Vector2i) -> void:
+	remove_natural(cell)
+	set_water(cell, false)
+	_add_building("nest", cell)
+
+
+func _take_nest(building: Dictionary) -> void:
+	var state: Dictionary = zone_states.get(Wild.key(zone), {})
+	var taken: Array = state.get("nests", [])
+	taken.append([building.origin.x, building.origin.y])
+	state.nests = taken
+	zone_states[Wild.key(zone)] = state
+	remove_natural(building.origin)
+	inventory.add("egg")
+	hud.flash(Items.TIPS.egg, 4.0)
+
+
+# What cloning a species costs: bigger dinosaurs need more fossils and amber.
+static func clone_cost(species_id: String) -> Dictionary:
+	var strength: int = Catalog.DINOS[species_id].strength
+	return {"fossil": strength + 1, "amber": maxi(1, strength - 2)}
+
+
+# Seconds an egg of this species takes to hatch.
+static func hatch_time(species_id: String) -> int:
+	return 40 + 20 * int(Catalog.DINOS[species_id].strength)
+
+
+# A surprise: any land species, the small ones more often, and those not yet in the Dinodex
+# three times more.
+func _mystery_species() -> String:
+	var total := 0.0
+	var weights := {}
+	for id in Catalog.DINOS:
+		var species: Dictionary = Catalog.DINOS[id]
+		if species.habitat != "land":
+			continue
+		weights[id] = 1000.0 / species.cost * (1.0 if caught.has(id) else 3.0)
+		total += weights[id]
+	var roll := randf() * total
+	for id in weights:
+		roll -= weights[id]
+		if roll <= 0.0:
+			return id
+	return weights.keys()[0]
+
+
+# Puts an egg in the laboratory. how: "mystery", "found" (an egg from a nest) or a species to
+# clone. Returns why it cannot, or "".
+func start_egg(how: String) -> String:
+	if not lab_state.is_empty():
+		return "Il y a déjà un œuf qui couve !"
+	var needs: Dictionary = MYSTERY_EGG
+	if how == "found":
+		needs = {"egg": 1}
+	elif how != "mystery":
+		needs = clone_cost(how)
+	if not inventory.has_all(needs):
+		return "Il te manque : %s" % Items.describe_needs(needs)
+	for id in needs:
+		inventory.remove(id, needs[id])
+	var species := how if Catalog.DINOS.has(how) else _mystery_species()
+	lab_state = {"egg": species, "ready": int(Time.get_unix_time_from_system()) + hatch_time(species)}
+	_draw_labs()
+	return ""
+
+
+func egg_seconds_left() -> int:
+	return maxi(int(lab_state.get("ready", 0)) - int(Time.get_unix_time_from_system()), 0)
+
+
+# The egg hatches in front of the laboratory: the baby is small, already loves the player
+# (3 hearts) and follows them until they bring it into an enclosure.
+func hatch() -> void:
+	if lab_state.is_empty() or egg_seconds_left() > 0:
+		return
+	var species: String = lab_state.egg
+	var front: Vector2i = player.cell()
+	for building in buildings:
+		if building.kind == "lab":
+			front = building.origin + Vector2i(0, building.size.y)
+			break
+	var baby := _spawn_wild(species, _arrival_cell(front))
+	baby.wild = false
+	baby.age = 0.0
+	baby.friendship = RIDE_HEARTS * baby.HEART
+	baby.following = player
+	baby.home_cell = baby.cell
+	lab_state = {}
+	_draw_labs()
+	_mark_caught(species)
+	hud.flash("C'est un bébé %s !\nIl te suit : emmène-le dans un enclos." % Catalog.DINOS[species].name, 4.0)
+
+
+func _draw_labs() -> void:
+	for building in buildings:
+		if building.kind == "lab" and building.root != null:
+			building.root.texture = Art.lab(not lab_state.is_empty())
 
 
 # A campfire found in the wild, out until the player lights it.

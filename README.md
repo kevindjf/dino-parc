@@ -63,7 +63,7 @@ Chaque massif de montagnes a une **entrée de mine** creusée dans sa falaise su
 
 - Le cristal, l'or, l'ambre et les fossiles demandent la **pioche en fer** (3 fer + 2 bois).
 - Le fer et le cuivre servent à la **barrière électrique** (2 fer + 1 cuivre → 2), la seule qui retient un T-Rex ou un Spinosaure.
-- L'ambre et les fossiles serviront au laboratoire, à la prochaine étape.
+- L'ambre et les fossiles servent au **laboratoire** pour faire naître des bébés dinos.
 
 Une partie commencée sur l'ancienne petite carte est replacée telle quelle près de l'entrée, avec la nouvelle carte autour.
 
@@ -93,6 +93,18 @@ Si un dinosaure te fait trop peur, tu te réveilles **près du dernier feu de ca
 Le bouton **Carte** (en haut) montre le monde : les zones visitées en couleur, les autres en gris avec « ? », le parc, l'endroit où tu es, et les feux allumés. **Touche le parc pour rentrer**, ou une zone avec un feu allumé pour y aller tout de suite (pas depuis une mine ni le village).
 
 Le monde se règle dans `scripts/wild.gd` (taille, climat, noms des zones) et `scripts/world_gen.gd` (`generate_zone`).
+
+## Aventure : le laboratoire
+
+Le **laboratoire** se fabrique (10 bois + 8 pierres + 2 fer + 1 cristal) ou s'achète au village (600 pièces), et se pose dans le parc. Devant lui, Action ouvre sa fenêtre. Il couve **un œuf à la fois** :
+
+- **Œuf mystère** : 2 fossiles + 1 ambre. Une surprise ! Les espèces pas encore dans le Dinodex sortent plus souvent.
+- **Œuf trouvé dans la nature** : dans les Terres sauvages, des **nids** cachent un œuf (plus souvent loin du parc). Action devant le nid pour le prendre.
+- **Faire naître un dino du Dinodex** : plus il est gros, plus il faut de fossiles et d'ambre (un T-Rex : 6 fossiles + 3 ambres).
+
+L'œuf couve de 1 à 2 minutes selon l'espèce, même si tu pars explorer, et le dôme du laboratoire montre l'œuf. Quand il est prêt, « Faire éclore ! » : le **bébé** naît devant le laboratoire. Il est petit, il t'aime déjà (3 cœurs) et **il te suit** : emmène-le dans un enclos pour qu'il y habite. Il **grandit en 4 minutes** ; une fois grand, on peut lui mettre une selle.
+
+Les fossiles et l'ambre se trouvent au fond des mines (niveaux 2 et 3). Tout se règle dans `scripts/main.gd` (`MYSTERY_EGG`, `clone_cost`, `hatch_time`) et `scripts/dino.gd` (`GROW_TIME`).
 
 ## Aventure : le village et la boutique
 

@@ -30,7 +30,7 @@ static func land(park: Node2D) -> Dictionary:
 	var dinos := []
 	for dino in park.dinos:
 		var entry := {"id": dino.species_id, "x": dino.cell.x, "y": dino.cell.y, "wild": dino.wild, "trust": dino.trust,
-			"friendship": dino.friendship, "saddled": dino.saddled}
+			"friendship": dino.friendship, "saddled": dino.saddled, "age": dino.age}
 		# Out with the player (ridden or following): it is saved back home.
 		if not dino.wild and (dino.ridden or dino.following != null):
 			entry.x = dino.home_cell.x
@@ -64,6 +64,7 @@ static func save(park: Node2D) -> void:
 		data.zones = park.zone_states
 		data.exits = park.base_exits
 		data.respawn = park.respawn
+		data.lab = park.lab_state
 	# Write to a temporary file first, keep the previous save as a backup, then swap:
 	# a crash in the middle of writing never loses the game.
 	var path := path_for(park.world_info.id)

@@ -62,6 +62,12 @@ var world_map: PanelContainer  # the map of the Wild Lands
 var map_grid: GridContainer
 var camp: PanelContainer  # the menu of a campfire
 var camp_buttons := {}  # "meat" / "pie" -> Button
+var lab: PanelContainer  # the laboratory: eggs and clones
+var lab_status: Label
+var lab_hatch: Button
+var lab_mystery: Button
+var lab_found: Button
+var lab_grid: GridContainer
 var dex_title: Label
 
 
@@ -83,6 +89,7 @@ func setup(owner_park: Node2D, player_inventory: RefCounted, player_name: String
 	_build_shop()
 	_build_map()
 	_build_camp()
+	_build_lab()
 	_build_message()
 	inventory.changed.connect(_refresh)
 	_refresh()
@@ -740,6 +747,7 @@ func _hide_travel() -> void:
 	if world_map != null:
 		world_map.visible = false
 		camp.visible = false
+		lab.visible = false
 
 
 # A window in the middle of the screen, with a title and a "Fermer" button. Returns its column.
@@ -873,6 +881,113 @@ func _cook(what: String) -> void:
 	_fill_camp()
 
 
+# --- The laboratory -------------------------------------------------------------
+
+func _build_lab() -> void:
+	var column := _window("Laboratoire", func() -> void: lab.visible = false)
+	lab = column.get_parent()
+	lab.custom_minimum_size = Vector2(820, 0)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	column.add_child(row)
+	var egg := TextureRect.new()
+	egg.texture = Art.bag_icon("egg")
+	egg.custom_minimum_size = Vector2(48, 48)
+	egg.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	row.add_child(egg)
+	lab_status = _label(row, "", 18)
+	lab_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lab_hatch = _button(row, "Faire éclore !", 180, func() -> void:
+		park.hatch()
+		lab.visible = false)
+	var choices := HBoxContainer.new()
+	choices.add_theme_constant_override("separation", 10)
+	column.add_child(choices)
+	lab_mystery = _button(choices, "", 390, _start_egg.bind("mystery"))
+	lab_found = _button(choices, "", 390, _start_egg.bind("found"))
+	for button in [lab_mystery, lab_found]:
+		button.custom_minimum_size.y = 56
+		button.add_theme_font_size_override("font_size", 14)
+	lab_mystery.icon = Art.bag_icon("fossil")
+	lab_found.icon = Art.bag_icon("egg")
+	var hint := _label(column, "Ou fais naître un dino de ton Dinodex (il te faut des fossiles et de l'ambre, trouvés au fond des mines) :", 14)
+	hint.add_theme_color_override("font_color", Color("7a6248"))
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 240)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	column.add_child(scroll)
+	lab_grid = GridContainer.new()
+	lab_grid.columns = 5
+	lab_grid.add_theme_constant_override("h_separation", 8)
+	lab_grid.add_theme_constant_override("v_separation", 8)
+	scroll.add_child(lab_grid)
+
+
+func open_lab() -> void:
+	if bag_open:
+		toggle_bag()
+	dex.visible = false
+	pocket.visible = false
+	world_map.visible = false
+	camp.visible = false
+	lab.visible = true
+	_fill_lab()
+
+
+func _fill_lab() -> void:
+	var busy: bool = not park.lab_state.is_empty()
+	var left: int = park.egg_seconds_left()
+	if not busy:
+		lab_status.text = "Le laboratoire attend un œuf."
+	elif left > 0:
+		lab_status.text = "Un œuf couve… il éclot dans %d:%02d" % [left / 60, left % 60]
+	else:
+		lab_status.text = "L'œuf bouge ! Il va éclore !"
+	lab_hatch.visible = busy and left == 0
+	lab_mystery.text = "Œuf mystère : %s\n(tu as %d fossiles, %d ambres)" % [Items.describe_needs(park.MYSTERY_EGG), inventory.count("fossil"), inventory.count("amber")]
+	lab_found.text = "Couver un œuf trouvé dans la nature\n(tu en as %d)" % inventory.count("egg")
+	lab_mystery.disabled = busy
+	lab_found.disabled = busy or inventory.count("egg") == 0
+	for child in lab_grid.get_children():
+		child.queue_free()
+	var any := false
+	for id in Catalog.DINOS:
+		if Catalog.DINOS[id].habitat != "land" or not park.caught.has(id):
+			continue
+		any = true
+		var card := VBoxContainer.new()
+		card.custom_minimum_size = Vector2(150, 0)
+		lab_grid.add_child(card)
+		var picture := TextureRect.new()
+		picture.texture = Art.icon("dino:" + id)
+		picture.custom_minimum_size = Vector2(150, 44)
+		picture.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+		card.add_child(picture)
+		var name := _label(card, "%s\n%s" % [Catalog.DINOS[id].name, Items.describe_needs(park.clone_cost(id))], 12)
+		name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var make := _button(card, "Faire naître", 150, _start_egg.bind(id))
+		make.disabled = busy or not inventory.has_all(park.clone_cost(id))
+	if not any:
+		_label(lab_grid, "Attrape des dinos pour remplir ton Dinodex !", 14)
+
+
+func _start_egg(how: String) -> void:
+	var refused: String = park.start_egg(how)
+	if refused != "":
+		flash(refused, 2.0)
+	else:
+		flash("L'œuf est au chaud dans le laboratoire !", 2.0)
+	_fill_lab()
+
+
+func _process(_delta: float) -> void:
+	if lab != null and lab.visible and not park.lab_state.is_empty():
+		var left: int = park.egg_seconds_left()
+		if left != lab_status.get_meta("left", -1):
+			lab_status.set_meta("left", left)
+			_fill_lab()
+
+
 # A row of tabs, one per Items.TABS, each with its picture. pick(id) is called on a touch.
 func _tab_row(parent: Control, pick: Callable) -> Dictionary:
 	var row := HBoxContainer.new()
@@ -893,7 +1008,7 @@ func _tab_row(parent: Control, pick: Callable) -> Dictionary:
 
 # A window is open over the game: the character waits.
 func menu_open() -> bool:
-	return bag_open or dex.visible or pocket.visible or shop.visible or world_map.visible or camp.visible
+	return bag_open or dex.visible or pocket.visible or shop.visible or world_map.visible or camp.visible or lab.visible
 
 
 # --- What the park expects from a HUD ----------------------------------------------

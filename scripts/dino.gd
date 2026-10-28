@@ -47,6 +47,8 @@ var surface_time := 0.0
 # (then they follow the player), and wild carnivores charge the player.
 const TRUST_NEEDED := 3
 var wild := false
+const GROW_TIME := 240.0  # seconds for a baby born in the laboratory to grow up
+var age := 1.0  # 0 just hatched, 1 grown up: babies are smaller and cannot carry a saddle
 var trust := 0
 var following: Node2D = null
 var chase_cool := 3.0
@@ -178,7 +180,7 @@ func hearts_text() -> String:
 
 
 func can_be_ridden() -> bool:
-	return habitat == "land" and species.length >= RIDE_MIN_LENGTH and species.plan in SEAT
+	return age >= 1.0 and habitat == "land" and species.length >= RIDE_MIN_LENGTH and species.plan in SEAT
 
 
 # Height of the saddle above the ground, in pixels.
@@ -266,6 +268,12 @@ func _process(delta: float) -> void:
 	roar_text.set_shown(roar_time > 0.0)
 	if captured:
 		return
+	if age < 1.0:
+		age = minf(age + delta / GROW_TIME, 1.0)
+		sprite.scale = Vector2.ONE * (0.5 + 0.5 * age)
+		shadow.scale = sprite.scale
+		if age >= 1.0:
+			park.float_text(position + Vector2(0, -frames.height), "%s a grandi !" % species.name, Color("a5f0a8"))
 	if habitat == "land":
 		flash_time = maxf(flash_time - delta, 0.0)
 		sprite.modulate = Color(3, 3, 3) if flash_time > 0.0 else Color.WHITE

@@ -704,6 +704,10 @@ static func item(id: String) -> Texture2D:
 			return heliport()
 		"campfire":
 			return campfire(true, 0)
+		"lab":
+			return lab()
+		"nest":
+			return nest()
 		"fence":
 			return fence(data.style, [Vector2i.LEFT, Vector2i.RIGHT])
 	return null
@@ -1635,6 +1639,10 @@ static func resource(id: String) -> Texture2D:
 					l.part([l.box(x - 0.5, 7, 1.2, 4)], Color("e8c070"), 0, 0, false)
 				l.dot(6, 8, Color("ff8098"))
 				l.dot(10, 8, Color("ff8098"))
+			"egg":
+				l.part([l.ellipse(8, 9, 5, 6.3)], Color("f0e8d0"), 2, 2)
+				for at in [Vector2(6, 6), Vector2(10, 9), Vector2(7, 12), Vector2(10, 5)]:
+					l.part([l.ellipse(at.x, at.y, 1, 0.8)], Color("60b060"), 0, 0, false)
 			"saddle":
 				l.part([l.ellipse(8, 9, 6.5, 3.8)], Color("8a4a24"), 1, 1)
 				l.part([l.ellipse(3.8, 6.2, 2.2, 2.8), l.ellipse(12, 6.8, 2, 2.2)], Color("a05a2c"), 1, 1)
@@ -1649,6 +1657,53 @@ static func resource(id: String) -> Texture2D:
 					l.part([l.poly([Vector2(10, 4), Vector2(15, 1.5), Vector2(13, 6)])], Color("fdd835"), 1, 0)
 				else:
 					l.part([l.box(4, 3, 6, 1)], leather.lightened(0.3), 0, 0, false)
+		return ImageTexture.create_from_image(l.image))
+
+
+# The laboratory of the park, in three quarters: a white cabin on a stone base with a glass dome
+# glowing green on its roof, windows with test tubes and an egg painted over the door.
+# incubating: an egg glows in the dome. 2 cells, 36 x 46 pixels.
+static func lab(incubating := false) -> Texture2D:
+	return cached("lab:%s" % incubating, func() -> Texture2D:
+		var l := Layers.new(Vector2i(36, 46))
+		l.part([l.box(2, 33, 32, 12)], STONES[2], 1, 1)
+		for x in [6, 14, 22, 29]:
+			l.part([l.box(x - 2.5, 36 + (x % 3), 5, 3)], STONES[3].darkened(0.08), 0, 1, false)
+		l.part([l.box(3, 18, 30, 16)], Color("e8e4d8"), 1, 1)
+		for x in [8, 13, 18, 23, 28]:
+			for y in range(19, 33):
+				l.shade(x, y, 0.08)
+		l.part([l.box(1, 15, 34, 4)], Color("6a7a8a"), 1, 1)
+		l.part([l.ellipse(18, 13, 9.5, 8.5)], Color("9ad8e8"), 1, 1)
+		if incubating:
+			l.part([l.ellipse(18, 13.5, 3, 4)], Color("f0e8d0"), 1, 1)
+		else:
+			l.part([l.ellipse(18, 14, 4.5, 3.5)], Color("60e080"), 1, 1, false)
+		if incubating:
+			l.dot(17, 13, Color("60c060"))
+			l.dot(19, 15, Color("60c060"))
+		l.part([l.box(13.5, 8, 1, 6)], Color.WHITE, 0, 0, false)
+		l.part([l.box(14, 33, 8, 12)], Color("4a6a8a"), 1, 0)
+		l.part([l.box(17.5, 34, 1, 11)], Color("2a3a4a"), 0, 0, false)
+		for x in [5.5, 24.5]:
+			l.part([l.box(x, 22, 7, 7)], Color("8ac0e8"), 1, 1)
+			for i in 3:
+				l.part([l.box(x + 1 + i * 2, 25 - i, 1.2, 4 + i)], [Color("e04060"), Color("60d060"), Color("f0c030")][i], 0, 0, false)
+		l.part([l.ellipse(18, 28, 2.5, 3)], Color("f0e8d0"), 1, 1)
+		l.dot(17, 27, Color("60c060"))
+		return ImageTexture.create_from_image(l.image))
+
+
+# A nest of straw in the wild with an egg in it. 16 x 14 pixels.
+static func nest() -> Texture2D:
+	return cached("nest", func() -> Texture2D:
+		var l := Layers.new(Vector2i(16, 14))
+		l.part([l.ellipse(8, 10, 7, 3.5)], THATCH[1], 1, 1)
+		l.part([l.ellipse(8, 6.5, 3.2, 4.2)], Color("f0e8d0"), 1, 1)
+		l.dot(7, 5, Color("60c060"))
+		l.dot(9, 7, Color("60c060"))
+		for x in [2, 5, 11, 14]:
+			l.part([l.limb(Vector2(x, 10), Vector2(x + 1.5, 8), 0.5, 0.5)], THATCH[2], 0, 0, false)
 		return ImageTexture.create_from_image(l.image))
 
 

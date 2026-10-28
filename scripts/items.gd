@@ -16,6 +16,7 @@ const ITEMS := {
 	"gold": {"name": "Or", "kind": "resource"},
 	"amber": {"name": "Ambre", "kind": "resource"},
 	"fossil": {"name": "Fossile", "kind": "resource"},
+	"egg": {"name": "Œuf de dino", "kind": "resource"},
 	"berries": {"name": "Baies", "kind": "food"},
 	"meat": {"name": "Viande", "kind": "food"},
 	"meat_cooked": {"name": "Viande grillée", "kind": "food"},
@@ -33,6 +34,7 @@ const ITEMS := {
 	"fence_electric": {"name": "Barrière électrique", "kind": "build", "place": "fence_electric"},
 	"bridge": {"name": "Pont", "kind": "build", "place": "bridge"},
 	"campfire": {"name": "Feu de camp", "kind": "build", "place": "campfire"},
+	"lab": {"name": "Laboratoire", "kind": "build", "place": "lab"},
 	"feeder_plants": {"name": "Mangeoire à plantes", "kind": "build", "place": "feeder_plants"},
 	"feeder_meat": {"name": "Mangeoire à viande", "kind": "build", "place": "feeder_meat"},
 	"slingshot": {"name": "Lance-pierre", "kind": "weapon"},
@@ -79,6 +81,8 @@ const TIPS := {
 	"brush": "La brosse : Action devant un dino de ton parc pour gagner son amitié. Une fois toutes les 20 secondes.",
 	"sniper": "Le fusil à lunette tire de très loin. Parfait pour les gros dinos !",
 	"campfire": "Pose le feu de camp où tu veux : tu pourras y revenir depuis la carte.",
+	"lab": "Pose le laboratoire dans ton parc. Devant lui, Action : avec des fossiles et de l'ambre, il fait naître des bébés dinos !",
+	"egg": "Un œuf trouvé dans la nature ! Porte-le au laboratoire de ton parc pour le faire éclore.",
 }
 
 # Boots make the character walk faster (the best pair in the bag counts).
@@ -136,6 +140,7 @@ const RECIPES := [
 	{"make": "fence_electric", "count": 2, "needs": {"iron": 2, "copper": 1}},
 	{"make": "bridge", "count": 2, "needs": {"wood": 3}},
 	{"make": "campfire", "count": 1, "needs": {"wood": 3, "stone": 3}},
+	{"make": "lab", "count": 1, "needs": {"wood": 10, "stone": 8, "iron": 2, "crystal": 1}},
 	{"make": "path", "count": 4, "needs": {"stone": 1}},
 	{"make": "feeder_plants", "count": 1, "needs": {"wood": 4, "berries": 3}},
 	{"make": "feeder_meat", "count": 1, "needs": {"wood": 4, "meat": 3}},

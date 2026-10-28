@@ -132,6 +132,15 @@ static func generate_zone(park: Node2D, zone: Vector2i, world_seed: int) -> void
 			if id != "":
 				park.add_natural(id, cell)
 
+	# Sometimes a nest with an egg in it, more often far from the park.
+	if rng.randf() < 0.3 + 0.15 * Wild.level(zone):
+		for attempt in 40:
+			var cell := Vector2i(_inside(park, rng, 8))
+			if park.is_water(cell) or (park.occupied.has(cell) and not Items.HARVEST.has(park.occupied[cell].id)):
+				continue
+			park.add_nest(cell)
+			break
+
 	# One or two old campfires to find, out: light them to come back from the map.
 	var camps := 0
 	for attempt in 60:

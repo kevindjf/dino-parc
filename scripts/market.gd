@@ -21,6 +21,7 @@ const BUY := [
 	{"id": "blowpipe", "count": 1, "price": 60},
 	{"id": "net", "count": 2, "price": 50},
 	{"id": "sniper", "count": 1, "price": 900},
+	{"id": "lab", "count": 1, "price": 600},
 	{"id": "syringe", "count": 5, "price": 80},
 	{"id": "meat", "count": 5, "price": 25},
 	{"id": "feeder_meat", "count": 1, "price": 120},
