@@ -33,7 +33,18 @@ const T := 16
 const GRID := Vector2i(128, 96)
 const ENTRANCE := Vector2i(0, 48)
 const OLD_GRID := Vector2i(64, 48)  # size of the map in the first versions
-const TICKET_PRICE := 10
+const TICKET_PRICE := 10  # with no star; each star of the park adds TICKET_PER_STAR
+const TICKET_PER_STAR := 5
+# The stars of the park in the adventure: species shown to the visitors (in an enclosure along a
+# path) and visitors welcomed so far. Each star is kept for good, gives coins, raises the ticket
+# and opens new things in the shop (see Market.BUY, "stars").
+const STARS := [
+	{"species": 1, "visitors": 0, "gift": 100},
+	{"species": 3, "visitors": 50, "gift": 300},
+	{"species": 6, "visitors": 300, "gift": 600},
+	{"species": 10, "visitors": 1000, "gift": 1000},
+	{"species": 15, "visitors": 3000, "gift": 2000},
+]
 const MAX_VISITORS := 120
 const DART_PRICE := 50
 const FISH_PRICE := 10
@@ -77,6 +88,12 @@ const ADVENTURE_GOALS := [
 	{"id": "electric", "text": "Fabrique une barrière électrique : la seule qui retient un T-Rex !"},
 	{"id": "dex5", "text": "Attrape 5 espèces différentes (bouton Dinodex)"},
 	{"id": "dex10", "text": "Attrape 10 espèces différentes"},
+	{"id": "stars2", "text": "Fais monter ton parc à 2 étoiles : montre 3 espèces aux visiteurs (enclos le long d'un chemin)"},
+	{"id": "lab", "text": "Construis un laboratoire et fais naître un bébé dino (fossiles et ambre au fond des mines)"},
+	{"id": "far", "text": "Explore les Terres sauvages jusqu'à une zone à 3 étoiles, tout au bord du monde"},
+	{"id": "stars3", "text": "Fais monter ton parc à 3 étoiles"},
+	{"id": "dex15", "text": "Attrape 15 espèces différentes"},
+	{"id": "stars5", "text": "Fais de ton parc un parc 5 étoiles !"},
 ]
 const GOALS := [
 	{"id": "pen", "text": "Ferme un enclos avec des barrières et mets-y un dinosaure"},
@@ -160,6 +177,8 @@ var left_base_at := 0.0  # when the player left the park, to pay the visitors wh
 var zone_states := {}  # zone key -> what the player changed there, saved with the game
 var base_exits := {}  # "up" / "down" / "left" / "right" -> where the trails out of the park are
 var border_nodes: Array[Node] = []  # the forest around the zone and the signs of its trails
+var stars := 0  # the stars of the park, kept for good (see STARS)
+var hatched := 0  # babies born in the laboratory
 var lab_state := {}  # {"egg": species, "ready": unix time}: the egg in the laboratory
 var respawn := {}  # {"zone", "x", "y"}: the last campfire the player rested by, where they wake up
 
@@ -235,6 +254,8 @@ func start_adventure(data: Dictionary) -> void:
 	zone_states = data.get("zones", {})
 	respawn = data.get("respawn", {})
 	lab_state = data.get("lab", {})
+	stars = int(data.get("stars", 0))
+	hatched = int(data.get("hatched", 0))
 	base_exits = data.get("exits", {})
 	if data.is_empty():
 		loading = true
@@ -269,7 +290,7 @@ func start_adventure(data: Dictionary) -> void:
 	builder.setup(self)
 	hud.setup_builder(builder)
 	hud.set_hearts(hearts, MAX_HEARTS)
-	# A sign by the park gate shows the road to the village.
+	hud.set_stars(stars)
 	camera.position = start
 	camera.remember("adventure", 1)
 	camera.follow(player)
@@ -1144,6 +1165,53 @@ func _update_attraction() -> void:
 		if building.open:
 			total += Catalog.ITEMS[building.id].get("attraction", 0)
 	attraction = max(total, 0)
+	if mode == "adventure" and zone == Wild.BASE and not loading:
+		_check_stars()
+
+
+func ticket_price() -> int:
+	return TICKET_PRICE + TICKET_PER_STAR * stars
+
+
+# The species the visitors can see: in an enclosure along a path, or in an open aviary or lagoon.
+func shown_species() -> int:
+	var shown := {}
+	for dino in dinos:
+		if dino.wild or dino.escaped or dino.following != null:
+			continue
+		if dino.habitat != "land":
+			if dino.home_building != null and dino.home_building.open:
+				shown[dino.species_id] = true
+		elif dino.region >= 0 and dino.region < regions.size() and regions[dino.region].enclosed and regions[dino.region].visible:
+			shown[dino.species_id] = true
+	return shown.size()
+
+
+func _check_stars() -> void:
+	if stars >= STARS.size():
+		return
+	var next: Dictionary = STARS[stars]
+	if shown_species() < next.species or total_visitors < next.visitors:
+		return
+	stars += 1
+	money += next.gift
+	var unlocked := PackedStringArray()
+	for entry in Market.BUY:
+		if entry.get("stars", 0) == stars:
+			unlocked.append(Items.name_of(entry.id))
+	var text := "Ton parc a %d étoile%s ! %s\n+%d pièces, le billet coûte maintenant %d." % [stars, "s" if stars > 1 else "", "★".repeat(stars), next.gift, ticket_price()]
+	if not unlocked.is_empty():
+		text += "\nNouveau à la boutique : %s" % ", ".join(unlocked)
+	hud.flash(text, 6.0)
+	hud.set_stars(stars)
+
+
+# What the next star needs, told on the corner sheet.
+func next_star_text() -> String:
+	if stars >= STARS.size():
+		return "Parc 5 étoiles !"
+	var next: Dictionary = STARS[stars]
+	return "Prochaine étoile : %d espèces montrées, %d visiteurs" % [next.species, next.visitors]
 
 
 func _spawn_visitor() -> void:
@@ -1151,9 +1219,9 @@ func _spawn_visitor() -> void:
 	visitor.add_to_group("visitors")
 	world.add_child(visitor)
 	visitor.setup(self, ENTRANCE)
-	money += TICKET_PRICE
+	money += ticket_price()
 	total_visitors += 1
-	_float_text(cell_center(ENTRANCE), "+%d" % TICKET_PRICE, Color("ffe082"))
+	_float_text(cell_center(ENTRANCE), "+%d" % ticket_price(), Color("ffe082"))
 
 
 func on_visitor_step(visitor: Node2D) -> void:
@@ -1227,6 +1295,18 @@ func _goal_done(id: String) -> bool:
 				return inventory.count("fence_electric") > 0 or buildings.any(func(b) -> bool: return b.id == "fence_electric")
 			"dex5":
 				return caught.size() >= 5
+			"stars2":
+				return stars >= 2
+			"stars3":
+				return stars >= 3
+			"stars5":
+				return stars >= 5
+			"lab":
+				return hatched > 0
+			"far":
+				return zone_states.keys().any(func(key: String) -> bool: return Wild.level(Wild.from_key(key)) >= 3)
+			"dex15":
+				return caught.size() >= 15
 			"dex10":
 				return caught.size() >= 10
 		return false
@@ -1719,7 +1799,7 @@ func _house_action(cell: Vector2i) -> void:
 
 # Buys a line of Market.BUY. Returns false when there are not enough coins.
 func buy(entry: Dictionary) -> bool:
-	if money < entry.price:
+	if money < entry.price or stars < entry.get("stars", 0):
 		return false
 	money -= entry.price
 	inventory.add(entry.id, entry.count)
@@ -2422,9 +2502,9 @@ func _pay_visitors_while_away() -> void:
 	if count <= 0:
 		hud.flash("De retour au parc !", 2.0)
 		return
-	money += count * TICKET_PRICE
+	money += count * ticket_price()
 	total_visitors += count
-	hud.flash("De retour au parc !\n%d visiteurs sont venus : +%d pièces" % [count, count * TICKET_PRICE], 3.5)
+	hud.flash("De retour au parc !\n%d visiteurs sont venus : +%d pièces" % [count, count * ticket_price()], 3.5)
 
 
 # The nearest free cell to arrive on, cleared of what grows on it.
@@ -2584,6 +2664,7 @@ func hatch() -> void:
 	baby.following = player
 	baby.home_cell = baby.cell
 	lab_state = {}
+	hatched += 1
 	_draw_labs()
 	_mark_caught(species)
 	hud.flash("C'est un bébé %s !\nIl te suit : emmène-le dans un enclos." % Catalog.DINOS[species].name, 4.0)

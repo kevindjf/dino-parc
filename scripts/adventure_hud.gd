@@ -62,6 +62,7 @@ var world_map: PanelContainer  # the map of the Wild Lands
 var map_grid: GridContainer
 var camp: PanelContainer  # the menu of a campfire
 var camp_buttons := {}  # "meat" / "pie" -> Button
+var stars_label: Label
 var lab: PanelContainer  # the laboratory: eggs and clones
 var lab_status: Label
 var lab_hatch: Button
@@ -123,6 +124,8 @@ func _build_top(player_name: String) -> void:
 	money_label = _label(second, "", 15)
 	money_label.add_theme_color_override("font_color", Color("8a5a00"))
 	visitors_label = _label(second, "", 13)
+	stars_label = _label(first, "", 17)
+	stars_label.add_theme_color_override("font_color", Color("c08a10"))
 	var note := _sheet(corner)
 	note.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	goal_label = _label(note, "", 13)
@@ -701,8 +704,11 @@ func _buy_card(entry: Dictionary) -> void:
 			flash("Pas assez de pièces !", 1.5)
 		_fill_shop())
 	price.custom_minimum_size.y = 48
-	# Boots and vehicles are bought once.
-	if Items.kind_of(entry.id) in ["gear", "vehicle"] and inventory.count(entry.id) > 0:
+	# Boots and vehicles are bought once; some things wait for the stars of the park.
+	if park.stars < entry.get("stars", 0):
+		price.text = "Parc %s requis" % "★".repeat(entry.stars)
+		price.disabled = true
+	elif Items.kind_of(entry.id) in ["gear", "vehicle"] and inventory.count(entry.id) > 0:
 		price.text = "Déjà à toi !"
 		price.disabled = true
 	elif park.money < entry.price:
@@ -1030,6 +1036,11 @@ func flash(text: String, duration := 1.5) -> void:
 	message_tween = create_tween()
 	message_tween.tween_interval(duration)
 	message_tween.tween_property(message_panel, "modulate:a", 0.0, 0.5)
+
+
+func set_stars(count: int) -> void:
+	stars_label.text = "★".repeat(count) + "☆".repeat(5 - count)
+	stars_label.tooltip_text = park.next_star_text()
 
 
 func update_stats(money: int, on_site: int, total: int, _attraction: int) -> void:

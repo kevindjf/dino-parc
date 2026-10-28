@@ -94,6 +94,20 @@ Le bouton **Carte** (en haut) montre le monde : les zones visitées en couleur, 
 
 Le monde se règle dans `scripts/wild.gd` (taille, climat, noms des zones) et `scripts/world_gen.gd` (`generate_zone`).
 
+## Aventure : les étoiles du parc
+
+Ton parc gagne des **étoiles**, de 1 à 5, affichées en haut à gauche à côté de ton nom. Elles montent avec les **espèces montrées aux visiteurs** (un dinosaure dans un enclos le long d'un chemin relié à l'entrée, ou dans une volière ou un lagon ouverts) et les **visiteurs accueillis** :
+
+| Étoiles | Espèces montrées | Visiteurs | Cadeau | Nouveau à la boutique |
+|---|---|---|---|---|
+| ★ | 1 | 0 | 100 pièces | |
+| ★★ | 3 | 50 | 300 pièces | moto, laboratoire |
+| ★★★ | 6 | 300 | 600 pièces | voiture, capsule en or, fusil à lunette |
+| ★★★★ | 10 | 1000 | 1000 pièces | hélicoptère |
+| ★★★★★ | 15 | 3000 | 2000 pièces | |
+
+Une étoile gagnée reste pour toujours, et chacune augmente le **prix du billet** de 5 pièces (10 sans étoile). Tout se règle dans `scripts/main.gd` (`STARS`) et `scripts/market.gd` (colonne `stars`).
+
 ## Aventure : le laboratoire
 
 Le **laboratoire** se fabrique (10 bois + 8 pierres + 2 fer + 1 cristal) ou s'achète au village (600 pièces), et se pose dans le parc. Devant lui, Action ouvre sa fenêtre. Il couve **un œuf à la fois** :
