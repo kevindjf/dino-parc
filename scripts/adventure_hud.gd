@@ -48,6 +48,11 @@ var shop_grid: GridContainer
 var shop_money: Label
 var shop_tabs := {}  # "buy" / "sell" -> Button
 var shop_selling := false
+var bag_tab := "tools"  # the tab shown in the bag and the workbench (see Items.TABS)
+var bag_tabs := {}  # tab id -> Button
+var shop_tab := "tools"
+var shop_kinds: HBoxContainer  # the row of tabs of the shop, hidden when selling
+var shop_kind_tabs := {}  # tab id -> Button
 var dex_title: Label
 
 
@@ -201,13 +206,16 @@ func _build_bag() -> void:
 	_button(header, "Fermer", 110, toggle_bag)
 	var hint := _label(column, "Touche un objet pour le mettre dans la case choisie de ta barre d'outils.", 14)
 	hint.add_theme_color_override("font_color", Color("7a6248"))
+	bag_tabs = _tab_row(column, func(id: String) -> void:
+		bag_tab = id
+		_fill_bag())
 
 	var halves := HBoxContainer.new()
 	halves.add_theme_constant_override("separation", 16)
 	halves.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(halves)
 	var left := ScrollContainer.new()
-	left.custom_minimum_size = Vector2(420, 380)
+	left.custom_minimum_size = Vector2(420, 330)
 	left.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	halves.add_child(left)
 	bag_grid = GridContainer.new()
@@ -275,9 +283,13 @@ func _refresh() -> void:
 func _fill_bag() -> void:
 	for child in bag_grid.get_children():
 		child.queue_free()
-	var ids: Array = inventory.counts.keys().filter(func(id: String) -> bool: return Items.kind_of(id) != "dino")
-	if ids.is_empty():
+	for id in bag_tabs:
+		bag_tabs[id].button_pressed = id == bag_tab
+	var ids: Array = inventory.counts.keys().filter(func(id: String) -> bool: return Items.tab_of(id) == bag_tab)
+	if inventory.counts.is_empty():
 		_label(bag_grid, "Ton sac est vide.\nFrappe un arbre pour avoir du bois !", 15)
+	elif ids.is_empty():
+		_label(bag_grid, "Rien dans cet onglet.", 15)
 	for id in ids:
 		var button := Button.new()
 		button.custom_minimum_size = Vector2(100, 92)
@@ -294,7 +306,10 @@ func _fill_bag() -> void:
 
 	for child in recipe_list.get_children():
 		child.queue_free()
-	for recipe in Items.RECIPES:
+	var recipes: Array = Items.RECIPES.filter(func(recipe: Dictionary) -> bool: return Items.tab_of(recipe.make) == bag_tab)
+	if recipes.is_empty():
+		_label(recipe_list, "Rien à fabriquer ici.\nCes trésors servent pour les recettes\ndes autres onglets.", 14)
+	for recipe in recipes:
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
 		recipe_list.add_child(row)
@@ -598,6 +613,11 @@ func _build_shop() -> void:
 	shop_money.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	shop_money.add_theme_color_override("font_color", Color("a07000"))
 	_button(header, "Fermer", 110, close_shop)
+	shop_kinds = HBoxContainer.new()
+	column.add_child(shop_kinds)
+	shop_kind_tabs = _tab_row(shop_kinds, func(id: String) -> void:
+		shop_tab = id
+		_fill_shop())
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -627,6 +647,9 @@ func _fill_shop() -> void:
 	shop_tabs.buy.button_pressed = not shop_selling
 	shop_tabs.sell.button_pressed = shop_selling
 	shop_money.text = "Tes pièces : %d" % park.money
+	shop_kinds.visible = not shop_selling
+	for id in shop_kind_tabs:
+		shop_kind_tabs[id].button_pressed = id == shop_tab
 	for child in shop_grid.get_children():
 		child.queue_free()
 	if shop_selling:
@@ -639,7 +662,8 @@ func _fill_shop() -> void:
 			_label(shop_grid, "Tu n'as rien à vendre.\nLe marchand achète le bois, les pierres, les baies,\nles minerais et les fossiles.", 16)
 		return
 	for entry in Market.BUY:
-		_buy_card(entry)
+		if Items.tab_of(entry.id) == shop_tab:
+			_buy_card(entry)
 
 
 # One thing for sale: its picture, its name, and a button with its price.
@@ -690,6 +714,24 @@ func _shop_card(id: String, text: String) -> VBoxContainer:
 	var name := _label(card, text, 14)
 	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	return card
+
+
+# A row of tabs, one per Items.TABS, each with its picture. pick(id) is called on a touch.
+func _tab_row(parent: Control, pick: Callable) -> Dictionary:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	parent.add_child(row)
+	var group := ButtonGroup.new()
+	var tabs := {}
+	for tab in Items.TABS:
+		var button := _button(row, tab.name, 132, pick.bind(tab.id))
+		button.icon = Art.bag_icon(tab.icon)
+		button.expand_icon = false
+		button.add_theme_font_size_override("font_size", 14)
+		button.toggle_mode = true
+		button.button_group = group
+		tabs[tab.id] = button
+	return tabs
 
 
 # A window is open over the game: the character waits.

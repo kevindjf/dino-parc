@@ -51,6 +51,20 @@ const ITEMS := {
 	"heli": {"name": "Hélicoptère", "kind": "vehicle"},
 }
 
+# The bag, the workbench and the shop sort things in these tabs (see tab_of()).
+const TABS := [
+	{"id": "tools", "name": "Outils", "icon": "axe"},
+	{"id": "hunt", "name": "Chasse", "icon": "bow"},
+	{"id": "food", "name": "Nourriture", "icon": "berries"},
+	{"id": "build", "name": "Construire", "icon": "fence_wood"},
+	{"id": "treasure", "name": "Trésors", "icon": "crystal"},
+	{"id": "travel", "name": "Voyage", "icon": "bike"},
+]
+const TAB_OF_KIND := {
+	"tool": "tools", "weapon": "hunt", "ammo": "hunt", "catch": "hunt", "food": "food",
+	"build": "build", "resource": "treasure", "gear": "travel", "vehicle": "travel",
+}
+
 # Boots make the character walk faster (the best pair in the bag counts).
 const GEAR_SPEED := {"boots": 1.25, "boots_fast": 1.5}
 # What the character can drive, in cells per second (walking is 4). The helicopter flies over
@@ -133,6 +147,14 @@ static func kind_of(id: String) -> String:
 	if id.begins_with("dino:"):
 		return "dino"
 	return ITEMS[id].kind if ITEMS.has(id) else ""
+
+
+# The tab of the bag where this thing goes. The saddle is used on the dinosaurs of the park,
+# like the brush: it goes with the tools.
+static func tab_of(id: String) -> String:
+	if id == "saddle":
+		return "tools"
+	return TAB_OF_KIND.get(kind_of(id), "")
 
 
 static func exists(id: String) -> bool:
