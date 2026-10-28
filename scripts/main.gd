@@ -27,6 +27,7 @@ const Mine := preload("res://scripts/mine.gd")
 const Village := preload("res://scripts/village.gd")
 const House := preload("res://scripts/house.gd")
 const Market := preload("res://scripts/market.gd")
+const Wild := preload("res://scripts/wild.gd")
 
 const T := 16
 const GRID := Vector2i(128, 96)
@@ -147,6 +148,13 @@ var hearts := MAX_HEARTS
 var safe_until := 0.0  # after a hit, a short time when nothing can hit us again
 var heal_timer := 0.0
 var gate_warned := 0.0
+var zone := Wild.BASE  # the zone of the Wild Lands the player is in (see wild.gd)
+var world_seed := 0  # makes the same wild zones every time in this world
+var base_land := {}  # the park, saved while the player is in a wild zone
+var left_base_at := 0.0  # when the player left the park, to pay the visitors who came meanwhile
+var zone_states := {}  # zone key -> what the player changed there, saved with the game
+var base_exits := {}  # "up" / "down" -> the column of the trail out of the park
+var border_nodes: Array[Node] = []  # the forest around the zone and the signs of its trails
 
 
 func _ready() -> void:
@@ -216,6 +224,9 @@ func start_adventure(data: Dictionary) -> void:
 	money = 0
 	inventory = Inventory.new()
 	var start := cell_center(ENTRANCE + Vector2i(3, 0))
+	world_seed = int(data.get("seed", randi() % 1000000000))
+	zone_states = data.get("zones", {})
+	base_exits = data.get("exits", {})
 	if data.is_empty():
 		loading = true
 		WorldGen.generate(self, randi())
@@ -228,6 +239,8 @@ func start_adventure(data: Dictionary) -> void:
 		start = Vector2(saved.get("x", start.x), saved.get("y", start.y)) + Vector2(offset * T)
 		mine_states = data.get("mines", {})
 		village_state = data.get("village", {})
+	_carve_base_exits()
+	_build_border()
 	natural_target = _count_nature()
 	caught = {}
 	for id in data.get("caught", []):
@@ -248,15 +261,13 @@ func start_adventure(data: Dictionary) -> void:
 	hud.setup_builder(builder)
 	hud.set_hearts(hearts, MAX_HEARTS)
 	# A sign by the park gate shows the road to the village.
-	var sign := Art.sprite(Art.signpost())
-	sign.position = Vector2(-1.5 * T, ENTRANCE.y * T - 1)
-	sign.flip_h = true
-	world.add_child(sign)
-	WorldText.make(sign, Vector2(0, -24), "← Village", "sign")
 	camera.position = start
 	camera.remember("adventure", 1)
 	camera.follow(player)
 	_refresh()
+	var saved_zone := Wild.from_key(str(data.get("zone", Wild.key(Wild.BASE))))
+	if saved_zone != Wild.BASE and Wild.in_world(saved_zone):
+		travel(saved_zone, start)
 	if data.is_empty():
 		hud.flash("Bienvenue %s !\nVa frapper un arbre pour récolter du bois." % look.name, 4.0)
 		save_game()
@@ -284,8 +295,8 @@ func _notification(what: int) -> void:
 func _load_park(data: Dictionary) -> Vector2i:
 	loading = true
 	money = int(data.get("money", money))
-	total_visitors = int(data.get("total_visitors", 0))
-	goal_index = int(data.get("goal_index", 0))
+	total_visitors = int(data.get("total_visitors", total_visitors))
+	goal_index = int(data.get("goal_index", goal_index))
 	var saved_size := Vector2i(int(data.grid[0]), int(data.grid[1])) if data.has("grid") else OLD_GRID
 	var offset := Vector2i.ZERO
 	if saved_size != GRID:
@@ -1285,8 +1296,13 @@ func _process_adventure(delta: float) -> void:
 			save_game()
 		return
 	# The road out of the park gate leads to the village.
-	if player.position.x < -1.5 * T:
+	if zone == Wild.BASE and player.position.x < -1.5 * T:
 		enter_village()
+		return
+	# Off the edge of the zone: the next zone of the Wild Lands.
+	var edge := _edge_crossed()
+	if edge != Vector2i.ZERO:
+		_cross_edge(edge)
 		return
 	# Walking up into a mine entrance goes down.
 	var entrance = occupied.get(player.cell() + Vector2i.UP) if player.pushing == Vector2i.UP else null
@@ -1382,8 +1398,17 @@ func player_action(cell: Vector2i) -> void:
 func player_blocked(cell: Vector2i) -> bool:
 	if away != null:
 		return away.is_solid(cell)
+	if not in_grid(cell) and mode == "adventure":
+		var dir := _edge_of(cell)
+		if dir != Vector2i.ZERO and _edge_open(dir, cell):
+			if player.mount != null:
+				if clock > gate_warned:
+					gate_warned = clock + 3.0
+					_float_text(player.position, "Descends de ton dinosaure pour partir à l'aventure", Color("ffab91"))
+				return true
+			return false
 	# Out of the park gate, the road goes on to the village.
-	if cell.x < 0 and cell.x >= -BORDER and cell.y == ENTRANCE.y:
+	if zone == Wild.BASE and cell.x < 0 and cell.x >= -BORDER and cell.y == ENTRANCE.y:
 		if player.mount != null:
 			if clock > gate_warned:
 				gate_warned = clock + 3.0
@@ -1395,7 +1420,10 @@ func player_blocked(cell: Vector2i) -> bool:
 
 # Where the player can go: the park, or the zone they are in.
 func player_area() -> Rect2:
-	return away.bounds() if away != null else Rect2(Vector2.ZERO, Vector2(GRID * T))
+	if away != null:
+		return away.bounds()
+	# One cell more on each side, so that the helicopter can fly to the next zone.
+	return Rect2(-Vector2.ONE * T, Vector2(GRID * T) + Vector2.ONE * T * 2)
 
 
 # Where the player is in the park (where they will come back while away).
@@ -1408,6 +1436,8 @@ func enter_mine(entrance: Dictionary) -> void:
 		_float_text(player.position, "Descends de ton dinosaure pour entrer dans la mine", Color("ffab91"))
 		return
 	var key := "%d,%d" % [entrance.origin.x, entrance.origin.y]
+	if zone != Wild.BASE:
+		key = "%s:%s" % [Wild.key(zone), key]
 	if not mine_states.has(key):
 		mine_states[key] = {"seed": randi() % 1000000, "dug": {}}
 	surface_spot = cell_center(entrance.origin + Vector2i.DOWN)
@@ -1903,6 +1933,11 @@ func float_text(at: Vector2, text: String, color: Color) -> void:
 
 
 func player_scared(dino: Node2D) -> void:
+	if zone != Wild.BASE:
+		# Far from home, the player runs back to the park.
+		hud.flash("%s t'a fait très peur !\nTu rentres en courant au parc." % dino.species.name, 3.0)
+		call_deferred("travel", Wild.BASE, cell_center(ENTRANCE + Vector2i(2, 0)))
+		return
 	player.position = cell_center(ENTRANCE + Vector2i(2, 0))
 	player.velocity = Vector2.ZERO
 	camera.position = player.position
@@ -1951,13 +1986,18 @@ func _wild_species(biome: String) -> String:
 		var species: Dictionary = Catalog.DINOS[id]
 		if species.habitat == "land" and species.biome == biome:
 			choices.append(id)
-			total += 1000.0 / species.cost
+			total += _wild_weight(species)
 	var roll := randf() * total
 	for id in choices:
-		roll -= 1000.0 / Catalog.DINOS[id].cost
+		roll -= _wild_weight(Catalog.DINOS[id])
 		if roll <= 0.0:
 			return id
 	return ""
+
+
+# Far from the park, the big and rare dinosaurs come much more often.
+func _wild_weight(species: Dictionary) -> float:
+	return 1000.0 / species.cost * (1.0 + Wild.level(zone) * (species.strength - 1) * 0.6)
 
 
 func random_cell_near(center: Vector2i, radius: int, region: int) -> Vector2i:
@@ -2142,6 +2182,182 @@ func _grow_nature() -> void:
 	if id != "" and id != "mountain":
 		_add_building(id, cell)
 		_refresh()
+
+
+# --- The Wild Lands -------------------------------------------------------
+
+func _exit_column(dir: Vector2i) -> int:
+	return int(base_exits.get("up" if dir == Vector2i.UP else "down", GRID.x / 2))
+
+
+# Opens the trails out of the park, where they cross the least: a park made before the Wild
+# Lands may have trees, rocks or water there, never what the player built.
+func _carve_base_exits() -> void:
+	for dir: Vector2i in Wild.BASE_EXITS:
+		var name := "up" if dir == Vector2i.UP else "down"
+		var rows := range(0, 5) if dir == Vector2i.UP else range(GRID.y - 5, GRID.y)
+		if not base_exits.has(name):
+			var best := GRID.x / 2
+			var best_cost := INF
+			for x in range(16, GRID.x - 16):
+				var cost := absf(x - GRID.x / 2) * 0.05
+				for y in rows:
+					for dx in range(-1, 2):
+						var cell := Vector2i(x + dx, y)
+						var building = occupied.get(cell)
+						if is_water(cell) or (building != null and not Items.HARVEST.has(building.id)):
+							cost += 20.0
+						elif building != null:
+							cost += 1.0
+				if cost < best_cost:
+					best_cost = cost
+					best = x
+			base_exits[name] = best
+		var column := int(base_exits[name])
+		for y in rows:
+			for dx in range(-1, 2):
+				var cell := Vector2i(column + dx, y)
+				var building = occupied.get(cell)
+				if building != null and Items.HARVEST.has(building.id):
+					remove_natural(cell)
+				if building == null or Items.HARVEST.has(building.id):
+					set_water(cell, false)
+	ground.refresh(Vector2i(GRID.x / 2, 0), GRID.x)
+	ground.refresh(Vector2i(GRID.x / 2, GRID.y - 1), GRID.x)
+
+
+# The side of the zone a cell outside of it is on, or ZERO.
+func _edge_of(cell: Vector2i) -> Vector2i:
+	if cell.y < 0:
+		return Vector2i.UP
+	if cell.y >= GRID.y:
+		return Vector2i.DOWN
+	if cell.x < 0:
+		return Vector2i.LEFT
+	if cell.x >= GRID.x:
+		return Vector2i.RIGHT
+	return Vector2i.ZERO
+
+
+# Whether the player can go out of the zone there: on the trails of the park on foot, anywhere
+# on an open side of a wild zone, or anywhere by helicopter.
+func _edge_open(dir: Vector2i, cell: Vector2i) -> bool:
+	if not Wild.open_edge(zone, dir):
+		return false
+	if zone == Wild.BASE and player.vehicle != "heli":
+		return absi(cell.x - _exit_column(dir)) <= 1
+	return true
+
+
+func _edge_crossed() -> Vector2i:
+	var cell := Vector2i((player.position / T).floor())
+	var dir := _edge_of(cell)
+	if dir == Vector2i.ZERO or not Wild.open_edge(zone, dir):
+		return Vector2i.ZERO
+	return dir
+
+
+# Goes into the next zone, at the same place on its opposite side.
+func _cross_edge(dir: Vector2i) -> void:
+	var at := player.position
+	var size := Vector2(GRID * T)
+	if dir.x != 0:
+		at.x = 0.5 * T if dir.x > 0 else size.x - 0.5 * T
+	else:
+		at.y = 0.5 * T if dir.y > 0 else size.y - 0.5 * T
+	var next := zone + dir
+	if next == Wild.BASE and player.vehicle != "heli":
+		at.x = cell_center(Vector2i(_exit_column(-dir), 0)).x
+	travel(next, at)
+
+
+# Leaves the zone the player is in and builds another one: the park comes back as it was left,
+# a wild zone is made again from its seed. at: where the player arrives, in pixels.
+func travel(to: Vector2i, at: Vector2) -> void:
+	if to == zone:
+		player.position = at
+		return
+	if zone == Wild.BASE:
+		base_land = SaveGame.land(self)
+		left_base_at = clock
+	_clear_land()
+	zone = to
+	loading = true
+	if zone == Wild.BASE:
+		_add_building("path", ENTRANCE, true)
+		_load_park(base_land)
+		base_land = {}
+	else:
+		WorldGen.generate_zone(self, zone, world_seed)
+		_finish_loading()
+	_build_border()
+	natural_target = _count_nature()
+	var cell := _arrival_cell(Vector2i((at / T).floor()))
+	player.position = cell_center(cell) if not in_grid(Vector2i((at / T).floor())) or player_blocked(Vector2i((at / T).floor())) else at
+	player.velocity = Vector2.ZERO
+	camera.position = player.position
+	_spawn_wild_dinos(WILD_TARGET)
+	_refresh()
+	hud.refresh_build()
+	if zone == Wild.BASE:
+		_pay_visitors_while_away()
+	else:
+		var stars := "★".repeat(Wild.level(zone))
+		hud.flash("%s  %s" % [Wild.name_of(zone), stars], 2.5)
+
+
+# The park kept living while the player was away: the visitors paid their ticket.
+func _pay_visitors_while_away() -> void:
+	_update_attraction()
+	var minutes := (clock - left_base_at) / 60.0
+	var count := mini(int(minutes * attraction), 2000)
+	if count <= 0:
+		hud.flash("De retour au parc !", 2.0)
+		return
+	money += count * TICKET_PRICE
+	total_visitors += count
+	hud.flash("De retour au parc !\n%d visiteurs sont venus : +%d pièces" % [count, count * TICKET_PRICE], 3.5)
+
+
+# The nearest free cell to arrive on, cleared of what grows on it.
+func _arrival_cell(wanted: Vector2i) -> Vector2i:
+	wanted = wanted.clamp(Vector2i.ZERO, GRID - Vector2i.ONE)
+	for radius in 12:
+		for y in range(wanted.y - radius, wanted.y + radius + 1):
+			for x in range(wanted.x - radius, wanted.x + radius + 1):
+				var cell := Vector2i(x, y)
+				if not in_grid(cell) or maxi(absi(x - wanted.x), absi(y - wanted.y)) != radius or is_water(cell):
+					continue
+				var building = occupied.get(cell)
+				if building == null:
+					return cell
+				if Items.HARVEST.has(building.id) and building.id != "rock":
+					remove_natural(cell)
+					return cell
+	return wanted
+
+
+# Empties the land: every building, dinosaur and visitor goes, the ground is blank again.
+func _clear_land() -> void:
+	for building in buildings:
+		if building.root != null:
+			building.root.queue_free()
+		for node in building.nodes:
+			if is_instance_valid(node):
+				node.queue_free()
+	buildings.clear()
+	occupied.clear()
+	for dino in dinos:
+		dino.queue_free()
+	dinos.clear()
+	for visitor in get_tree().get_nodes_in_group("visitors"):
+		visitor.queue_free()
+	biomes.fill("prairie")
+	water.fill(0)
+	distance.clear()
+	if combat != null:
+		combat.target = null
+		combat.chosen = null
 
 
 # --- Helpers -----------------------------------------------------------
@@ -2436,27 +2652,7 @@ func _build_world() -> void:
 	world.y_sort_enabled = true
 	add_child(world)
 
-	# A thick forest all around the park, like in the old handheld games, with the gate on the left.
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 42
-	for ring in BORDER:
-		for x in range(-BORDER, GRID.x + BORDER):
-			for y in [-1 - ring, GRID.y + ring]:
-				_border_tree(Vector2i(x, y), rng)
-		for y in range(-BORDER + ring, GRID.y + BORDER - ring):
-			for x in [-1 - ring, GRID.x + ring]:
-				if x < 0 and absi(y - ENTRANCE.y) <= 2:
-					continue
-				_border_tree(Vector2i(x, y), rng)
-	var gate := Art.sprite(Art.gate())
-	gate.position = Vector2(-0.5 * T, (ENTRANCE.y + 3) * T)
-	world.add_child(gate)
-	var entry := ColorRect.new()
-	entry.color = Color("e8d4a0")
-	entry.position = Vector2(-BORDER * T, ENTRANCE.y * T)
-	entry.size = Vector2(BORDER * T, T)
-	entry.z_index = -9
-	add_child(entry)
+	_build_border()
 
 	camera = ParkCamera.new()
 	add_child(camera)
@@ -2473,11 +2669,79 @@ func _build_world() -> void:
 	add_child(ghost)
 
 
+# A thick forest all around the zone, like in the old handheld games. The park has its gate on
+# the left and a trail at the top and at the bottom; a wild zone is open on its sides that lead to
+# another zone.
+func _build_border() -> void:
+	for node in border_nodes:
+		node.queue_free()
+	border_nodes.clear()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 42 + zone.x * 13 + zone.y * 7
+	var base := zone == Wild.BASE
+	for ring in BORDER:
+		for dir: Vector2i in [Vector2i.UP, Vector2i.DOWN]:
+			if not base and Wild.open_edge(zone, dir):
+				continue
+			var y := -1 - ring if dir == Vector2i.UP else GRID.y + ring
+			for x in range(-BORDER, GRID.x + BORDER):
+				if base and mode == "adventure" and Wild.open_edge(zone, dir) and absi(x - _exit_column(dir)) <= 1:
+					continue
+				_border_tree(Vector2i(x, y), rng)
+		for dir: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT]:
+			if not base and Wild.open_edge(zone, dir):
+				continue
+			var x := -1 - ring if dir == Vector2i.LEFT else GRID.x + ring
+			for y in range(-BORDER + ring, GRID.y + BORDER - ring):
+				if base and x < 0 and absi(y - ENTRANCE.y) <= 2:
+					continue
+				_border_tree(Vector2i(x, y), rng)
+	if not base:
+		return
+	if mode == "adventure":
+		var village_sign := Art.sprite(Art.signpost())
+		village_sign.position = Vector2(-1.5 * T, ENTRANCE.y * T - 1)
+		village_sign.flip_h = true
+		_add_border(village_sign)
+		WorldText.make(village_sign, Vector2(0, -24), "← Village", "sign")
+	var gate := Art.sprite(Art.gate())
+	gate.position = Vector2(-0.5 * T, (ENTRANCE.y + 3) * T)
+	_add_border(gate)
+	var entry := ColorRect.new()
+	entry.color = Color("e8d4a0")
+	entry.position = Vector2(-BORDER * T, ENTRANCE.y * T)
+	entry.size = Vector2(BORDER * T, T)
+	entry.z_index = -9
+	add_child(entry)
+	border_nodes.append(entry)
+	if mode != "adventure":
+		return
+	for dir: Vector2i in Wild.BASE_EXITS:
+		# A dirt trail through the forest, and a sign by it.
+		var x := _exit_column(dir)
+		var trail := ColorRect.new()
+		trail.color = Color("e8d4a0")
+		trail.position = Vector2((x - 1) * T, -BORDER * T if dir == Vector2i.UP else GRID.y * T)
+		trail.size = Vector2(3 * T, BORDER * T)
+		trail.z_index = -9
+		add_child(trail)
+		border_nodes.append(trail)
+		var sign := Art.sprite(Art.signpost())
+		sign.position = Vector2((x + 2.5) * T, (1 if dir == Vector2i.UP else GRID.y - 1) * T - 1)
+		_add_border(sign)
+		WorldText.make(sign, Vector2(0, -24), "↑ Terres sauvages" if dir == Vector2i.UP else "↓ Terres sauvages", "sign")
+
+
+func _add_border(node: Node2D) -> void:
+	world.add_child(node)
+	border_nodes.append(node)
+
+
 func _border_tree(cell: Vector2i, rng: RandomNumberGenerator) -> void:
 	var tree := Art.sprite(Art.border_tree(rng.randi() % 3))
 	tree.position = Vector2((cell.x + 0.5) * T + rng.randi_range(-2, 2), (cell.y + 1) * T + 4)
 	Art.ground_shadow(tree, 28)
-	world.add_child(tree)
+	_add_border(tree)
 
 
 # --- Demo park (godot --path . -- --demo) ------------------------------------

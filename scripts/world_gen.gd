@@ -5,6 +5,8 @@ extends RefCounted
 # a jungle crossed by a river, a desert with canyons in the east, snowy mountains with mines
 # in the north-east, and the sea with its beach along the east coast.
 
+const Wild := preload("res://scripts/wild.gd")
+
 const NATURE := {
 	"prairie": [["tree", 4.0], ["bush", 2.0], ["rock", 1.5], ["fern", 1.0]],
 	"jungle": [["tree", 7.0], ["palm", 5.0], ["fern", 5.0], ["bush", 3.0]],
@@ -80,6 +82,58 @@ static func generate(park: Node2D, seed: int) -> void:
 			var id := "tree" if forest and rng.randf() < 0.35 else pick(park.biome_at(cell), rng)
 			if id != "":
 				park.add_natural(id, cell)
+
+
+# Makes a zone of the Wild Lands (see wild.gd): patches of biomes drawn from where it is in the
+# world, lakes in the wet ones, mountains with a mine in the cold and dry ones, rivers, and
+# nature everywhere, thicker than in the park.
+static func generate_zone(park: Node2D, zone: Vector2i, world_seed: int) -> void:
+	var seed := Wild.seed_of(world_seed, zone)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
+	var warp := FastNoiseLite.new()
+	warp.seed = seed
+	warp.frequency = 0.04
+	# The biomes follow the whole world, so that they go on from one zone to the next.
+	var climate := FastNoiseLite.new()
+	climate.seed = world_seed
+	climate.frequency = 0.012
+	for y in park.GRID.y:
+		for x in park.GRID.x:
+			var world := Vector2(zone * park.GRID + Vector2i(x, y))
+			park.biomes[park.index_of(Vector2i(x, y))] = Wild.biome_at(world, park.GRID, climate)
+	var weights := {}
+	var total := 0.0
+	for biome in park.biomes:
+		weights[biome] = weights.get(biome, 0.0) + 1.0
+		total += 1.0
+	var share := func(biome: String) -> float: return weights.get(biome, 0.0) / total
+	for i in int(round(share.call("marais") * 8.0)) + rng.randi_range(0, 1):
+		_blob(park, rng, _inside(park, rng, 10), rng.randi_range(3, 6), "water")
+	if rng.randf() < 0.6:
+		var side := rng.randi_range(0, 1)
+		var from := Vector2(rng.randf_range(20, park.GRID.x - 20), 1) if side == 0 else Vector2(1, rng.randf_range(15, park.GRID.y - 15))
+		var to := Vector2(rng.randf_range(20, park.GRID.x - 20), park.GRID.y - 2) if side == 0 else Vector2(park.GRID.x - 2, rng.randf_range(15, park.GRID.y - 15))
+		_river(park, rng, from, to)
+	for i in int(round((share.call("neige") + share.call("desert")) * 5.0)) + 1:
+		var center := _inside(park, rng, 16)
+		var cells := _blob(park, rng, center, rng.randi_range(4, 9), "mountain")
+		_mine_entrance(park, cells, center)
+
+	for y in park.GRID.y:
+		for x in park.GRID.x:
+			var cell := Vector2i(x, y)
+			if park.occupied.has(cell) or park.is_water(cell):
+				continue
+			var id := pick(park.biome_at(cell), rng)
+			if id == "" and warp.get_noise_2d(x * 3, y * 3) > 0.35 and rng.randf() < 0.3:
+				id = "pine" if park.biome_at(cell) == "neige" else ("cactus" if park.biome_at(cell) == "desert" else "tree")
+			if id != "":
+				park.add_natural(id, cell)
+
+
+static func _inside(park: Node2D, rng: RandomNumberGenerator, margin: int) -> Vector2:
+	return Vector2(rng.randf_range(margin, park.GRID.x - margin), rng.randf_range(margin, park.GRID.y - margin))
 
 
 static func pick(biome: String, rng: RandomNumberGenerator) -> String:

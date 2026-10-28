@@ -18,7 +18,9 @@ static func exists(world_id: String) -> bool:
 	return FileAccess.file_exists(path_for(world_id)) or FileAccess.file_exists(backup_for(world_id))
 
 
-static func save(park: Node2D) -> void:
+# The land of the park: its ground, what is built on it and its dinosaurs. While the player is
+# in a wild zone, the park was kept as it was left (park.base_land).
+static func land(park: Node2D) -> Dictionary:
 	var buildings := []
 	for building in park.buildings:
 		if building.fixed:
@@ -36,11 +38,17 @@ static func save(park: Node2D) -> void:
 		if dino.home_building != null:
 			entry.home = [dino.home_building.origin.x, dino.home_building.origin.y]
 		dinos.append(entry)
-	var data := {
+	return {"grid": [park.GRID.x, park.GRID.y], "water": Marshalls.raw_to_base64(park.water),
+		"biomes": Array(park.biomes), "buildings": buildings, "dinos": dinos}
+
+
+static func save(park: Node2D) -> void:
+	var in_park: bool = park.mode != "adventure" or park.zone == park.Wild.BASE
+	var data: Dictionary = land(park) if in_park else park.base_land.duplicate()
+	data.merge({
 		"version": VERSION, "money": park.money, "total_visitors": park.total_visitors, "goal_index": park.goal_index,
-		"grid": [park.GRID.x, park.GRID.y], "water": Marshalls.raw_to_base64(park.water),
-		"biomes": Array(park.biomes), "buildings": buildings, "dinos": dinos, "caught": park.caught.keys(),
-	}
+		"caught": park.caught.keys(),
+	}, true)
 	if park.player != null:
 		var look := {}
 		for key in park.look:
@@ -49,6 +57,10 @@ static func save(park: Node2D) -> void:
 		data.player = {"look": look, "x": at.x, "y": at.y, "inventory": park.inventory.to_dict()}
 		data.mines = park.mine_states
 		data.village = park.village_state
+		data.seed = park.world_seed
+		data.zone = park.Wild.key(park.zone)
+		data.zones = park.zone_states
+		data.exits = park.base_exits
 	# Write to a temporary file first, keep the previous save as a backup, then swap:
 	# a crash in the middle of writing never loses the game.
 	var path := path_for(park.world_info.id)
