@@ -8,6 +8,14 @@ extends RefCounted
 
 const ENTRIES := [
 	{
+		"version": 7,
+		"title": "Des barrières plus solides !",
+		"items": [
+			["fence_stone", "Une barrière assez forte pour ton dino tient toujours, même pendant l'orage !"],
+			["dino:trex", "Une barrière trop faible tient 3 coups : quand tu vois « BOUM ! », mets vite une barrière plus forte."],
+		],
+	},
+	{
 		"version": 6,
 		"title": "Les Terres sauvages, la mer et le laboratoire !",
 		"items": [
