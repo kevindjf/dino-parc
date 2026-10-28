@@ -8,6 +8,22 @@ extends RefCounted
 
 const ENTRIES := [
 	{
+		"version": 8,
+		"title": "Un vrai parc, et des niveaux !",
+		"items": [
+			["capsule_gold", "Le jeu a maintenant 11 niveaux. Chacun a sa liste d'objectifs, et un cadeau quand tout est fait !"],
+			["pie", "Touche la petite feuille en haut à gauche, ou le bouton Carnet : ta liste, tes quêtes et la note de ton parc."],
+			["berries", "Une flèche jaune te montre où aller : un arbre, un buisson, un dino à apprivoiser, une grotte…"],
+			["icecream", "Ouvre des stands de glaces, de burgers et de souvenirs : les visiteurs achètent !"],
+			["gyro_station", "Gyrosphères, jeeps et héliport arrivent dans l'aventure."],
+			["fountain", "Décore ton parc : fleurs, bancs, poubelles, lampadaires, statue et fontaine."],
+			["ground_neige", "Change le sol de tes enclos avec des graines ou des sacs de sable, de boue ou de neige."],
+			["dino:triceratops", "Les visiteurs parlent ! Ils te disent ce qu'ils aiment et ce qui manque."],
+			["bench", "Ton parc a une note sur 100. Plus elle est haute, plus tu gagnes d'étoiles."],
+			["keeper_hut", "Embauche un soigneur, un ouvrier et un garde : ils t'aident à t'occuper du parc."],
+		],
+	},
+	{
 		"version": 7,
 		"title": "Des barrières plus solides !",
 		"items": [
