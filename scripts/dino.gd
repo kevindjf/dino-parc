@@ -234,6 +234,8 @@ func teleport(to: Vector2i) -> void:
 
 # How many treats a wild dinosaur needs to follow us: carnivores trust slower.
 func trust_needed() -> int:
+	if species.diet == "fish":
+		return 2 + int(species.strength)  # a giant of the sea is harder to win over
 	return TRUST_NEEDED + 2 if species.diet == "carn" else TRUST_NEEDED
 
 
@@ -514,6 +516,12 @@ func _orbit(delta: float) -> void:
 
 
 func _process_air(delta: float) -> bool:
+	if state == "sleep":
+		# Worn out, it glides down to the ground and rests there.
+		altitude = move_toward(altitude, 3.0, 30.0 * delta)
+		sprite.position.y = -altitude
+		_wake_wild(delta)
+		return false
 	_eat_fish()
 	_orbit(delta)
 	if randf() < delta * 0.1:
@@ -523,6 +531,13 @@ func _process_air(delta: float) -> bool:
 
 
 func _process_sea(delta: float) -> bool:
+	if state == "sleep":
+		# Worn out, it floats at the surface.
+		sprite.position.y = 0.0
+		sprite.rotation = 0.0
+		sprite.modulate = Color.WHITE
+		_wake_wild(delta)
+		return false
 	_eat_fish()
 	_orbit(delta)
 	next_jump -= delta
@@ -547,6 +562,14 @@ func _process_sea(delta: float) -> bool:
 		sprite.rotation = 0.0
 		sprite.modulate = Color.WHITE if surface_time > 0.0 else UNDERWATER
 	return true
+
+
+func _wake_wild(delta: float) -> void:
+	sleep_time -= delta
+	if sleep_time <= 0.0:
+		state = "idle"
+		energy = max_energy()
+		altitude = randf_range(22.0, 40.0) if habitat == "air" else 0.0
 
 
 func _eat_fish() -> void:

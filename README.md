@@ -77,6 +77,14 @@ Ton parc n'est que le début : il est au milieu d'un monde de **7 × 7 zones**, 
 - Dans les zones sauvages, on peut poser des **feux de camp, des ponts et des chemins**. Les enclos se construisent seulement dans le parc.
 - Pendant que tu explores, le parc continue : en rentrant, les visiteurs venus entre-temps ont payé leur billet.
 
+### La mer et le ciel
+
+- **Tout à l'est du monde, c'est la mer** : une côte de sable, puis le large avec des îles. Le **bateau** (15 bois, ou 500 pièces à la boutique avec un parc ★★) se met à l'eau face à l'eau avec Action ; face à la rive, Action pour descendre. En bateau, on passe d'une zone de mer à l'autre.
+- La **canne à pêche** (2 bois + 1 baie) : face à l'eau, Action pour pêcher des **poissons** (et parfois un fossile !). Ça marche aussi depuis le bateau. On peut griller les poissons au feu de camp.
+- Les **dinos volants** tournent dans le ciel des zones sauvages, chacun au-dessus de son biome (le Ptérodactyle dans la neige, le Quetzalcoatlus dans les plaines…). Les **reptiles marins** nagent là où l'eau est assez large pour eux : le Plésiosaure dans les lacs, les géants (Mosasaure, Liopleurodon…) seulement dans la mer.
+- Pour les avoir : **lance-leur des poissons** (le poisson grillé compte double) jusqu'à ce qu'ils te fassent confiance (plus ils sont gros, plus il en faut), ou fatigue-les avec une arme puis lance une capsule. Un volant épuisé se pose par terre, un marin flotte à la surface.
+- Dans le parc, ils vivent dans une **volière** (8 × 8 cases, 20 bois + 8 fer) ou un **lagon** (12 × 8 cases, 25 pierres + 4 cristaux), aussi vendus à la boutique. Relâche-les dedans depuis « Mes dinos ».
+
 ### Les feux de camp
 
 Chaque zone sauvage cache un ou deux **vieux feux de camp éteints**. Mets-toi devant et appuie sur Action pour l'allumer. On peut aussi en fabriquer (3 bois + 3 pierres) et les poser où on veut.
@@ -225,7 +233,7 @@ Chaque dinosaure du parc a de l'**amitié pour toi, de 0 à 5 cœurs**. Elle dé
 
 **La selle** : dès qu'un dinosaure de ton parc a **3 cœurs**, prends la selle en main et appuie sur Action devant lui : la selle est posée et tu montes tout de suite. Ensuite, Action devant lui (mains vides ou selle en main) pour remonter. Quand on prend la selle en main dans le sac, le jeu explique ces étapes. Il faut un dinosaure d'au moins 6 m : à partir du Gallimimus, du Tricératops ou du Dilophosaure. Sa vitesse dépend de l'espèce. Action fait descendre. Si tu descends hors de son enclos, il te suit jusqu'à ce que tu le ramènes. Sur un dinosaure au moins aussi fort qu'eux, les carnivores sauvages n'osent plus te foncer dessus.
 
-Le **Dinodex** (bouton en haut) montre les 44 espèces : les ombres noires sont celles qu'il reste à attraper. Les volants et les reptiles marins arriveront plus tard.
+Le **Dinodex** (bouton en haut) montre les 44 espèces : les ombres noires sont celles qu'il reste à attraper. Les volants et les reptiles marins s'attrapent dans le ciel et la mer des Terres sauvages.
 
 Recettes : Feu de camp (3 bois + 3 pierres), Hache (3 bois), Pioche (4 bois), Barrières en bambou (1 bois → 2), en bois (2 bois → 2), en pierre (2 pierres → 2), Portail (3 bois), Chemin (1 pierre → 4), Mangeoire à plantes (4 bois + 3 baies), Mangeoire à viande (4 bois + 3 viandes), Lance-pierre (3 bois), Arc (5 bois), Flèches (1 bois + 1 pierre → 5), Fléchettes endormantes (1 bois + 2 baies → 3), Bolas (2 pierres + 1 bois → 2), Lance (3 bois + 2 pierres), Sarbacane (4 bois), Filet (2 bois + 2 baies → 2), Fusil à lunette (4 fer + 2 cristal + 2 bois), Seringues (1 fer + 2 baies → 3), Cage (4 bois + 2 pierres), Capsules en cuivre (2 cuivre + 1 pierre → 2), en fer (2 fer + 1 cuivre → 2), en or (1 or + 1 fer + 1 cristal), Brosse (2 bois + 1 baie), Selle (4 bois + 2 pierres + 2 baies). On les modifie dans `scripts/items.gd`.
 

@@ -1626,6 +1626,21 @@ static func resource(id: String) -> Texture2D:
 				l.dot(6, 3, metal[1])
 				l.part([l.box(1.5, 8, 13, 1)], Color("4a3a2a"), 0, 0, false)
 				l.part([l.ellipse(8, 8.5, 2.2, 2.2)], Color("f09818"), 1, 0)
+			"rod":
+				l.part([l.limb(Vector2(2, 14.5), Vector2(13, 2), 0.9, 0.5)], LOG[2], 0, 1)
+				l.part([l.limb(Vector2(13, 2), Vector2(14, 11), 0.3, 0.3)], Color("e0e0e0"), 0, 0, false)
+				l.part([l.ellipse(14, 12, 1.4, 1.6)], Color("e53935"), 0, 1)
+				l.part([l.ellipse(4, 12.5, 1.6, 1.6)], STEEL, 0, 1)
+			"fish", "fish_cooked":
+				var body := Color("7ab0d8") if id == "fish" else Color("a06030")
+				l.part([l.poly([Vector2(1, 4), Vector2(5, 8), Vector2(1, 12)])], body.darkened(0.15), 1, 1)
+				l.part([l.ellipse(9, 8, 6.5, 4)], body, 2, 2)
+				l.dot(13, 7, Color("1a1a1a"))
+				if id == "fish":
+					l.part([l.box(7, 6, 4, 1)], Color("d0e8f8"), 0, 0, false)
+				else:
+					for x in [7, 10]:
+						l.part([l.box(x, 5, 1, 6)], Color("5a3010"), 0, 0, false)
 			"meat_cooked":
 				l.part([l.limb(Vector2(3, 13), Vector2(7, 9), 1.2, 1.2)], Color("f4ecd8"), 1, 0)
 				l.part([l.ellipse(2.5, 12, 1.6, 1.6), l.ellipse(4, 13.8, 1.6, 1.6)], Color("f4ecd8"), 1, 0)
@@ -2413,11 +2428,15 @@ static func vehicle(id: String, frame: int, direction := "side") -> Texture2D:
 			return _moto(frame % 4)
 		"car":
 			return _car(frame % 4)
+		"boat":
+			return _boat(frame % 4, "side")
 	return helicopter(frame % 2)
 
 
 # A vehicle seen from the front (coming towards us) or from the back.
 static func _vehicle_end(id: String, frame: int, front: bool) -> Texture2D:
+	if id == "boat":
+		return _boat(frame % 4, "down" if front else "up")
 	return cached("vehicle_end:%s:%d:%s" % [id, frame % 4, front], func() -> Texture2D:
 		var light := Color("fff176") if front else Color("e53935")
 		match id:
@@ -2513,6 +2532,30 @@ static func _moto(frame: int) -> Texture2D:
 		p.limb(Vector2(19, 3), Vector2(22, 4), 0.7, 0.7, Color("303034"))
 		p.dot(Vector2(23, 7), Color("fff176"), 2)
 		return p.finish())
+
+
+# A wooden rowboat on the water, with little waves along its hull that move as it goes.
+# direction: "side" (32 x 16), or "down" / "up" (20 x 16).
+static func _boat(frame: int, direction: String) -> Texture2D:
+	return cached("boat:%d:%s" % [frame, direction], func() -> Texture2D:
+		var side := direction == "side"
+		var l := Layers.new(Vector2i(32, 16) if side else Vector2i(20, 16))
+		if side:
+			l.part([l.poly([Vector2(1, 6), Vector2(31, 6), Vector2(27, 13), Vector2(5, 13)])], LOG[2], 1, 2)
+			l.part([l.box(1, 5, 30, 2)], LOG[3], 0, 1)
+			for x in [9, 16, 23]:
+				l.shade(x, 9, 0.25)
+				l.shade(x, 10, 0.25)
+			l.part([l.limb(Vector2(22, 7), Vector2(30, 14), 0.6, 0.9)], LOG[1], 0, 0)
+		else:
+			l.part([l.ellipse(10, 9, 9, 5)], LOG[2], 1, 2)
+			l.part([l.ellipse(10, 8, 6.5, 3)], LOG[0], 0, 0, false)
+			l.part([l.box(1, 6.5, 18, 1.5)], LOG[3], 0, 0, false)
+		var width := 32 if side else 20
+		for i in 4:
+			var x := (i * 9 + frame * 2) % width
+			l.part([l.box(x, 14, 3, 1)], Color(1, 1, 1, 0.8), 0, 0, false)
+		return ImageTexture.create_from_image(l.image))
 
 
 static func _car(frame: int) -> Texture2D:

@@ -20,6 +20,11 @@ const ITEMS := {
 	"berries": {"name": "Baies", "kind": "food"},
 	"meat": {"name": "Viande", "kind": "food"},
 	"meat_cooked": {"name": "Viande grillée", "kind": "food"},
+	"fish": {"name": "Poisson", "kind": "food"},
+	"fish_cooked": {"name": "Poisson grillé", "kind": "food"},
+	"rod": {"name": "Canne à pêche", "kind": "tool"},
+	"aviary": {"name": "Volière", "kind": "build", "place": "aviary"},
+	"lagoon": {"name": "Lagon", "kind": "build", "place": "lagoon"},
 	"pie": {"name": "Tarte aux baies", "kind": "food"},
 	"axe": {"name": "Hache", "kind": "tool"},
 	"pickaxe": {"name": "Pioche", "kind": "tool"},
@@ -59,6 +64,7 @@ const ITEMS := {
 	"moto": {"name": "Moto", "kind": "vehicle"},
 	"car": {"name": "Voiture", "kind": "vehicle"},
 	"heli": {"name": "Hélicoptère", "kind": "vehicle"},
+	"boat": {"name": "Bateau", "kind": "vehicle"},
 }
 
 # The bag, the workbench and the shop sort things in these tabs (see tab_of()).
@@ -82,6 +88,10 @@ const TIPS := {
 	"sniper": "Le fusil à lunette tire de très loin. Parfait pour les gros dinos !",
 	"campfire": "Pose le feu de camp où tu veux : tu pourras y revenir depuis la carte.",
 	"lab": "Pose le laboratoire dans ton parc. Devant lui, Action : avec des fossiles et de l'ambre, il fait naître des bébés dinos !",
+	"rod": "La canne à pêche : mets-toi face à l'eau et appuie sur Action. Les dinos volants et marins adorent les poissons !",
+	"boat": "Le bateau : face à l'eau, Action pour monter dedans. Action face à la rive pour descendre. La mer est tout à l'est du monde !",
+	"aviary": "Pose la volière dans ton parc (8 × 8 cases), puis relâche-y tes dinos volants.",
+	"lagoon": "Pose le lagon dans ton parc (12 × 8 cases), puis relâche-y tes reptiles marins.",
 	"egg": "Un œuf trouvé dans la nature ! Porte-le au laboratoire de ton parc pour le faire éclore.",
 }
 
@@ -94,6 +104,7 @@ const VEHICLES := {
 	"moto": {"speed": 11.0},
 	"car": {"speed": 14.0},
 	"heli": {"speed": 16.0, "flies": true},
+	"boat": {"speed": 9.0, "sails": true},
 }
 # A caught dinosaur travels in the bag as "dino:<species>" (kind "dino").
 
@@ -122,6 +133,8 @@ const WEAPONS := {
 	"meat": {"ammo": "meat", "feed": "carn", "range": 5.0, "every": 0.6, "flight": "arc", "speed": 160.0},
 	"pie": {"ammo": "pie", "feed": "herb", "worth": 2, "range": 5.0, "every": 0.6, "flight": "arc", "speed": 160.0},
 	"meat_cooked": {"ammo": "meat_cooked", "feed": "carn", "worth": 2, "range": 5.0, "every": 0.6, "flight": "arc", "speed": 160.0},
+	"fish": {"ammo": "fish", "feed": "fish", "range": 6.0, "every": 0.6, "flight": "arc", "speed": 170.0},
+	"fish_cooked": {"ammo": "fish_cooked", "feed": "fish", "worth": 2, "range": 6.0, "every": 0.6, "flight": "arc", "speed": 170.0},
 	"capsule_copper": {"ammo": "capsule_copper", "capture": 3, "range": 5.0, "every": 1.0, "flight": "arc", "speed": 170.0},
 	"capsule_iron": {"ammo": "capsule_iron", "capture": 4, "range": 5.0, "every": 1.0, "flight": "arc", "speed": 170.0},
 	"capsule_gold": {"ammo": "capsule_gold", "capture": 5, "range": 5.0, "every": 1.0, "flight": "arc", "speed": 170.0},
@@ -141,6 +154,10 @@ const RECIPES := [
 	{"make": "bridge", "count": 2, "needs": {"wood": 3}},
 	{"make": "campfire", "count": 1, "needs": {"wood": 3, "stone": 3}},
 	{"make": "lab", "count": 1, "needs": {"wood": 10, "stone": 8, "iron": 2, "crystal": 1}},
+	{"make": "rod", "count": 1, "needs": {"wood": 2, "berries": 1}},
+	{"make": "boat", "count": 1, "needs": {"wood": 15}},
+	{"make": "aviary", "count": 1, "needs": {"wood": 20, "iron": 8}},
+	{"make": "lagoon", "count": 1, "needs": {"stone": 25, "crystal": 4}},
 	{"make": "path", "count": 4, "needs": {"stone": 1}},
 	{"make": "feeder_plants", "count": 1, "needs": {"wood": 4, "berries": 3}},
 	{"make": "feeder_meat", "count": 1, "needs": {"wood": 4, "meat": 3}},

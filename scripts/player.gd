@@ -117,7 +117,9 @@ func _process(delta: float) -> void:
 		_drive()
 		if acting and cooldown <= 0.0 and not landing:
 			cooldown = 0.5
-			if vehicle != "heli":
+			if vehicle == "boat":
+				park.boat_action()
+			elif vehicle != "heli":
 				park.player_leave_vehicle()
 			elif park.player_blocked(cell()):
 				park.float_text(position + Vector2(0, -altitude - 16), "Pose-toi sur un endroit libre !", Color("ffab91"))
@@ -284,6 +286,10 @@ func _drive() -> void:
 		"moto":
 			sprite.position = Vector2(back, -5)
 			sprite.z_index = 1
+		"boat":
+			# Sitting in the boat: the hull hides the legs.
+			sprite.position = Vector2(back * 0.5, -6 if direction == "side" else -7)
+			sprite.z_index = -1
 		"car":
 			# Drawn behind the car: only the head shows over the door.
 			sprite.position = Vector2(back * 1.5, -7 if direction == "side" else -10)

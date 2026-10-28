@@ -25,6 +25,11 @@ const BUY := [
 	{"id": "lab", "count": 1, "price": 600, "stars": 2},
 	{"id": "syringe", "count": 5, "price": 80},
 	{"id": "meat", "count": 5, "price": 25},
+	{"id": "fish", "count": 5, "price": 20},
+	{"id": "rod", "count": 1, "price": 30},
+	{"id": "boat", "count": 1, "price": 500, "stars": 2},
+	{"id": "aviary", "count": 1, "price": 900, "stars": 2},
+	{"id": "lagoon", "count": 1, "price": 1500, "stars": 3},
 	{"id": "feeder_meat", "count": 1, "price": 120},
 	{"id": "saddle", "count": 1, "price": 120},
 	{"id": "brush", "count": 1, "price": 20},
@@ -40,5 +45,5 @@ const BUY := [
 # What the merchant gives for one of each thing.
 const SELL := {
 	"wood": 1, "stone": 1, "berries": 1, "copper": 3, "iron": 5,
-	"crystal": 15, "gold": 20, "amber": 25, "fossil": 30, "meat_cooked": 8, "pie": 4,
+	"crystal": 15, "gold": 20, "amber": 25, "fossil": 30, "meat_cooked": 8, "pie": 4, "fish": 2, "fish_cooked": 6,
 }

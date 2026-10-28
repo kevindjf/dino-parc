@@ -29,6 +29,9 @@ static func land(park: Node2D) -> Dictionary:
 			"stock": building.stock, "ready": building.get("ready", true)})
 	var dinos := []
 	for dino in park.dinos:
+		# Wild flyers and swimmers come back by themselves.
+		if dino.wild and dino.habitat != "land":
+			continue
 		var entry := {"id": dino.species_id, "x": dino.cell.x, "y": dino.cell.y, "wild": dino.wild, "trust": dino.trust,
 			"friendship": dino.friendship, "saddled": dino.saddled, "age": dino.age}
 		# Out with the player (ridden or following): it is saved back home.

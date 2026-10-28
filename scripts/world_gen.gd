@@ -108,29 +108,23 @@ static func generate_zone(park: Node2D, zone: Vector2i, world_seed: int) -> void
 	for biome in park.biomes:
 		weights[biome] = weights.get(biome, 0.0) + 1.0
 		total += 1.0
-	var share := func(biome: String) -> float: return weights.get(biome, 0.0) / total
-	for i in int(round(share.call("marais") * 8.0)) + rng.randi_range(0, 1):
-		_blob(park, rng, _inside(park, rng, 10), rng.randi_range(3, 6), "water")
-	if rng.randf() < 0.6:
-		var side := rng.randi_range(0, 1)
-		var from := Vector2(rng.randf_range(20, park.GRID.x - 20), 1) if side == 0 else Vector2(1, rng.randf_range(15, park.GRID.y - 15))
-		var to := Vector2(rng.randf_range(20, park.GRID.x - 20), park.GRID.y - 2) if side == 0 else Vector2(park.GRID.x - 2, rng.randf_range(15, park.GRID.y - 15))
-		_river(park, rng, from, to)
-	for i in int(round((share.call("neige") + share.call("desert")) * 5.0)) + 1:
-		var center := _inside(park, rng, 16)
-		var cells := _blob(park, rng, center, rng.randi_range(4, 9), "mountain")
-		_mine_entrance(park, cells, center)
+	if Wild.is_ocean(zone):
+		_ocean(park, rng, warp)
+	else:
+		var share := func(biome: String) -> float: return weights.get(biome, 0.0) / total
+		for i in int(round(share.call("marais") * 8.0)) + rng.randi_range(0, 1):
+			_blob(park, rng, _inside(park, rng, 10), rng.randi_range(3, 6), "water")
+		if rng.randf() < 0.6:
+			var side := rng.randi_range(0, 1)
+			var from := Vector2(rng.randf_range(20, park.GRID.x - 20), 1) if side == 0 else Vector2(1, rng.randf_range(15, park.GRID.y - 15))
+			var to := Vector2(rng.randf_range(20, park.GRID.x - 20), park.GRID.y - 2) if side == 0 else Vector2(park.GRID.x - 2, rng.randf_range(15, park.GRID.y - 15))
+			_river(park, rng, from, to)
+		for i in int(round((share.call("neige") + share.call("desert")) * 5.0)) + 1:
+			var center := _inside(park, rng, 16)
+			var cells := _blob(park, rng, center, rng.randi_range(4, 9), "mountain")
+			_mine_entrance(park, cells, center)
 
-	for y in park.GRID.y:
-		for x in park.GRID.x:
-			var cell := Vector2i(x, y)
-			if park.occupied.has(cell) or park.is_water(cell):
-				continue
-			var id := pick(park.biome_at(cell), rng)
-			if id == "" and warp.get_noise_2d(x * 3, y * 3) > 0.35 and rng.randf() < 0.3:
-				id = "pine" if park.biome_at(cell) == "neige" else ("cactus" if park.biome_at(cell) == "desert" else "tree")
-			if id != "":
-				park.add_natural(id, cell)
+	_fill_nature(park, rng, warp)
 
 	# Sometimes a nest with an egg in it, more often far from the park.
 	if rng.randf() < 0.3 + 0.15 * Wild.level(zone):
@@ -151,6 +145,48 @@ static func generate_zone(park: Node2D, zone: Vector2i, world_seed: int) -> void
 			continue
 		park.add_camp(cell)
 		camps += 1
+
+
+# Nature everywhere on land, thicker than in the park; then nests and old campfires.
+static func _fill_nature(park: Node2D, rng: RandomNumberGenerator, warp: FastNoiseLite) -> void:
+	for y in park.GRID.y:
+		for x in park.GRID.x:
+			var cell := Vector2i(x, y)
+			if park.occupied.has(cell) or park.is_water(cell):
+				continue
+			var id := pick(park.biome_at(cell), rng)
+			if id == "" and warp.get_noise_2d(x * 3, y * 3) > 0.35 and rng.randf() < 0.3:
+				id = "pine" if park.biome_at(cell) == "neige" else ("cactus" if park.biome_at(cell) == "desert" else "tree")
+			if id != "":
+				park.add_natural(id, cell)
+
+
+# The open sea: a sandy coast on the west side, where the land zones end, and islands.
+static func _ocean(park: Node2D, rng: RandomNumberGenerator, warp: FastNoiseLite) -> void:
+	var islands := []
+	for i in rng.randi_range(3, 5):
+		islands.append(Vector3(rng.randf_range(35, park.GRID.x - 12), rng.randf_range(12, park.GRID.y - 12), rng.randf_range(5, 11)))
+	for y in park.GRID.y:
+		var coast := 9 + int(round(warp.get_noise_2d(0, y * 3) * 4.0))
+		for x in park.GRID.x:
+			var cell := Vector2i(x, y)
+			var land: bool = x < coast
+			for island in islands:
+				var wobble := 1.0 + 0.25 * warp.get_noise_2d(x * 4, y * 4)
+				if Vector2(x, y).distance_to(Vector2(island.x, island.y)) < island.z * wobble:
+					land = true
+			if not land:
+				park.set_water(cell, true)
+	# Sand along the water, the climate's land further in (palms on the jungle islands).
+	for y in park.GRID.y:
+		for x in park.GRID.x:
+			var cell := Vector2i(x, y)
+			if park.is_water(cell):
+				continue
+			for d in [Vector2i(2, 0), Vector2i(-2, 0), Vector2i(0, 2), Vector2i(0, -2)]:
+				if park.in_grid(cell + d) and park.is_water(cell + d):
+					park.biomes[park.index_of(cell)] = "desert"
+					break
 
 
 static func _inside(park: Node2D, rng: RandomNumberGenerator, margin: int) -> Vector2:

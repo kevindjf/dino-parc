@@ -78,7 +78,15 @@ static func _biome(cold: float, wet: float) -> String:
 	return "prairie"
 
 
+# The zones along the east edge of the world are the open sea, with a beach on their west side
+# and islands: the big marine reptiles live there. A boat is needed to go far.
+static func is_ocean(zone: Vector2i) -> bool:
+	return zone.x == SIZE.x - 1
+
+
 static func main_biome(zone: Vector2i) -> String:
+	if is_ocean(zone):
+		return "ocean"
 	var d := _from_base((Vector2(zone) + Vector2(0.5, 0.5)) * Vector2(128, 96), Vector2i(128, 96))
 	return _biome(-d.y, -d.x)
 
@@ -89,6 +97,7 @@ const NAMES := {
 	"marais": ["Marais brumeux", "Lacs verts", "Marécage des roseaux"],
 	"desert": ["Désert des canyons", "Dunes rouges", "Plateau brûlant"],
 	"prairie": ["Grandes plaines", "Collines vertes", "Vallée des fleurs"],
+	"ocean": ["Mer des îles", "Récif turquoise", "Grand large"],
 }
 
 

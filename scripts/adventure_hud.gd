@@ -14,7 +14,7 @@ const Market := preload("res://scripts/market.gd")
 const Wild := preload("res://scripts/wild.gd")
 const MAP_COLORS := {
 	"prairie": Color("7ab858"), "jungle": Color("3a8a3a"), "marais": Color("6a8a6a"),
-	"desert": Color("e0c078"), "neige": Color("eef2f6"),
+	"desert": Color("e0c078"), "neige": Color("eef2f6"), "ocean": Color("3a88c8"),
 }
 
 var park: Node2D
@@ -301,6 +301,10 @@ func _refresh() -> void:
 		var driven: String = park.player.vehicle if park.player != null else ""
 		action.caption = "Atterrir" if driven == "heli" else "Descendre"
 		action.set_icon(Art.bag_icon(driven) if driven != "" else Art.resource("saddle"))
+		if driven == "boat" and (Items.WEAPONS.has(current) or current == "rod"):
+			# In the boat, Action uses what is in hand (see Park.boat_action).
+			action.caption = Items.name_of(current)
+			action.set_icon(Art.bag_icon(current))
 	if bag_open:
 		_fill_bag()
 
@@ -422,8 +426,15 @@ func toggle_dex() -> void:
 		cell.add_child(picture)
 		var name := _label(cell, Catalog.DINOS[id].name if known else "???", 12)
 		name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		var where: String = Catalog.BIOMES[Catalog.DINOS[id].biome].name if Catalog.DINOS[id].has("biome") else \
-			("Volière" if Catalog.DINOS[id].habitat == "air" else "Lagon")
+		var species: Dictionary = Catalog.DINOS[id]
+		var where: String = ""
+		match species.habitat:
+			"land":
+				where = Catalog.BIOMES[species.biome].name
+			"air":
+				where = "Ciel · " + Catalog.BIOMES[species.biome].name
+			"sea":
+				where = "Lacs et mer" if species.pool <= 3 else "Mer, tout à l'est"
 		var hint := _label(cell, where, 11)
 		hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		hint.add_theme_color_override("font_color", Color("8a7258"))
@@ -866,11 +877,12 @@ func _build_camp() -> void:
 	rest.custom_minimum_size.y = 56
 	camp_buttons.meat = _button(column, "", 480, _cook.bind("meat_cooked"))
 	camp_buttons.pie = _button(column, "", 480, _cook.bind("pie"))
+	camp_buttons.fish = _button(column, "", 480, _cook.bind("fish_cooked"))
 	var map := _button(column, "Voyager avec la carte", 480, toggle_map)
 	map.custom_minimum_size.y = 56
-	for id in ["meat", "pie"]:
+	for id in ["meat", "pie", "fish"]:
 		camp_buttons[id].custom_minimum_size.y = 56
-		camp_buttons[id].icon = Art.bag_icon("meat_cooked" if id == "meat" else "pie")
+		camp_buttons[id].icon = Art.bag_icon({"meat": "meat_cooked", "pie": "pie", "fish": "fish_cooked"}[id])
 
 
 func open_campfire() -> void:
@@ -888,6 +900,8 @@ func _fill_camp() -> void:
 	camp_buttons.meat.disabled = inventory.count("meat") == 0
 	camp_buttons.pie.text = "Faire une tarte avec 2 baies (tu en as %d)" % inventory.count("berries")
 	camp_buttons.pie.disabled = inventory.count("berries") < 2
+	camp_buttons.fish.text = "Griller un poisson (tu en as %d)" % inventory.count("fish")
+	camp_buttons.fish.disabled = inventory.count("fish") == 0
 
 
 func _cook(what: String) -> void:

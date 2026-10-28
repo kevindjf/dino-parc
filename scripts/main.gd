@@ -66,6 +66,8 @@ const BORDER := 3  # rows of forest drawn around the park
 const BERRY_REGROW := 25.0
 const AUTOSAVE := 20.0
 const WILD_TARGET := 30  # wild dinosaurs roaming the adventure land
+const SKY_TARGET := 5  # wild flyers circling over a zone
+const SEA_TARGET := 4  # wild marine reptiles in the open water of a zone
 const MAX_HEARTS := 5
 const HEAL_EVERY := 6.0  # seconds to get a heart back, once nobody has hit us for a while
 
@@ -281,6 +283,8 @@ func start_adventure(data: Dictionary) -> void:
 	for id in data.get("caught", []):
 		caught[id] = true
 	_spawn_wild_dinos(WILD_TARGET)
+	_spawn_wild_sky(SKY_TARGET)
+	_spawn_wild_sea(SEA_TARGET)
 	hud = AdventureHud.new()
 	add_child(hud)
 	hud.setup(self, inventory, look.get("name", ""))
@@ -882,6 +886,8 @@ func consume_feeder(feeder: Dictionary, dino: Node2D) -> bool:
 
 
 func feed_fish(dino: Node2D) -> void:
+	if dino.wild:
+		return
 	money = max(money - FISH_PRICE, 0)
 	_float_text(dino.position, "Poisson !", Color("81d4fa"))
 
@@ -1477,6 +1483,9 @@ func player_action(cell: Vector2i) -> void:
 		enter_mine(entrance)
 		return
 	var holding: String = inventory.current()
+	if holding == "rod":
+		fish_at(cell)
+		return
 	if entrance != null and entrance.kind == "lab" and not holding in ["axe", "pickaxe", "pickaxe_iron"]:
 		hud.open_lab()
 		return
@@ -1512,6 +1521,8 @@ func player_action(cell: Vector2i) -> void:
 func player_blocked(cell: Vector2i) -> bool:
 	if away != null:
 		return away.is_solid(cell)
+	if mode == "adventure" and player.vehicle == "boat" and in_grid(cell):
+		return not is_water(cell)
 	if not in_grid(cell) and mode == "adventure":
 		var dir := _edge_of(cell)
 		if dir != Vector2i.ZERO and _edge_open(dir, cell):
@@ -2006,7 +2017,7 @@ func _befriend(dino: Node2D, holding: String) -> void:
 # take this food now, or "" if it would.
 func food_refused(dino: Node2D, food: String) -> String:
 	if dino.species.diet != Items.WEAPONS[food].feed:
-		return "Il ne mange pas de baies !" if Items.WEAPONS[food].feed == "herb" else "Il ne mange pas de viande !"
+		return {"herb": "Lui, il mange des baies !", "carn": "Lui, il mange de la viande !", "fish": "Lui, il mange du poisson !"}[dino.species.diet]
 	if dino.wild:
 		return "Il te suit déjà !" if dino.following != null else ""
 	if clock < dino.next_treat:
@@ -2071,6 +2082,16 @@ func _rideable_names() -> String:
 
 # Gets on the bike, the moto, the car or the helicopter held in hand.
 func board_vehicle(id: String) -> void:
+	if id == "boat":
+		var water: Vector2i = player.front()
+		if away != null or not in_grid(water) or not is_water(water) or occupied.has(water):
+			_float_text(player.position, "Mets-toi face à l'eau pour mettre le bateau à l'eau !", Color("ffab91"))
+			return
+		player.board(id)
+		player.position = cell_center(water)
+		hud.set_riding(true)
+		hud.flash("À l'eau !\nFace à la rive, bouton Action pour descendre.", 2.5)
+		return
 	if id == "heli" and away != null:
 		_float_text(player.position, "Pas de place pour décoller ici !", Color("ffab91"))
 		return
@@ -2082,8 +2103,56 @@ func board_vehicle(id: String) -> void:
 
 # Off the vehicle: it goes back in the bag.
 func player_leave_vehicle() -> void:
+	if player.vehicle == "boat":
+		# Out of the boat onto the shore: in front first, else any side.
+		var shore := NONE
+		for dir in [player.facing, Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var cell: Vector2i = player.cell() + dir
+			if in_grid(cell) and not is_water(cell) and not is_blocked_for_vehicle("walk", cell):
+				shore = cell
+				break
+		if shore == NONE:
+			_float_text(player.position, "Approche-toi de la rive pour descendre !", Color("ffab91"))
+			return
+		player.leave_vehicle()
+		player.position = cell_center(shore)
+		hud.set_riding(false)
+		return
 	player.leave_vehicle()
 	hud.set_riding(false)
+
+
+# Action in the boat: shoot or throw what is in hand, fish with the rod, or get out.
+func boat_action() -> void:
+	var holding: String = inventory.current()
+	if holding == "rod":
+		fish_at(player.front())
+	elif combat.weapon != "":
+		combat.fire()
+	else:
+		player_leave_vehicle()
+
+
+var next_bite := 0.0
+
+
+# Fishing in the water in front: a fish now and then, sometimes something else.
+func fish_at(cell: Vector2i) -> void:
+	if not in_grid(cell) or not is_water(cell):
+		_float_text(player.position, "Mets-toi face à l'eau pour pêcher !", Color("e0e0e0"))
+		return
+	if clock < next_bite:
+		return
+	next_bite = clock + 0.8
+	var roll := randf()
+	if roll < 0.45:
+		inventory.add("fish")
+		_float_text(cell_center(cell), "Ça mord ! +1 poisson", Color("81d4fa"))
+	elif roll < 0.48:
+		inventory.add("fossil")
+		_float_text(cell_center(cell), "Une vieille boîte… un fossile !", Color("fff59d"))
+	else:
+		_float_text(cell_center(cell), "Plouf… rien. Réessaie !", Color("b0c8e0"))
 
 
 func player_dismount() -> void:
@@ -2186,21 +2255,92 @@ func player_scared(dino: Node2D) -> void:
 	hud.flash("%s t'a fait très peur !\nTu cours te réfugier à l'entrée." % dino.species.name, 3.0)
 
 
-func _spawn_wild(id: String, cell: Vector2i, trust := 0) -> Node2D:
+func _spawn_wild(id: String, cell: Vector2i, trust := 0, room := 5) -> Node2D:
 	var dino := Dino.new()
 	world.add_child(dino)
-	dino.setup(self, id, cell, null)
+	var habitat: String = Catalog.DINOS[id].habitat
+	# Flyers circle and swimmers swim around a spot of the wild, like in an aviary or a lagoon.
+	var home = null
+	if habitat != "land":
+		home = {"id": "", "kind": "wild_home", "origin": cell - Vector2i.ONE * room, "size": Vector2i.ONE * room * 2,
+			"dinos": [], "open": false}
+	dino.setup(self, id, cell, home)
 	dino.wild = true
 	dino.trust = trust
 	dinos.append(dino)
-	var region := region_map[_index(cell)]
-	dino.set_region(region, false)
+	if home != null:
+		home.dinos.append(dino)
+	else:
+		var region := region_map[_index(cell)]
+		dino.set_region(region, false)
 	return dino
+
+
+# Flyers over their biome, a few in each zone of the adventure.
+func _spawn_wild_sky(limit: int) -> void:
+	var count := dinos.filter(func(d) -> bool: return d.wild and d.habitat == "air").size()
+	for attempt in 30:
+		if count >= SKY_TARGET or limit <= 0:
+			return
+		var cell := Vector2i(randi_range(8, GRID.x - 9), randi_range(8, GRID.y - 9))
+		if player != null and Vector2(cell - player.cell()).length() < 10.0:
+			continue
+		var id := _wild_pick(func(species: Dictionary) -> bool: return species.habitat == "air" and species.biome == biome_at(cell))
+		if id == "":
+			continue
+		_spawn_wild(id, cell, 0, 6)
+		count += 1
+		limit -= 1
+
+
+# Marine reptiles where the water is wide enough for them: lakes for the small ones, the sea
+# for the giants.
+func _spawn_wild_sea(limit: int) -> void:
+	var count := dinos.filter(func(d) -> bool: return d.wild and d.habitat == "sea").size()
+	for attempt in 40:
+		if count >= SEA_TARGET or limit <= 0:
+			return
+		var cell := Vector2i(randi_range(2, GRID.x - 3), randi_range(2, GRID.y - 3))
+		if not is_water(cell):
+			continue
+		var room := _open_water(cell)
+		var id := _wild_pick(func(species: Dictionary) -> bool: return species.habitat == "sea" and species.pool <= room)
+		if id == "":
+			continue
+		_spawn_wild(id, cell, 0, room)
+		count += 1
+		limit -= 1
+
+
+# How many cells of water there are all around this one (a square), up to 8.
+func _open_water(cell: Vector2i) -> int:
+	for r in range(1, 9):
+		for d in range(-r, r + 1):
+			for c in [cell + Vector2i(d, -r), cell + Vector2i(d, r), cell + Vector2i(-r, d), cell + Vector2i(r, d)]:
+				if not in_grid(c) or not is_water(c) or occupied.has(c):
+					return r - 1
+	return 8
+
+
+# A species that fits `fits`, the big and rare ones more often far from the park.
+func _wild_pick(fits: Callable) -> String:
+	var total := 0.0
+	var choices := []
+	for id in Catalog.DINOS:
+		if fits.call(Catalog.DINOS[id]):
+			choices.append(id)
+			total += _wild_weight(Catalog.DINOS[id])
+	var roll := randf() * total
+	for id in choices:
+		roll -= _wild_weight(Catalog.DINOS[id])
+		if roll <= 0.0:
+			return id
+	return ""
 
 
 # Keeps the land populated: wild dinosaurs appear far from the player, in the biome they like.
 func _spawn_wild_dinos(limit: int) -> void:
-	var wild_count := dinos.filter(func(d) -> bool: return d.wild).size()
+	var wild_count := dinos.filter(func(d) -> bool: return d.wild and d.habitat == "land").size()
 	var tries := 0
 	while wild_count < WILD_TARGET and limit > 0 and tries < 200:
 		tries += 1
@@ -2251,12 +2391,20 @@ func random_cell_near(center: Vector2i, radius: int, region: int) -> Vector2i:
 
 
 func _can_place(cell: Vector2i, item := "") -> bool:
-	if not in_grid(cell) or occupied.has(cell) or cell == player.cell():
-		return false
-	# Bridges go on water, everything else on land.
-	if is_water(cell) != (item == "bridge"):
-		return false
+	for c in _footprint(item, cell):
+		if not in_grid(c) or occupied.has(c) or c == player.cell():
+			return false
+		# Bridges go on water, everything else on land.
+		if is_water(c) != (item == "bridge"):
+			return false
 	return _dino_near(cell_center(cell), 10.0) == null
+
+
+# The cells a bag item takes when laid with its top left corner on `cell`.
+func _footprint(item: String, cell: Vector2i) -> Array[Vector2i]:
+	var place: String = Items.ITEMS.get(item, {}).get("place", "")
+	var size := Catalog.size_of(Catalog.ITEMS[place]) if Catalog.ITEMS.has(place) else Vector2i.ONE
+	return _cells(cell, size)
 
 
 # --- Adventure: the building mode (see builder.gd) ------------------------------------
@@ -2267,6 +2415,11 @@ func build_refused(cell: Vector2i, id: String) -> String:
 		return "Hors de la carte"
 	if zone != Wild.BASE and not Items.ITEMS[id].get("place", "") in WILD_BUILDS:
 		return "Ici, seulement des feux de camp, des ponts et des chemins. Les enclos, c'est dans ton parc !"
+	var size := _footprint(id, cell)
+	if size.size() > 1:
+		for c in size:
+			if not in_grid(c) or occupied.has(c) or is_water(c) or c == player.cell():
+				return "Il faut %d × %d cases libres ici" % [size[-1].x - cell.x + 1, size[-1].y - cell.y + 1]
 	var building = occupied.get(cell)
 	if building != null:
 		match building.id:
@@ -2419,6 +2572,9 @@ func _grow_nature() -> void:
 			building.root.texture = Art.decor("bush")
 	if randf() < 0.03:
 		_spawn_wild_dinos(1)
+	if randf() < 0.01:
+		_spawn_wild_sky(1)
+		_spawn_wild_sea(1)
 	if randf() > 0.12 or _count_nature() >= natural_target:
 		return
 	var cell := Vector2i(randi_range(0, GRID.x - 1), randi_range(0, GRID.y - 1))
@@ -2541,6 +2697,9 @@ func _edge_of(cell: Vector2i) -> Vector2i:
 func _edge_open(dir: Vector2i, cell: Vector2i) -> bool:
 	if not Wild.open_edge(zone, dir):
 		return false
+	# A boat sails on to the next zone only on the open sea.
+	if player.vehicle == "boat":
+		return Wild.is_ocean(zone + dir)
 	if zone == Wild.BASE and player.vehicle != "heli":
 		return _on_trail(dir, _along(dir, cell))
 	return true
@@ -2611,11 +2770,16 @@ func travel(to: Vector2i, at: Vector2) -> void:
 	world_bounds = _zone_bounds()
 	camera.bounds = world_bounds
 	natural_target = _count_nature()
-	var cell := _arrival_cell(Vector2i((at / T).floor()))
+	var cell := _arrival_cell(Vector2i((at / T).floor()), player.vehicle == "boat")
 	player.position = cell_center(cell) if not in_grid(Vector2i((at / T).floor())) or player_blocked(Vector2i((at / T).floor())) else at
 	player.velocity = Vector2.ZERO
+	if player.vehicle == "boat" and not is_water(player.cell()):
+		player.leave_vehicle()
+		hud.set_riding(false)
 	camera.position = player.position
 	_spawn_wild_dinos(WILD_TARGET)
+	_spawn_wild_sky(SKY_TARGET)
+	_spawn_wild_sea(SEA_TARGET)
 	_refresh()
 	hud.refresh_build()
 	if zone == Wild.BASE:
@@ -2639,13 +2803,13 @@ func _pay_visitors_while_away() -> void:
 
 
 # The nearest free cell to arrive on, cleared of what grows on it.
-func _arrival_cell(wanted: Vector2i) -> Vector2i:
+func _arrival_cell(wanted: Vector2i, on_water := false) -> Vector2i:
 	wanted = wanted.clamp(Vector2i.ZERO, GRID - Vector2i.ONE)
 	for radius in 12:
 		for y in range(wanted.y - radius, wanted.y + radius + 1):
 			for x in range(wanted.x - radius, wanted.x + radius + 1):
 				var cell := Vector2i(x, y)
-				if not in_grid(cell) or maxi(absi(x - wanted.x), absi(y - wanted.y)) != radius or is_water(cell):
+				if not in_grid(cell) or maxi(absi(x - wanted.x), absi(y - wanted.y)) != radius or is_water(cell) != on_water:
 					continue
 				var building = occupied.get(cell)
 				if building == null:
@@ -2885,7 +3049,7 @@ func rest() -> void:
 
 # Grills one meat, or bakes a pie with 2 berries. Returns false if there is not enough.
 func cook(what: String) -> bool:
-	var needs := {"meat": 1} if what == "meat_cooked" else {"berries": 2}
+	var needs: Dictionary = {"meat_cooked": {"meat": 1}, "fish_cooked": {"fish": 1}, "pie": {"berries": 2}}[what]
 	if not inventory.has_all(needs):
 		return false
 	for id in needs:
@@ -2918,7 +3082,9 @@ func travel_by_map(target: Vector2i) -> String:
 	if player.mount != null:
 		return "Descends de ton dinosaure pour voyager"
 	if player.vehicle != "":
-		player_leave_vehicle()
+		# Out of the vehicle where it is: the trip puts the player on land.
+		player.leave_vehicle()
+		hud.set_riding(false)
 	if target == Wild.BASE:
 		travel(Wild.BASE, cell_center(ENTRANCE + Vector2i(3, 0)))
 		return ""

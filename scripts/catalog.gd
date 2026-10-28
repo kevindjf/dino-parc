@@ -68,6 +68,8 @@ const ITEMS := {
 		"color": Color("6d4c41"), "solid": true},
 }
 
+# Flyers circle over their biome in the wild; swimmers need open water `pool` cells wide around
+# them (lakes for the small ones, the sea for the big ones).
 # length: real length in meters (wingspan for flyers); the sprite is resized to match, one cell being 3 m.
 # shape: body proportions used by dino_art.gd (x = length, y = height). space: number of cells each dinosaur needs.
 const DINOS := {
@@ -179,33 +181,33 @@ const DINOS := {
 		"attraction": 42, "space": 50, "speed": 0.95, "plan": "biped", "length": 13.0, "color": Color("8a6a5a"), "color2": Color("4a3028"),
 		"sound": "GRROOAAAR !"},
 
-	"pteranodon": {"name": "Ptéranodon", "diet": "fish", "habitat": "air", "strength": 1, "cost": 400, "attraction": 18,
+	"pteranodon": {"name": "Ptéranodon", "diet": "fish", "habitat": "air", "biome": "desert", "strength": 1, "cost": 400, "attraction": 18,
 		"speed": 1.4, "plan": "flyer", "length": 6.0, "color": Color("8d6e63"), "color2": Color("ff7043"),
 		"features": ["crest"], "sound": "KRAAA !"},
-	"quetzalcoatlus": {"name": "Quetzalcoatlus", "diet": "fish", "habitat": "air", "strength": 2, "cost": 700, "attraction": 25,
+	"quetzalcoatlus": {"name": "Quetzalcoatlus", "diet": "fish", "habitat": "air", "biome": "prairie", "strength": 2, "cost": 700, "attraction": 25,
 		"speed": 1.1, "plan": "flyer", "length": 10.0, "color": Color("eceff1"), "color2": Color("e53935"),
 		"features": ["crest"], "sound": "KRAAAA !"},
-	"dimorphodon": {"name": "Dimorphodon", "diet": "fish", "habitat": "air", "strength": 1, "cost": 250, "attraction": 12,
+	"dimorphodon": {"name": "Dimorphodon", "diet": "fish", "habitat": "air", "biome": "jungle", "strength": 1, "cost": 250, "attraction": 12,
 		"speed": 1.8, "plan": "flyer", "length": 2.2, "color": Color("263238"), "color2": Color("fdd835"),
 		"sound": "KIII !", "shape": {"beak": 0.2}},
-	"tapejara": {"name": "Tapejara", "diet": "fish", "habitat": "air", "strength": 1, "cost": 350, "attraction": 15,
+	"tapejara": {"name": "Tapejara", "diet": "fish", "habitat": "air", "biome": "jungle", "strength": 1, "cost": 350, "attraction": 15,
 		"speed": 1.4, "plan": "flyer", "length": 3.5, "color": Color("6d4c41"), "color2": Color("e91e63"),
 		"features": ["sail_crest"], "sound": "KRIII !"},
-	"rhamphorhynchus": {"name": "Rhamphorhynchus", "diet": "fish", "habitat": "air", "strength": 1, "cost": 300, "attraction": 14,
+	"rhamphorhynchus": {"name": "Rhamphorhynchus", "diet": "fish", "habitat": "air", "biome": "marais", "strength": 1, "cost": 300, "attraction": 14,
 		"speed": 1.6, "plan": "flyer", "length": 1.8, "color": Color("8a6a4a"), "color2": Color("f0c040"), "sound": "KIKII !"},
-	"pterodactylus": {"name": "Ptérodactyle", "diet": "fish", "habitat": "air", "strength": 1, "cost": 280, "attraction": 13,
+	"pterodactylus": {"name": "Ptérodactyle", "diet": "fish", "habitat": "air", "biome": "neige", "strength": 1, "cost": 280, "attraction": 13,
 		"speed": 1.7, "plan": "flyer", "length": 1.5, "color": Color("a08060"), "color2": Color("e07050"),
 		"features": ["crest"], "sound": "KRIK !"},
 
-	"mosasaurus": {"name": "Mosasaure", "diet": "fish", "habitat": "sea", "strength": 5, "cost": 2500, "attraction": 60,
+	"mosasaurus": {"name": "Mosasaure", "diet": "fish", "habitat": "sea", "pool": 7, "strength": 5, "cost": 2500, "attraction": 60,
 		"speed": 1.2, "plan": "mosasaur", "length": 17.0, "color": Color("455a64"), "color2": Color("cfd8dc"), "sound": "SPLAAASH !"},
-	"plesiosaurus": {"name": "Plésiosaure", "diet": "fish", "habitat": "sea", "strength": 3, "cost": 1200, "attraction": 35,
+	"plesiosaurus": {"name": "Plésiosaure", "diet": "fish", "habitat": "sea", "pool": 3, "strength": 3, "cost": 1200, "attraction": 35,
 		"speed": 0.9, "plan": "plesio", "length": 8.0, "color": Color("26a69a"), "color2": Color("b2dfdb"), "sound": "BLOUP !"},
-	"ichthyosaurus": {"name": "Ichthyosaure", "diet": "fish", "habitat": "sea", "strength": 2, "cost": 900, "attraction": 28,
+	"ichthyosaurus": {"name": "Ichthyosaure", "diet": "fish", "habitat": "sea", "pool": 4, "strength": 2, "cost": 900, "attraction": 28,
 		"speed": 1.5, "plan": "mosasaur", "length": 6.0, "color": Color("5a7a9a"), "color2": Color("d0e0f0"), "sound": "PFIOUU !"},
-	"liopleurodon": {"name": "Liopleurodon", "diet": "fish", "habitat": "sea", "strength": 4, "cost": 1800, "attraction": 45,
+	"liopleurodon": {"name": "Liopleurodon", "diet": "fish", "habitat": "sea", "pool": 6, "strength": 4, "cost": 1800, "attraction": 45,
 		"speed": 1.1, "plan": "mosasaur", "length": 7.0, "color": Color("3a4a5a"), "color2": Color("a0b0c0"), "sound": "GLOUBS !"},
-	"elasmosaurus": {"name": "Elasmosaure", "diet": "fish", "habitat": "sea", "strength": 3, "cost": 1400, "attraction": 38,
+	"elasmosaurus": {"name": "Elasmosaure", "diet": "fish", "habitat": "sea", "pool": 5, "strength": 3, "cost": 1400, "attraction": 38,
 		"speed": 0.8, "plan": "plesio", "length": 14.0, "color": Color("4a8a7a"), "color2": Color("c0e0d0"), "sound": "BLOUBLOUP !"},
 }
 

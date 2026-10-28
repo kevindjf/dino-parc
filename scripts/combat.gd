@@ -27,7 +27,7 @@ func setup(owner_park: Node2D) -> void:
 func _process(delta: float) -> void:
 	time += delta
 	var holding: String = park.inventory.current()
-	var usable: bool = park.away == null and park.player.mount == null and park.player.vehicle == "" and not park.builder.active
+	var usable: bool = park.away == null and park.player.mount == null and park.player.vehicle in ["", "boat"] and not park.builder.active
 	weapon = holding if usable and Items.WEAPONS.has(holding) else ""
 	if chosen != null and not (weapon != "" and is_instance_valid(chosen) and _can_aim(chosen) and _in_reach(chosen, 1.25)):
 		chosen = null
@@ -72,7 +72,7 @@ func _dino_at(at: Vector2) -> Node2D:
 	var best: Node2D = null
 	var best_distance := INF
 	for dino in park.dinos:
-		if dino.habitat != "land" or dino.captured or dino.ridden:
+		if (dino.habitat != "land" and not dino.wild) or dino.captured or dino.ridden:
 			continue
 		var half := Vector2(maxf(dino.frames.size.x * 0.5, 10.0), maxf(dino.frames.height * 0.6, 10.0))
 		var offset: Vector2 = (at - _aim_point(dino)).abs()
@@ -111,7 +111,10 @@ static func chance_color(chance: float) -> Color:
 
 # Whether what the player holds can be used on this dinosaur.
 func _can_aim(dino: Node2D) -> bool:
-	if dino.habitat != "land" or dino.captured or dino.ridden or dino.following != null:
+	if dino.captured or dino.ridden or dino.following != null:
+		return false
+	# Flyers and swimmers of the wild can be aimed at; those of the park live in their homes.
+	if dino.habitat != "land" and not dino.wild:
 		return false
 	if is_food(weapon):
 		# Berries go to any herbivore, wild or of the park, that is awake; meat to any carnivore.
@@ -171,11 +174,16 @@ func fire() -> void:
 	var kind := weapon
 	var shot := target
 	var from: Vector2 = player.position + Vector2(0, -8)
-	_fly(kind, from, shot, func() -> void: _land(kind, shot))
+	var aimed: WeakRef = weakref(shot)
+	_fly(kind, from, shot, func() -> void:
+		if aimed.get_ref() != null:
+			_land(kind, aimed.get_ref()))
 
 
 # Where a shot aims on a dinosaur: the middle of its body.
 func _aim_point(dino: Node2D) -> Vector2:
+	if dino.habitat != "land":
+		return dino.position + dino.sprite.position
 	return dino.position + Vector2(0, -dino.frames.height * 0.45)
 
 
@@ -196,7 +204,8 @@ func _fly(kind: String, from: Vector2, shot: Node2D, done: Callable) -> void:
 
 
 # A shot on its way, `t` from 0 (just shot) to 1 (arrived). It follows the dinosaur if it moves.
-func _move_shot(t: float, sprite: Sprite2D, from: Vector2, shot: Node2D, goal: Vector2, flight: String) -> void:
+# shot: the dinosaur aimed at, maybe gone meanwhile (caught or tamed by an earlier shot).
+func _move_shot(t: float, sprite: Sprite2D, from: Vector2, shot: Variant, goal: Vector2, flight: String) -> void:
 	var to: Vector2 = _aim_point(shot) if is_instance_valid(shot) and not shot.captured else goal
 	var height := 0.0 if flight == "straight" else sin(PI * t) * minf(from.distance_to(goal) * 0.3, 28.0)
 	sprite.position = from.lerp(to, t) - Vector2(0, height)
@@ -371,6 +380,8 @@ func _escape_arrows() -> void:
 func _energy_bar(dino: Node2D) -> void:
 	var ratio: float = dino.energy / dino.max_energy() if dino.state != "sleep" else 0.0
 	var top: Vector2 = dino.position + Vector2(-12, -dino.frames.height - 7)
+	if dino.habitat != "land":
+		top = _aim_point(dino) + Vector2(-12, -dino.frames.size.y * 0.5 - 7)
 	draw_rect(Rect2(top - Vector2(1, 1), Vector2(26, 5)), Color("1a1a24"))
 	draw_rect(Rect2(top, Vector2(24, 3)), Color("5a5a66"))
 	var fill := Color("43c04a") if ratio > 0.5 else (Color("f0c020") if ratio > 0.2 else Color("e53935"))
