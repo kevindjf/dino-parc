@@ -2,7 +2,7 @@ extends RefCounted
 
 # What the people of the village ask for, once they have given their first present: three
 # quests each, harder and harder, in the order of House.RESIDENTS. Talking to them gives the
-# reward when the quest is done, then tells the next one. The "Quêtes" window lists them.
+# reward when the quest is done, then tells the next one. The "Quêtes" tab of the Carnet lists them.
 #
 #   ask: what they say, need: what has to be done, reward: what they give ("coins" are pièces),
 #   thanks: what they say when it is done.

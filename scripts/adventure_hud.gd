@@ -12,6 +12,7 @@ const TouchStick := preload("res://scripts/touch_stick.gd")
 const TouchButton := preload("res://scripts/touch_button.gd")
 const Market := preload("res://scripts/market.gd")
 const Wild := preload("res://scripts/wild.gd")
+const Levels := preload("res://scripts/levels.gd")
 const MAP_COLORS := {
 	"prairie": Color("7ab858"), "jungle": Color("3a8a3a"), "marais": Color("6a8a6a"),
 	"desert": Color("e0c078"), "neige": Color("eef2f6"), "ocean": Color("3a88c8"),
@@ -63,8 +64,11 @@ var map_grid: GridContainer
 var camp: PanelContainer  # the menu of a campfire
 var camp_buttons := {}  # "meat" / "pie" -> Button
 var stars_label: Label
-var quests: PanelContainer  # the quests of the people of the village
-var quest_rows: VBoxContainer
+var carnet: PanelContainer  # the notebook: the goals of the level, the quests, the mark of the park
+var carnet_rows: VBoxContainer
+var carnet_tabs := {}  # "level" / "quests" / "park" -> Button
+var carnet_tab := "level"
+var level_title: Label
 var lab: PanelContainer  # the laboratory: eggs and clones
 var lab_status: Label
 var lab_hatch: Button
@@ -93,7 +97,7 @@ func setup(owner_park: Node2D, player_inventory: RefCounted, player_name: String
 	_build_map()
 	_build_camp()
 	_build_lab()
-	_build_quests()
+	_build_carnet()
 	_build_message()
 	inventory.changed.connect(_refresh)
 	_refresh()
@@ -129,9 +133,20 @@ func _build_top(player_name: String) -> void:
 	visitors_label = _label(second, "", 13)
 	stars_label = _label(first, "", 17)
 	stars_label.add_theme_color_override("font_color", Color("c08a10"))
+	# The level and its next goal; a touch opens the notebook with the whole list.
 	var note := _sheet(corner)
 	note.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	goal_label = _label(note, "", 13)
+	note.mouse_filter = Control.MOUSE_FILTER_STOP
+	note.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed:
+			toggle_carnet())
+	var note_lines := VBoxContainer.new()
+	note_lines.add_theme_constant_override("separation", 0)
+	note_lines.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	note.add_child(note_lines)
+	level_title = _label(note_lines, "", 14)
+	level_title.add_theme_color_override("font_color", Color("2a6a2a"))
+	goal_label = _label(note_lines, "", 13)
 	goal_label.custom_minimum_size.x = 300
 	goal_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	goal_label.add_theme_color_override("font_color", Color("b03018"))
@@ -143,7 +158,7 @@ func _build_top(player_name: String) -> void:
 	buttons.offset_top = 8
 	buttons.add_theme_constant_override("separation", 6)
 	root.add_child(buttons)
-	for entry in [["Sac", 64, toggle_bag], ["Mes dinos", 104, toggle_pocket], ["Carte", 72, toggle_map], ["Quêtes", 84, toggle_quests], ["Dinodex", 92, toggle_dex], ["Menu", 72, park.back_to_menu],
+	for entry in [["Sac", 64, toggle_bag], ["Mes dinos", 104, toggle_pocket], ["Carte", 72, toggle_map], ["Carnet", 84, toggle_carnet], ["Dinodex", 92, toggle_dex], ["Menu", 72, park.back_to_menu],
 			["−", 44, func() -> void: park.camera.zoom_step(-1)], ["+", 44, func() -> void: park.camera.zoom_step(1)]]:
 		var button := _button(buttons, entry[0], entry[1], entry[2])
 		button.custom_minimum_size.y = 44
@@ -773,7 +788,7 @@ func _hide_travel() -> void:
 		world_map.visible = false
 		camp.visible = false
 		lab.visible = false
-		quests.visible = false
+		carnet.visible = false
 
 
 # A window in the middle of the screen, with a title and a "Fermer" button. Returns its column.
@@ -910,48 +925,122 @@ func _cook(what: String) -> void:
 	_fill_camp()
 
 
-# --- The quests of the village ------------------------------------------------------
+# --- The notebook: the level, the quests of the village and the mark of the park -------------
 
-func _build_quests() -> void:
-	var column := _window("Quêtes", toggle_quests)
-	quests = column.get_parent()
-	quests.custom_minimum_size = Vector2(760, 0)
-	var hint := _label(column, "Ce que te demandent les habitants du village. Quand c'est fait, va les voir pour ta récompense !", 14)
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.add_theme_color_override("font_color", Color("7a6248"))
+func _build_carnet() -> void:
+	var column := _window("Carnet", toggle_carnet)
+	carnet = column.get_parent()
+	carnet.custom_minimum_size = Vector2(780, 0)
+	var header: HBoxContainer = column.get_child(0)
+	var group := ButtonGroup.new()
+	var at := 1
+	for entry in [["level", "Niveau"], ["quests", "Quêtes"], ["park", "Mon parc"]]:
+		var tab := _button(header, entry[1], 120, func() -> void:
+			carnet_tab = entry[0]
+			_fill_carnet())
+		tab.toggle_mode = true
+		tab.button_group = group
+		header.move_child(tab, at)
+		at += 1
+		carnet_tabs[entry[0]] = tab
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(0, 380)
+	scroll.custom_minimum_size = Vector2(0, 420)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	column.add_child(scroll)
-	quest_rows = VBoxContainer.new()
-	quest_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	quest_rows.add_theme_constant_override("separation", 10)
-	scroll.add_child(quest_rows)
+	carnet_rows = VBoxContainer.new()
+	carnet_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	carnet_rows.add_theme_constant_override("separation", 8)
+	scroll.add_child(carnet_rows)
 
 
-func toggle_quests() -> void:
-	var show := not quests.visible
+func toggle_carnet() -> void:
+	var show := not carnet.visible
 	if bag_open:
 		toggle_bag()
 	dex.visible = false
 	pocket.visible = false
 	shop.visible = false
 	_hide_travel()
-	quests.visible = show
-	if not show:
-		return
-	for child in quest_rows.get_children():
+	carnet.visible = show
+	if show:
+		_fill_carnet()
+
+
+func _fill_carnet() -> void:
+	for id in carnet_tabs:
+		carnet_tabs[id].button_pressed = id == carnet_tab
+	for child in carnet_rows.get_children():
 		child.queue_free()
+	match carnet_tab:
+		"level":
+			_fill_level()
+		"quests":
+			_fill_quests()
+		"park":
+			_fill_park()
+
+
+# The goals of the level, ticked when done, its present, and the levels to come.
+func _fill_level() -> void:
+	if park.level >= Levels.count():
+		_wrapped(carnet_rows, "Tu as fini les %d niveaux : tu es une légende des dinos !\nContinue à agrandir ton parc et à remplir ton Dinodex." % Levels.count(), 18, Color("2a7a2a"))
+		return
+	var current: Dictionary = Levels.LEVELS[park.level]
+	var title := _label(carnet_rows, "Niveau %d / %d : %s" % [park.level + 1, Levels.count(), current.title], 22)
+	title.add_theme_color_override("font_color", Color("2a6a2a"))
+	_wrapped(carnet_rows, "Fais tout ce qui est sur la liste, dans l'ordre que tu veux, pour passer au niveau suivant.", 14, Color("7a6248"))
+	for goal in current.goals:
+		var done: bool = park.goals_done.has(goal[0])
+		_wrapped(carnet_rows, ("✔  " if done else "☐  ") + goal[1], 17, Color("6a8a5a") if done else Color("3a2a1a"))
+	_wrapped(carnet_rows, "Cadeau du niveau : %s" % Levels.describe_reward(current.reward, Items.name_of), 16, Color("a07000"))
+	var next := PackedStringArray()
+	for i in range(park.level + 1, Levels.count()):
+		next.append("%d. %s" % [i + 1, Levels.LEVELS[i].title])
+	if not next.is_empty():
+		_wrapped(carnet_rows, "Ensuite : " + ", ".join(next), 13, Color("8a7258"))
+
+
+func _fill_quests() -> void:
 	var list: Array = park.quest_list()
+	_wrapped(carnet_rows, "Ce que te demandent les habitants du village. Quand c'est fait, va les voir pour ta récompense !", 14, Color("7a6248"))
 	if list.is_empty():
-		_label(quest_rows, "Va rencontrer les habitants du village (à gauche du parc) : ils ont des choses à te demander !", 16).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_wrapped(carnet_rows, "Va rencontrer les habitants du village (à gauche du parc) : ils ont des choses à te demander !", 16, Color("3a2a1a"))
 	for quest in list:
-		var who := _label(quest_rows, quest.name + (" — c'est fait, va le voir !" if quest.done else ""), 17)
+		var who := _label(carnet_rows, quest.name + (" — c'est fait, va le voir !" if quest.done else ""), 17)
 		who.add_theme_color_override("font_color", Color("2a7a2a") if quest.done else Color("8a4a10"))
-		var ask := _label(quest_rows, quest.ask, 15)
-		ask.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		var progress := _label(quest_rows, quest.progress, 13)
+		_wrapped(carnet_rows, quest.ask, 15, Color("3a2a1a"))
+		var progress := _label(carnet_rows, quest.progress, 13)
 		progress.add_theme_color_override("font_color", Color("7a6248"))
+
+
+# The mark of the park, part by part, and what the next star needs.
+func _fill_park() -> void:
+	if park.zone != Wild.BASE:
+		_wrapped(carnet_rows, "Rentre dans ton parc pour voir sa note.", 16, Color("3a2a1a"))
+		return
+	var title := _label(carnet_rows, "Note du parc : %d / 100" % park.rating, 22)
+	title.add_theme_color_override("font_color", Color("2a6a2a"))
+	for line in park.rating_lines():
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		carnet_rows.add_child(row)
+		var score := _label(row, ("%d" % line[1]) if line[2] == 0 else "%d / %d" % [line[1], line[2]], 17)
+		score.custom_minimum_size.x = 80
+		score.add_theme_color_override("font_color", Color("b03018") if line[1] < 0 else (Color("2a7a2a") if line[1] >= line[2] else Color("a07000")))
+		if line[2] == 0 and line[1] == 0:
+			row.queue_free()
+			continue
+		var text := _wrapped(row, "%s — %s" % [line[0], line[3]], 15, Color("3a2a1a"))
+		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_wrapped(carnet_rows, park.next_star_text(), 16, Color("a07000"))
+
+
+func _wrapped(parent: Control, text: String, size: int, color: Color) -> Label:
+	var label := _label(parent, text, size)
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.custom_minimum_size.x = 600
+	label.add_theme_color_override("font_color", color)
+	return label
 
 
 # --- The laboratory -------------------------------------------------------------
@@ -1069,10 +1158,10 @@ func _tab_row(parent: Control, pick: Callable) -> Dictionary:
 	var group := ButtonGroup.new()
 	var tabs := {}
 	for tab in Items.TABS:
-		var button := _button(row, tab.name, 132, pick.bind(tab.id))
+		var button := _button(row, tab.name, 112, pick.bind(tab.id))
 		button.icon = Art.bag_icon(tab.icon)
 		button.expand_icon = false
-		button.add_theme_font_size_override("font_size", 14)
+		button.add_theme_font_size_override("font_size", 13)
 		button.toggle_mode = true
 		button.button_group = group
 		tabs[tab.id] = button
@@ -1081,7 +1170,7 @@ func _tab_row(parent: Control, pick: Callable) -> Dictionary:
 
 # A window is open over the game: the character waits.
 func menu_open() -> bool:
-	return bag_open or dex.visible or pocket.visible or shop.visible or world_map.visible or camp.visible or lab.visible or quests.visible
+	return bag_open or dex.visible or pocket.visible or shop.visible or world_map.visible or camp.visible or lab.visible or carnet.visible
 
 
 # --- What the park expects from a HUD ----------------------------------------------
@@ -1097,6 +1186,8 @@ func action_held() -> bool:
 func flash(text: String, duration := 1.5) -> void:
 	message_label.text = text
 	message_panel.reset_size()
+	# Kept in the middle of the screen, however long the text.
+	message_panel.position.x = (root.size.x - message_panel.size.x) / 2.0
 	message_panel.modulate.a = 1.0
 	if message_tween:
 		message_tween.kill()
@@ -1112,7 +1203,7 @@ func set_stars(count: int) -> void:
 
 func update_stats(money: int, on_site: int, total: int, _attraction: int) -> void:
 	money_label.text = "Pièces : %d" % money
-	visitors_label.text = "Visiteurs : %d (total %d)" % [on_site, total]
+	visitors_label.text = "Visiteurs : %d (total %d) · Note %d/100" % [on_site, total, park.rating]
 
 
 # The player's hearts: full ones, then empty ones.
@@ -1132,6 +1223,22 @@ func set_hearts(full: int, total: int) -> void:
 
 func set_goal(text: String) -> void:
 	goal_label.text = text
+
+
+# The note at the top left: the level, how many goals are done, and the next one.
+func set_level(number: int, goals: Array, title: String) -> void:
+	if number >= Levels.count():
+		level_title.text = "Tous les niveaux finis !"
+		goal_label.text = "Remplis ton Dinodex et agrandis ton parc."
+		return
+	var left := goals.filter(func(goal: Array) -> bool: return not park.goals_done.has(goal[0]))
+	level_title.text = "Niveau %d : %s (%d/%d)" % [number + 1, title, goals.size() - left.size(), goals.size()]
+	goal_label.text = "→ " + (left[0][1] if not left.is_empty() else "")
+	if carnet.visible and carnet_tab == "level":
+		var shown: int = carnet_rows.get_meta("done", -1)
+		if shown != goals.size() - left.size():
+			carnet_rows.set_meta("done", goals.size() - left.size())
+			_fill_carnet()
 
 
 func set_riding(value: bool) -> void:

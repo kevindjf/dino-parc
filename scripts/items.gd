@@ -42,6 +42,29 @@ const ITEMS := {
 	"lab": {"name": "Laboratoire", "kind": "build", "place": "lab"},
 	"feeder_plants": {"name": "Mangeoire à plantes", "kind": "build", "place": "feeder_plants"},
 	"feeder_meat": {"name": "Mangeoire à viande", "kind": "build", "place": "feeder_meat"},
+	# The park of the visitors: shops, rides, decorations, and bags to change the ground.
+	"icecream": {"name": "Stand de glaces", "kind": "build", "place": "icecream"},
+	"burger": {"name": "Stand de burgers", "kind": "build", "place": "burger"},
+	"souvenir": {"name": "Boutique souvenirs", "kind": "build", "place": "souvenir"},
+	"gyro_station": {"name": "Station gyrosphères", "kind": "build", "place": "gyro_station"},
+	"jeep_garage": {"name": "Garage à jeeps", "kind": "build", "place": "jeep_garage"},
+	"road": {"name": "Route", "kind": "build", "place": "road"},
+	"heliport": {"name": "Héliport", "kind": "build", "place": "heliport"},
+	"keeper_hut": {"name": "Cabane du soigneur", "kind": "build", "place": "keeper_hut"},
+	"worker_hut": {"name": "Atelier de l'ouvrier", "kind": "build", "place": "worker_hut"},
+	"ranger_hut": {"name": "Poste du garde", "kind": "build", "place": "ranger_hut"},
+	"flowers": {"name": "Fleurs", "kind": "build", "place": "flowers"},
+	"bench": {"name": "Banc", "kind": "build", "place": "bench"},
+	"lamp": {"name": "Lampadaire", "kind": "build", "place": "lamp"},
+	"bin": {"name": "Poubelle", "kind": "build", "place": "bin"},
+	"statue": {"name": "Statue de T-Rex", "kind": "build", "place": "statue"},
+	"fountain": {"name": "Fontaine", "kind": "build", "place": "fountain"},
+	"volcano": {"name": "Volcan", "kind": "build", "place": "volcano"},
+	"ground_prairie": {"name": "Graines de prairie", "kind": "ground", "biome": "prairie"},
+	"ground_jungle": {"name": "Graines de jungle", "kind": "ground", "biome": "jungle"},
+	"ground_desert": {"name": "Sac de sable", "kind": "ground", "biome": "desert"},
+	"ground_marais": {"name": "Sac de boue", "kind": "ground", "biome": "marais"},
+	"ground_neige": {"name": "Sac de neige", "kind": "ground", "biome": "neige"},
 	"slingshot": {"name": "Lance-pierre", "kind": "weapon"},
 	"bow": {"name": "Arc", "kind": "weapon"},
 	"arrow": {"name": "Flèches", "kind": "ammo"},
@@ -76,13 +99,17 @@ const TABS := [
 	{"id": "hunt", "name": "Chasse", "icon": "bow"},
 	{"id": "food", "name": "Nourriture", "icon": "berries"},
 	{"id": "build", "name": "Construire", "icon": "fence_wood"},
+	{"id": "park", "name": "Parc", "icon": "icecream"},
 	{"id": "treasure", "name": "Trésors", "icon": "crystal"},
 	{"id": "travel", "name": "Voyage", "icon": "bike"},
 ]
 const TAB_OF_KIND := {
 	"tool": "tools", "weapon": "hunt", "ammo": "hunt", "catch": "hunt", "food": "food",
-	"build": "build", "resource": "treasure", "gear": "travel", "vehicle": "travel",
+	"build": "build", "resource": "treasure", "gear": "travel", "vehicle": "travel", "ground": "park",
 }
+# Built things that go in the "Parc" tab: what the visitors enjoy.
+const PARK_ITEMS := ["icecream", "burger", "souvenir", "keeper_hut", "worker_hut", "ranger_hut", "gyro_station", "jeep_garage", "road", "heliport", "flowers", "bench",
+	"lamp", "bin", "statue", "fountain", "volcano", "bush", "sapling"]
 
 # What to do with a thing, told when the player takes it in hand from the bag.
 const TIPS := {
@@ -96,6 +123,23 @@ const TIPS := {
 	"sailboat": "Le voilier va plus vite que la barque. Face à l'eau, Action pour monter dedans.",
 	"speedboat": "Le hors-bord file sur la mer ! Face à l'eau, Action pour monter dedans.",
 	"submarine": "Le sous-marin navigue sous l'eau : tu vois les reptiles marins en couleurs, et les épaves englouties ! Action au-dessus d'une épave pour la fouiller.",
+	"icecream": "Pose le stand de glaces au bord d'un chemin : les visiteurs qui passent achètent une glace (5 pièces).",
+	"burger": "Pose le stand de burgers au bord d'un chemin : les visiteurs affamés achètent (8 pièces).",
+	"souvenir": "Pose la boutique souvenirs au bord d'un chemin : les visiteurs achètent des peluches (12 pièces).",
+	"gyro_station": "Colle la station contre la barrière d'un enclos, au bord d'un chemin : les gyrosphères roulent au milieu des dinos !",
+	"jeep_garage": "Pose le garage au bord d'un chemin et trace une route à côté : les jeeps font le tour du parc.",
+	"road": "Trace des routes pour les jeeps du garage. Elles peuvent traverser les enclos !",
+	"heliport": "Pose l'héliport au bord d'un chemin (3 × 3 cases) : son hélicoptère fait survoler le parc aux visiteurs.",
+	"keeper_hut": "Pose la cabane au bord d'un chemin : le soigneur remplit les mangeoires vides et nourrit les dinos qui ont faim.",
+	"worker_hut": "Pose l'atelier au bord d'un chemin : l'ouvrier répare les barrières poussées et remet celles qui sont cassées.",
+	"ranger_hut": "Pose le poste au bord d'un chemin : le garde endort les dinos échappés et les ramène dans leur enclos.",
+	"lamp": "Pose les lampadaires le long des chemins : ils s'allument la nuit.",
+	"bench": "Pose des bancs le long des chemins : les visiteurs aiment s'asseoir.",
+	"ground_prairie": "Trace avec ton doigt dans un enclos pour changer le sol. Chaque dino veut son sol préféré : regarde le Dinodex !",
+	"ground_jungle": "Trace avec ton doigt dans un enclos pour changer le sol. Chaque dino veut son sol préféré : regarde le Dinodex !",
+	"ground_desert": "Trace avec ton doigt dans un enclos pour changer le sol. Chaque dino veut son sol préféré : regarde le Dinodex !",
+	"ground_marais": "Trace avec ton doigt dans un enclos pour changer le sol. Chaque dino veut son sol préféré : regarde le Dinodex !",
+	"ground_neige": "Trace avec ton doigt dans un enclos pour changer le sol. Chaque dino veut son sol préféré : regarde le Dinodex !",
 	"aviary": "Pose la volière dans ton parc (8 × 8 cases), puis relâche-y tes dinos volants.",
 	"lagoon": "Pose le lagon dans ton parc (12 × 8 cases), puis relâche-y tes reptiles marins.",
 	"egg": "Un œuf trouvé dans la nature ! Porte-le au laboratoire de ton parc pour le faire éclore.",
@@ -171,6 +215,27 @@ const RECIPES := [
 	{"make": "aviary", "count": 1, "needs": {"wood": 20, "iron": 8}},
 	{"make": "lagoon", "count": 1, "needs": {"stone": 25, "crystal": 4}},
 	{"make": "path", "count": 4, "needs": {"stone": 1}},
+	{"make": "icecream", "count": 1, "needs": {"wood": 6, "berries": 4}},
+	{"make": "burger", "count": 1, "needs": {"wood": 8, "meat": 3}},
+	{"make": "souvenir", "count": 1, "needs": {"wood": 10, "crystal": 1}},
+	{"make": "keeper_hut", "count": 1, "needs": {"wood": 10, "berries": 5}},
+	{"make": "worker_hut", "count": 1, "needs": {"wood": 10, "stone": 6}},
+	{"make": "ranger_hut", "count": 1, "needs": {"wood": 10, "iron": 3}},
+	{"make": "flowers", "count": 3, "needs": {"berries": 1}},
+	{"make": "bench", "count": 2, "needs": {"wood": 3}},
+	{"make": "bin", "count": 2, "needs": {"wood": 2}},
+	{"make": "lamp", "count": 2, "needs": {"iron": 1, "copper": 1}},
+	{"make": "statue", "count": 1, "needs": {"stone": 8}},
+	{"make": "fountain", "count": 1, "needs": {"stone": 10, "crystal": 1}},
+	{"make": "road", "count": 4, "needs": {"stone": 2}},
+	{"make": "jeep_garage", "count": 1, "needs": {"wood": 8, "iron": 4}},
+	{"make": "gyro_station", "count": 1, "needs": {"iron": 6, "crystal": 2}},
+	{"make": "heliport", "count": 1, "needs": {"iron": 10, "copper": 4, "gold": 1}},
+	{"make": "ground_prairie", "count": 10, "needs": {"berries": 2}},
+	{"make": "ground_jungle", "count": 10, "needs": {"wood": 1, "berries": 1}},
+	{"make": "ground_desert", "count": 10, "needs": {"stone": 2}},
+	{"make": "ground_marais", "count": 10, "needs": {"wood": 1, "stone": 1}},
+	{"make": "ground_neige", "count": 10, "needs": {"stone": 3}},
 	{"make": "feeder_plants", "count": 1, "needs": {"wood": 4, "berries": 3}},
 	{"make": "feeder_meat", "count": 1, "needs": {"wood": 4, "meat": 3}},
 	{"make": "slingshot", "count": 1, "needs": {"wood": 3}},
@@ -221,6 +286,8 @@ static func kind_of(id: String) -> String:
 static func tab_of(id: String) -> String:
 	if id == "saddle":
 		return "tools"
+	if id in PARK_ITEMS:
+		return "park"
 	return TAB_OF_KIND.get(kind_of(id), "")
 
 

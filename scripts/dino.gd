@@ -30,6 +30,7 @@ var wait := 1.0
 var feeder = null
 var attack_cell := NONE
 var escape_timer := 0.0
+var need := ""  # what the dinosaur needs ("Faim !", "Trop serré !"...), or "" when it is happy
 var sleep_time := 0.0
 var offset := Vector2.ZERO
 
@@ -240,6 +241,7 @@ func trust_needed() -> int:
 
 
 func set_mood(text: String, color: Color) -> void:
+	need = text
 	if ridden:
 		text = ""
 	elif state == "sleep":

@@ -11,6 +11,7 @@ const Helicopter := preload("res://scripts/helicopter.gd")
 const Hud := preload("res://scripts/hud.gd")
 const ParkCamera := preload("res://scripts/park_camera.gd")
 const WorldText := preload("res://scripts/world_text.gd")
+const Levels := preload("res://scripts/levels.gd")
 const FlipBook := preload("res://scripts/flip_book.gd")
 const Items := preload("res://scripts/items.gd")
 const Inventory := preload("res://scripts/inventory.gd")
@@ -40,13 +41,16 @@ const TICKET_PER_STAR := 5
 # The stars of the park in the adventure: species shown to the visitors (in an enclosure along a
 # path) and visitors welcomed so far. Each star is kept for good, gives coins, raises the ticket
 # and opens new things in the shop (see Market.BUY, "stars").
+# rating: the mark of the park out of 100 (see _rate_park()).
 const STARS := [
-	{"species": 1, "visitors": 0, "gift": 100},
-	{"species": 3, "visitors": 50, "gift": 300},
-	{"species": 6, "visitors": 300, "gift": 600},
-	{"species": 10, "visitors": 1000, "gift": 1000},
-	{"species": 15, "visitors": 3000, "gift": 2000},
+	{"species": 1, "visitors": 0, "rating": 0, "gift": 100},
+	{"species": 3, "visitors": 50, "rating": 15, "gift": 300},
+	{"species": 6, "visitors": 300, "rating": 35, "gift": 600},
+	{"species": 10, "visitors": 1000, "rating": 55, "gift": 1000},
+	{"species": 15, "visitors": 3000, "rating": 75, "gift": 2000},
 ]
+# Decorations that the visitors enjoy along the paths, for the mark of the park.
+const PARK_DECOR := ["flowers", "bench", "lamp", "bin", "statue", "fountain", "volcano"]
 const MAX_VISITORS := 120
 const DART_PRICE := 50
 const FISH_PRICE := 10
@@ -54,8 +58,8 @@ const DIRS := [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
 const NONE := Vector2i(-1, -1)
 const NOT_CONNECTED := 99999
 # Land dinosaurs cannot walk through these.
-const DINO_BLOCKERS := ["aviary", "lagoon", "shop", "gyro_station", "garage", "heliport", "campfire", "lab"]
-const VEHICLE_BLOCKERS := ["aviary", "lagoon", "shop", "gyro_station", "garage", "feeder", "heliport", "campfire", "lab"]
+const DINO_BLOCKERS := ["aviary", "lagoon", "shop", "staff", "gyro_station", "garage", "heliport", "campfire", "lab"]
+const VEHICLE_BLOCKERS := ["aviary", "lagoon", "shop", "staff", "gyro_station", "garage", "feeder", "heliport", "campfire", "lab"]
 # What can be built in the Wild Lands: enclosures are made in the park.
 # Trunks stop the dinosaurs; they walk through bushes and ferns, which are low.
 const DINO_TREES := ["tree", "pine", "palm", "cactus"]
@@ -71,34 +75,6 @@ const SEA_TARGET := 4  # wild marine reptiles in the open water of a zone
 const MAX_HEARTS := 5
 const HEAL_EVERY := 6.0  # seconds to get a heart back, once nobody has hit us for a while
 
-const ADVENTURE_GOALS := [
-	{"id": "wood", "text": "Frappe un arbre pour récolter 5 bois (bouton Action ou Espace)"},
-	{"id": "axe", "text": "Ouvre ton sac et fabrique une hache"},
-	{"id": "pickaxe", "text": "Fabrique une pioche"},
-	{"id": "stone", "text": "Casse un rocher avec la pioche pour avoir de la pierre"},
-	{"id": "berries", "text": "Cueille des baies sur un buisson"},
-	{"id": "pen", "text": "Fabrique des barrières et ferme un enclos (garde Action appuyé en marchant)"},
-	{"id": "feeder", "text": "Fabrique un portail pour entrer dans ton enclos, puis pose une mangeoire dedans"},
-	{"id": "path", "text": "Fais un chemin depuis l'entrée jusqu'à ton enclos"},
-	{"id": "tame", "text": "Trouve un dinosaure herbivore sauvage et lance-lui 3 baies : il ira dans « Mes dinos »"},
-	{"id": "adopt", "text": "Ouvre « Mes dinos », touche « Relâcher » et pose ton dinosaure dans ton enclos"},
-	{"id": "cage", "text": "Fabrique un lance-pierre et une cage. Fatigue un petit dinosaure de loin, puis mets-le en cage"},
-	{"id": "release", "text": "Relâche le dinosaure attrapé dans un enclos"},
-	{"id": "brush", "text": "Fabrique une brosse et brosse un dinosaure de ton parc"},
-	{"id": "friend", "text": "Gagne 3 cœurs d'amitié d'un gros dino de ton parc, comme un Tricératops (brosse-le, donne-lui à manger)"},
-	{"id": "ride", "text": "Fabrique une selle, prends-la en main et appuie sur Action devant lui : tu montes sur son dos !"},
-	{"id": "mine", "text": "Trouve une grotte dans les montagnes et descends dans la mine"},
-	{"id": "ore", "text": "Creuse les murs de la mine pour trouver du fer et du cuivre"},
-	{"id": "electric", "text": "Fabrique une barrière électrique : la seule qui retient un T-Rex !"},
-	{"id": "dex5", "text": "Attrape 5 espèces différentes (bouton Dinodex)"},
-	{"id": "dex10", "text": "Attrape 10 espèces différentes"},
-	{"id": "stars2", "text": "Fais monter ton parc à 2 étoiles : montre 3 espèces aux visiteurs (enclos le long d'un chemin)"},
-	{"id": "lab", "text": "Construis un laboratoire et fais naître un bébé dino (fossiles et ambre au fond des mines)"},
-	{"id": "far", "text": "Explore les Terres sauvages jusqu'à une zone à 3 étoiles, tout au bord du monde"},
-	{"id": "stars3", "text": "Fais monter ton parc à 3 étoiles"},
-	{"id": "dex15", "text": "Attrape 15 espèces différentes"},
-	{"id": "stars5", "text": "Fais de ton parc un parc 5 étoiles !"},
-]
 const GOALS := [
 	{"id": "pen", "text": "Ferme un enclos avec des barrières et mets-y un dinosaure"},
 	{"id": "visible", "text": "Fais passer un chemin le long de la barrière pour que les visiteurs voient l'enclos"},
@@ -116,6 +92,9 @@ var world_info := {}  # the world being played: id, name, mode, settings (see wo
 var money := 8000
 var total_visitors := 0
 var attraction := 0
+var rating := 0  # the mark of the park out of 100, what the visitors think of it
+var rating_parts := {}  # what makes the mark: see _rate_park()
+var park_open := {}  # building id -> true: what the visitors can use, along a path
 var tool := "path"
 var buildings: Array[Dictionary] = []
 var occupied := {}  # Vector2i -> building Dictionary
@@ -129,7 +108,10 @@ var painting := false
 var erasing := false
 var spawn_timer := 0.0
 var attraction_timer := 0.0
-var goal_index := 0
+var goal_index := 0  # the sandbox goal being done
+var level := 0  # the level of the adventure (see levels.gd)
+var goals_done := {}  # goal id -> true: the goals of the levels done so far
+var goal_timer := 0.0  # goals are checked a few times a second
 var hud: CanvasLayer
 var ground: Node2D
 var water := PackedByteArray()  # 1 where the cell is water (sea, river, lake)
@@ -186,6 +168,7 @@ var hatched := 0  # babies born in the laboratory
 var weather: Node2D = null  # day, night and storms of the adventure
 var rode := {}  # species id -> true: the dinosaurs the player has ridden
 var lab_state := {}  # {"egg": species, "ready": unix time}: the egg in the laboratory
+var ground_before := {}  # cell -> its biome before a bag of ground changed it, to undo in the building mode
 var respawn := {}  # {"zone", "x", "y"}: the last campfire the player rested by, where they wake up
 
 
@@ -264,6 +247,15 @@ func start_adventure(data: Dictionary) -> void:
 	hatched = int(data.get("hatched", 0))
 	rode = data.get("rode", {})
 	base_exits = data.get("exits", {})
+	level = int(data.get("level", 0))
+	goals_done = {}
+	if data.has("goals_done"):
+		for id in data.goals_done:
+			goals_done[id] = true
+	else:
+		# A game of the first versions: its goals in order, the first goal_index ones done.
+		for i in mini(int(data.get("goal_index", 0)), Levels.OLD_GOALS.size()):
+			goals_done[Levels.OLD_GOALS[i]] = true
 	if data.is_empty():
 		loading = true
 		WorldGen.generate(self, randi())
@@ -436,7 +428,12 @@ func _process(delta: float) -> void:
 	if attraction_timer <= 0.0:
 		attraction_timer = 0.5
 		_update_attraction()
-	_check_goal()
+		if zone == Wild.BASE and not loading:
+			_staff_work(0.5)
+	goal_timer -= delta
+	if goal_timer <= 0.0:
+		goal_timer = 0.3
+		_check_goal()
 	hud.update_stats(money, on_site, total_visitors, attraction)
 
 
@@ -600,7 +597,7 @@ func _add_building(id: String, origin: Vector2i, fixed := false) -> Dictionary:
 			world.add_child(building.root)
 			if not loading:
 				_rebuild_fences_around(origin)
-		"feeder", "shop", "decor", "aviary", "gyro_station", "garage", "lab", "nest", "wreck":
+		"feeder", "shop", "staff", "decor", "aviary", "gyro_station", "garage", "lab", "nest", "wreck":
 			building.root = Art.sprite(Art.item(id))
 			building.root.position = foot
 			Art.ground_shadow(building.root, int(building.root.texture.get_width() * 0.8))
@@ -621,6 +618,15 @@ func _add_building(id: String, origin: Vector2i, fixed := false) -> Dictionary:
 				building.root.texture = Art.lab(true)
 			if item.get("style", "") == "volcano":
 				_add_smoke(building.root)
+			if item.get("style", "") == "lamp":
+				# It lights the paths at night (see weather.gd).
+				var glow := PointLight2D.new()
+				glow.texture = Weather.glow(256)
+				glow.texture_scale = 0.5
+				glow.energy = 0.0
+				glow.position = Vector2(0, -28)
+				glow.add_to_group("fire_lights")
+				building.root.add_child(glow)
 		"lagoon":
 			var water := FlipBook.new()
 			var frames: Array[Texture2D] = []
@@ -736,10 +742,15 @@ func _update_gates(walker: Vector2) -> void:
 
 
 func _paint_biome(cell: Vector2i, biome: String) -> void:
+	if biomes[_index(cell)] == biome or not _spend(Catalog.BIOME_COST):
+		return
+	_set_biome(cell, biome)
+
+
+# Changes the ground of a cell, and what its enclosure counts of each biome.
+func _set_biome(cell: Vector2i, biome: String) -> void:
 	var i := _index(cell)
 	if biomes[i] == biome:
-		return
-	if not _spend(Catalog.BIOME_COST):
 		return
 	var region := region_map[i]
 	if region >= 0:
@@ -899,6 +910,7 @@ func feed_fish(dino: Node2D) -> void:
 
 const FENCE_PUSHES := 3  # pushes a weak fence holds before it breaks
 var fence_pushes := {}  # fence cell -> times a dinosaur pushed it
+var broken_fences := {}  # cell -> fence id: what the worker of the park puts back
 
 
 func fence_to_attack(dino: Node2D) -> Vector2i:
@@ -946,6 +958,7 @@ func break_fence(cell: Vector2i, dino: Node2D) -> void:
 	_float_text(cell_center(cell), "CRAC !", Color("ff7043"))
 	hud.flash("%s a cassé une barrière en %s !\nIl lui faut une barrière %s." % [
 		dino.species.name, name, Catalog.fence_for_strength(dino.species.strength)], 3.5)
+	broken_fences[cell] = occupied[cell].id
 	_remove_building(occupied[cell])
 
 
@@ -1199,8 +1212,106 @@ func _update_attraction() -> void:
 		if building.open:
 			total += Catalog.ITEMS[building.id].get("attraction", 0)
 	attraction = max(total, 0)
+	if zone == Wild.BASE and not loading:
+		_rate_park()
 	if mode == "adventure" and zone == Wild.BASE and not loading:
 		_check_stars()
+
+
+# The mark of the park out of 100, from what the visitors enjoy. Each part has its maximum, so
+# the "Note du parc" window can tell what to do to get more.
+func _rate_park() -> void:
+	var shown := shown_species()
+	var happy := 0
+	var seen := 0
+	for dino in dinos:
+		if dino.wild or dino.habitat != "land" or dino.escaped or dino.region < 0 or dino.region >= regions.size():
+			continue
+		if regions[dino.region].visible:
+			seen += 1
+			if dino.need == "":
+				happy += 1
+	var open := {}
+	var decor := 0
+	var rides := 0
+	var homes := 0
+	for building in buildings:
+		if not building.open or building.get("build_left", 0.0) > 0.0:
+			continue
+		open[building.id] = true
+		if building.id in PARK_DECOR:
+			decor += 1
+		if building.kind in ["gyro_station", "garage"] and building.region_cell != NONE or building.kind == "heliport":
+			rides += 1
+		if building.kind in ["aviary", "lagoon"] and not building.dinos.is_empty():
+			homes += 1
+	park_open = open
+	var escaped := dinos.filter(func(d) -> bool: return d.escaped and not d.wild).size()
+	rating_parts = {
+		"dinos": mini(shown * 5, 30),
+		"happy": 15 * happy / seen if seen > 0 else 0,
+		"food": (10 if open.has("icecream") or open.has("burger") else 0) + (5 if open.has("icecream") and open.has("burger") else 0),
+		"souvenir": 5 if open.has("souvenir") else 0,
+		"decor": mini(decor, 10) + (3 if open.has("bench") else 0) + (2 if open.has("bin") else 0),
+		"rides": mini(rides * 5, 15) + mini(homes * 5, 5),
+		"escaped": -10 * escaped,
+	}
+	var total := 0
+	for part in rating_parts.values():
+		total += part
+	rating = clampi(total, 0, 100)
+
+
+# What a visitor says in a bubble while walking: what they like, or what they miss.
+func visitor_thought(visitor: Node2D) -> String:
+	var near: Node2D = null
+	for dino in dinos:
+		if not dino.wild and not dino.escaped and dino.habitat == "land" and dino.position.distance_to(visitor.position) < 4.0 * T:
+			near = dino
+			break
+	var ideas: Array[String] = []
+	if near != null:
+		if near.need != "":
+			ideas.append("Ce %s a l'air triste…" % near.species.name)
+		else:
+			ideas.append("Waouh, un %s !" % near.species.name)
+			ideas.append("Regarde le %s !" % near.species.name)
+	if rating_parts.get("dinos", 0) == 0:
+		ideas.append("Où sont les dinos ?")
+	if rating_parts.get("food", 0) == 0:
+		ideas.append("J'ai faim… il n'y a pas de glaces ?")
+	elif visitor.bought.has("icecream") or visitor.bought.has("burger"):
+		ideas.append("Miam !")
+	if not park_open.has("bench"):
+		ideas.append("Je suis fatigué… il n'y a pas de banc ?")
+	elif rating_parts.get("decor", 0) < 8:
+		ideas.append("C'est un peu vide ici… des fleurs ?")
+	if not park_open.has("bin"):
+		ideas.append("Où est la poubelle ?")
+	if rating_parts.get("souvenir", 0) == 0 and stars >= 1:
+		ideas.append("Je voudrais une peluche de dino !")
+	if rating_parts.get("rides", 0) == 0 and stars >= 2:
+		ideas.append("J'aimerais faire un tour en gyrosphère !")
+	if rating >= 60:
+		ideas.append("Quel beau parc !")
+		ideas.append("Je reviendrai !")
+	if ideas.is_empty():
+		return ""
+	return ideas.pick_random()
+
+
+# What the "Note du parc" window says: each part with what it needs.
+func rating_lines() -> Array:
+	var p := rating_parts
+	return [
+		["Dinos montrés aux visiteurs", p.get("dinos", 0), 30, "5 points par espèce dans un enclos au bord d'un chemin"],
+		["Dinos heureux", p.get("happy", 0), 15, "Le bon sol, assez de place et une mangeoire pleine"],
+		["À manger", p.get("food", 0), 15, "Un stand de glaces et un stand de burgers"],
+		["Souvenirs", p.get("souvenir", 0), 5, "Une boutique souvenirs"],
+		["Décoration", p.get("decor", 0), 15, "Fleurs, bancs, poubelles, lampadaires, statues, fontaines"],
+		["Attractions", p.get("rides", 0), 20, "Gyrosphères, jeeps, héliport, volière, lagon"],
+		["Dinos échappés", p.get("escaped", 0), 0, "Chaque dino échappé enlève 10 points"],
+	]
 
 
 func ticket_price() -> int:
@@ -1225,7 +1336,7 @@ func _check_stars() -> void:
 	if stars >= STARS.size():
 		return
 	var next: Dictionary = STARS[stars]
-	if shown_species() < next.species or total_visitors < next.visitors:
+	if shown_species() < next.species or total_visitors < next.visitors or rating < next.rating:
 		return
 	stars += 1
 	money += next.gift
@@ -1245,7 +1356,7 @@ func next_star_text() -> String:
 	if stars >= STARS.size():
 		return "Parc 5 étoiles !"
 	var next: Dictionary = STARS[stars]
-	return "Prochaine étoile : %d espèces montrées, %d visiteurs" % [next.species, next.visitors]
+	return "Prochaine étoile : %d espèces montrées, %d visiteurs, note %d/100" % [next.species, next.visitors, next.rating]
 
 
 func _spawn_visitor() -> void:
@@ -1279,18 +1390,123 @@ func earn(amount: int, at: Vector2) -> void:
 
 
 func _check_goal() -> void:
-	var goals: Array = ADVENTURE_GOALS if mode == "adventure" else GOALS
-	if goal_index >= goals.size():
-		if mode == "adventure":
-			hud.set_goal("Bravo ! Bientôt : partir attraper ton premier dinosaure.")
-		else:
-			hud.set_goal("Bravo, ton parc est génial ! Continue à l'agrandir.")
+	if mode == "adventure":
+		_check_level()
 		return
-	if _goal_done(goals[goal_index].id):
+	if goal_index >= GOALS.size():
+		hud.set_goal("Bravo, ton parc est génial ! Continue à l'agrandir.")
+		return
+	if _goal_done(GOALS[goal_index].id):
 		goal_index += 1
 		hud.flash("Objectif réussi !")
-	if goal_index < goals.size():
-		hud.set_goal("Objectif %d/%d : %s" % [goal_index + 1, goals.size(), goals[goal_index].text])
+	if goal_index < GOALS.size():
+		hud.set_goal("Objectif %d/%d : %s" % [goal_index + 1, GOALS.size(), GOALS[goal_index].text])
+
+
+# The goals of the level: each one done is ticked for good; when all are, the player goes up a
+# level and gets its present.
+func _check_level() -> void:
+	if level >= Levels.count():
+		hud.set_level(level, [], "")
+		return
+	var current: Dictionary = Levels.LEVELS[level]
+	for goal in current.goals:
+		if not goals_done.has(goal[0]) and _goal_done(goal[0]):
+			goals_done[goal[0]] = true
+			hud.flash("Objectif réussi !\n%s" % goal[1], 2.5)
+	if current.goals.all(func(goal: Array) -> bool: return goals_done.has(goal[0])):
+		_level_up()
+		return
+	hud.set_level(level, current.goals, current.title)
+
+
+func _level_up() -> void:
+	var reward: Dictionary = Levels.LEVELS[level].reward
+	for id in reward:
+		if id == "coins":
+			money += reward.coins
+		else:
+			inventory.add(id, reward[id])
+	level += 1
+	var text := "NIVEAU %d !\nCadeau : %s" % [level + 1, Levels.describe_reward(reward, Items.name_of)]
+	if level >= Levels.count():
+		text = "Tu as fini tous les niveaux !\nTu es une légende des dinos !\nCadeau : %s" % Levels.describe_reward(reward, Items.name_of)
+	hud.flash(text, 5.0)
+	if player != null:
+		_float_text(player.position + Vector2(0, -24), "NIVEAU %d !" % (level + 1), Color("fff176"))
+	save_game()
+
+
+# The goals of the current level not done yet.
+func goals_left() -> Array:
+	if level >= Levels.count():
+		return []
+	return Levels.LEVELS[level].goals.filter(func(goal: Array) -> bool: return not goals_done.has(goal[0]))
+
+
+# Where the yellow arrow points for the next goal of the level, or null when there is nothing
+# to find on the land (see combat.gd).
+func goal_target():
+	var left := goals_left()
+	if left.is_empty():
+		return null
+	var at: Vector2 = player.position
+	match left[0][0]:
+		"wood":
+			return _nearest_building(at, func(b) -> bool: return b.id in ["tree", "pine", "palm"])
+		"berries":
+			return _nearest_building(at, func(b) -> bool: return b.id == "bush" and b.get("ready", true))
+		"stone":
+			if inventory.count("pickaxe") > 0:
+				return _nearest_building(at, func(b) -> bool: return b.id == "rock")
+		"mine":
+			return _nearest_building(at, func(b) -> bool: return b.kind == "mine")
+		"tame":
+			if inventory.count("berries") >= 3:
+				return _nearest_dino(at, func(d) -> bool: return d.wild and d.habitat == "land" and d.species.diet == "herb")
+		"cage":
+			if inventory.count("cage") > 0:
+				return _nearest_dino(at, func(d) -> bool: return d.wild and d.habitat == "land" and d.species.strength <= Items.CAGE_STRENGTH)
+	return null
+
+
+func _nearest_building(at: Vector2, wanted: Callable):
+	var best = null
+	var best_distance := 40.0 * T
+	for building in buildings:
+		if not wanted.call(building):
+			continue
+		var spot := cell_center(building.origin)
+		if spot.distance_to(at) < best_distance:
+			best = spot
+			best_distance = spot.distance_to(at)
+	return best
+
+
+func _nearest_dino(at: Vector2, wanted: Callable):
+	var best = null
+	var best_distance := 60.0 * T
+	for dino in dinos:
+		if wanted.call(dino) and dino.position.distance_to(at) < best_distance:
+			best = dino.position
+			best_distance = dino.position.distance_to(at)
+	return best
+
+
+func _quests_done() -> int:
+	var total := 0
+	for resident in Quests.QUESTS.size():
+		total += quest_step(resident)
+	return total
+
+
+# Campfires lit in the wild lands, from what each zone remembers.
+func _fires_lit() -> int:
+	var total := 0
+	for key in zone_states:
+		total += zone_states[key].get("fires", []).size()
+		total += zone_states[key].get("built", []).filter(func(entry: Array) -> bool: return entry[0] == "campfire").size()
+	return total
 
 
 func _goal_done(id: String) -> bool:
@@ -1300,6 +1516,43 @@ func _goal_done(id: String) -> bool:
 				return inventory.count("wood") >= 5 or inventory.count("axe") > 0
 			"axe", "pickaxe", "stone", "berries":
 				return inventory.count(id) > 0
+			"food_shop":
+				return park_open.has("icecream") or park_open.has("burger")
+			"souvenir":
+				return park_open.has("souvenir")
+			"staff":
+				return buildings.any(func(b) -> bool: return b.kind == "staff" and b.open)
+			"decor3":
+				return buildings.filter(func(b) -> bool: return b.open and b.id in PARK_DECOR).size() >= 3
+			"visitors10":
+				return total_visitors >= 10
+			"dex3":
+				return caught.size() >= 3
+			"dex25":
+				return caught.size() >= 25
+			"dexall":
+				return caught.size() >= Catalog.DINOS.size()
+			"campfire":
+				return _fires_lit() >= 1
+			"fires5":
+				return _fires_lit() >= 5
+			"happy":
+				return dinos.any(func(d) -> bool: return not d.wild and not d.escaped and d.habitat == "land" and d.region >= 0 \
+					and d.region < regions.size() and regions[d.region].enclosed and d.need == "")
+			"quest1":
+				return _quests_done() >= 1
+			"quest5":
+				return _quests_done() >= 5
+			"quest24":
+				return _quests_done() >= 24
+			"rating30", "rating50", "rating70", "rating90":
+				return zone == Wild.BASE and rating >= int(id.substr(6))
+			"stars4":
+				return stars >= 4
+			"sea":
+				return zone_states.keys().any(func(key: String) -> bool: return Wild.is_ocean(Wild.from_key(key)))
+			"ride_attraction":
+				return buildings.any(func(b) -> bool: return b.open and (b.kind == "heliport" or (b.kind in ["gyro_station", "garage"] and b.region_cell != NONE)))
 			"pen":
 				return regions.any(func(r) -> bool: return r.enclosed and r.cells.size() >= 4)
 			"feeder":
@@ -1312,7 +1565,7 @@ func _goal_done(id: String) -> bool:
 			"adopt":
 				return dinos.any(func(d) -> bool: return d.habitat == "land" and not d.wild and not d.escaped)
 			"cage":
-				return inventory.counts.keys().any(func(k) -> bool: return k.begins_with("dino:")) or goal_index > ADVENTURE_GOALS.size()
+				return inventory.counts.keys().any(func(k) -> bool: return k.begins_with("dino:")) or caught.size() >= 2
 			"release":
 				return dinos.filter(func(d) -> bool: return not d.wild and not d.escaped).size() >= 2
 			"brush":
@@ -1320,7 +1573,7 @@ func _goal_done(id: String) -> bool:
 			"friend":
 				return dinos.any(func(d) -> bool: return not d.wild and d.hearts() >= RIDE_HEARTS and d.can_be_ridden())
 			"ride":
-				return player.mount != null
+				return player.mount != null or not rode.is_empty()
 			"mine":
 				return mine != null or not mine_states.is_empty()
 			"ore":
@@ -2437,6 +2690,14 @@ func _footprint(item: String, cell: Vector2i) -> Array[Vector2i]:
 func build_refused(cell: Vector2i, id: String) -> String:
 	if not in_grid(cell):
 		return "Hors de la carte"
+	if Items.kind_of(id) == "ground":
+		if zone != Wild.BASE:
+			return "On change le sol seulement dans ton parc"
+		if is_water(cell):
+			return "Pas sur l'eau !"
+		if biomes[_index(cell)] == Items.ITEMS[id].biome:
+			return "Le sol est déjà comme ça"
+		return ""
 	if zone != Wild.BASE and not Items.ITEMS[id].get("place", "") in WILD_BUILDS:
 		return "Ici, seulement des feux de camp, des ponts et des chemins. Les enclos, c'est dans ton parc !"
 	var size := _footprint(id, cell)
@@ -2465,11 +2726,20 @@ func build_refused(cell: Vector2i, id: String) -> String:
 
 func build_at(cell: Vector2i, id: String) -> Dictionary:
 	inventory.remove(id)
+	if Items.kind_of(id) == "ground":
+		ground_before[cell] = biomes[_index(cell)]
+		_set_biome(cell, Items.ITEMS[id].biome)
+		return {}
 	return _add_building(Items.ITEMS[id].place, cell)
 
 
 # Undoes a placement: the thing goes back into the bag.
 func take_back_at(cell: Vector2i, id: String) -> void:
+	if Items.kind_of(id) == "ground":
+		if ground_before.has(cell):
+			_set_biome(cell, ground_before[cell])
+			inventory.add(id)
+		return
 	var building = occupied.get(cell)
 	if building != null and building.id == Items.ITEMS[id].place:
 		inventory.add(id)
@@ -2888,6 +3158,106 @@ func _rebuild_zone() -> void:
 			_set_fire(building, building.origin in lit)
 
 
+# --- The staff of the park ---------------------------------------------------------
+# Each hut by a path has its employee walking the paths. Now and then, each one does a job
+# somewhere in the park: the keeper fills an empty feeder or feeds a hungry dinosaur, the worker
+# mends a pushed fence or puts back a broken one, the ranger brings back an escaped dinosaur.
+
+const STAFF_EVERY := 8.0  # seconds between two jobs of one employee
+const STAFF_COLORS := {
+	"keeper": {"shirt": Color("4a9a4a"), "hat": Color("6a5a30")},
+	"worker": {"shirt": Color("e08a20"), "hat": Color("fdd835")},
+	"ranger": {"shirt": Color("4a6ab8"), "hat": Color("2a3a6a")},
+}
+
+
+func _staff_work(delta: float) -> void:
+	for building in buildings:
+		if building.kind != "staff":
+			continue
+		var role: String = Catalog.ITEMS[building.id].style
+		building.nodes = building.nodes.filter(func(n) -> bool: return is_instance_valid(n) and not n.is_queued_for_deletion())
+		if not building.open or building.get("build_left", 0.0) > 0.0:
+			continue
+		if building.nodes.is_empty():
+			var start := _path_next_to(building)
+			if start == NONE:
+				continue
+			var walker := Visitor.new()
+			world.add_child(walker)
+			walker.setup(self, start, role, STAFF_COLORS[role])
+			building.nodes.append(walker)
+		building.job_timer = building.get("job_timer", STAFF_EVERY) - delta
+		if building.job_timer > 0.0:
+			continue
+		building.job_timer = STAFF_EVERY
+		var walker: Node2D = building.nodes[0]
+		match role:
+			"keeper":
+				_keeper_job(walker)
+			"worker":
+				_worker_job(walker)
+			"ranger":
+				_ranger_job(walker)
+
+
+func _path_next_to(building: Dictionary) -> Vector2i:
+	for c in _cells(building.origin, building.size):
+		for dir in DIRS:
+			if is_path(c + dir) and distance.has(c + dir):
+				return c + dir
+	return NONE
+
+
+func _keeper_job(walker: Node2D) -> void:
+	for building in buildings:
+		if building.kind == "feeder" and building.stock <= 0 and building.get("build_left", 0.0) <= 0.0:
+			building.stock = Catalog.ITEMS[building.id].stock
+			building.label.set_shown(false)
+			_staff_says(walker, cell_center(building.origin), "Mangeoire remplie !")
+			return
+	for dino in dinos:
+		if not dino.wild and not dino.escaped and dino.habitat == "land" and dino.hunger < 40.0:
+			dino.hunger = 100.0
+			_staff_says(walker, dino.position, "Miam ! Le soigneur m'a nourri")
+			return
+
+
+func _worker_job(walker: Node2D) -> void:
+	for cell in broken_fences.keys():
+		var id: String = broken_fences[cell]
+		broken_fences.erase(cell)
+		if occupied.has(cell) or _dino_near(cell_center(cell), 10.0) != null:
+			continue
+		_add_building(id, cell)
+		_rebuild_fences_around(cell)
+		_refresh()
+		_staff_says(walker, cell_center(cell), "Barrière remise !")
+		return
+	for cell in fence_pushes.keys():
+		fence_pushes.erase(cell)
+		if _is_fence(cell):
+			_staff_says(walker, cell_center(cell), "Barrière réparée !")
+			return
+
+
+func _ranger_job(walker: Node2D) -> void:
+	for dino in dinos:
+		if dino.escaped and not dino.wild and dino.state != "sleep":
+			dino.sleep(3.0)
+			_staff_says(walker, dino.position, "Le garde l'a endormi !")
+			return
+
+
+# The employee calls out what they did, and the place where it was done shows it too.
+func _staff_says(walker: Node2D, at: Vector2, text: String) -> void:
+	_float_text(at, text, Color("c8f0a0"))
+	var bubble := WorldText.make(walker, Vector2(0, -26), "J'y vais !", "bubble")
+	var tween := bubble.create_tween()
+	tween.tween_interval(2.0)
+	tween.tween_callback(bubble.queue_free)
+
+
 # --- Storms (see weather.gd) ------------------------------------------------------
 
 func storm_started() -> void:
@@ -3160,6 +3530,7 @@ func _clear_land() -> void:
 	buildings.clear()
 	occupied.clear()
 	fence_pushes.clear()
+	broken_fences.clear()
 	for dino in dinos:
 		dino.queue_free()
 	dinos.clear()

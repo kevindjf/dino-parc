@@ -17,7 +17,7 @@ const Catalog := preload("res://scripts/catalog.gd")
 const T := 16
 const NONE := Vector2i(-1, -1)
 const LINES := ["fence", "path"]  # kinds that are drawn as lines
-const BUILD_TIME := {"feeder": 15.0}  # seconds of work for big buildings, by kind
+const BUILD_TIME := {"feeder": 15.0, "shop": 20.0, "staff": 20.0, "gyro_station": 30.0, "garage": 30.0, "heliport": 40.0}  # seconds of work for big buildings, by kind
 const TAP_HELP := 1.5  # seconds of work saved by each tap on scaffolding
 const CAMERA_SPEED := 420.0
 const OK := Color(0.3, 0.9, 0.35, 0.45)
@@ -61,7 +61,7 @@ func close() -> void:
 
 # The things of the bag that can be laid on the land.
 func buildable() -> Array:
-	return park.inventory.counts.keys().filter(func(id: String) -> bool: return Items.kind_of(id) == "build")
+	return park.inventory.counts.keys().filter(func(id: String) -> bool: return Items.kind_of(id) in ["build", "ground"])
 
 
 func choose(id: String) -> void:
@@ -109,6 +109,8 @@ func _is_fence(id: String) -> bool:
 
 
 func _is_line(id: String) -> bool:
+	if Items.kind_of(id) == "ground":
+		return true
 	return Items.ITEMS.has(id) and Catalog.ITEMS[Items.ITEMS[id].place].kind in LINES and id != "gate_wood"
 
 
@@ -230,6 +232,8 @@ func _commit() -> void:
 			var building: Dictionary = park.build_at(step.cell, step.id)
 			done.cells.append(step.cell)
 			done.items.append(step.id)
+			if building.is_empty():
+				continue
 			_pop(building, i)
 			var work: float = BUILD_TIME.get(building.kind, 0.0)
 			if work > 0.0:

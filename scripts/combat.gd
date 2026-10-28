@@ -320,6 +320,7 @@ func _catch(kind: String, dino: Node2D) -> void:
 
 func _draw() -> void:
 	_escape_arrows()
+	_goal_arrow()
 	for dino in park.dinos:
 		if dino.stun_time > 0.0:
 			# Bolas wrapped around its legs.
@@ -355,6 +356,34 @@ func _draw() -> void:
 		var dot := center + Vector2(half.x + 7.0, -half.y)
 		draw_circle(dot, 5.0, Color("1a1a24"))
 		draw_circle(dot, 4.0, color)
+
+
+# A yellow arrow shows where to go for the goal of the level: over the thing when it is on the
+# screen, at the edge of the screen pointing to it when it is further.
+func _goal_arrow() -> void:
+	if park.away != null or park.player == null or park.hud.menu_open():
+		return
+	var goal = park.goal_target()
+	if goal == null:
+		return
+	var scale := get_canvas_transform().get_scale().x
+	var view := get_canvas_transform().affine_inverse() * get_viewport_rect()
+	var size := 10.0 / scale
+	var tip: Vector2
+	var dir: Vector2
+	if view.has_point(goal):
+		dir = Vector2.DOWN
+		tip = goal + Vector2(0, -22 - absf(sin(time * 5.0)) * 6.0)
+	else:
+		var inner := view.grow(-40.0 / scale)
+		var center := inner.get_center()
+		var to: Vector2 = goal - center
+		var scale_to_edge := minf(absf(inner.size.x / 2.0 / to.x) if to.x != 0.0 else INF, absf(inner.size.y / 2.0 / to.y) if to.y != 0.0 else INF)
+		tip = center + to * scale_to_edge
+		dir = to.normalized()
+	var points := PackedVector2Array([tip, tip - dir * size * 1.6 + dir.orthogonal() * size, tip - dir * size * 1.6 - dir.orthogonal() * size])
+	draw_colored_polygon(points, Color("ffd740"))
+	draw_polyline(points + PackedVector2Array([tip]), Color("3a2a00"), 1.5 / scale)
 
 
 # A red arrow at the edge of the screen points to each escaped dinosaur out of sight.

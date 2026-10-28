@@ -1,6 +1,7 @@
 extends Node2D
 
 const Art := preload("res://scripts/art.gd")
+const WorldText := preload("res://scripts/world_text.gd")
 const T := 16
 const SKIN_TONES := [Color("f1c27d"), Color("e0ac69"), Color("c68642"), Color("8d5524"), Color("ffdbac")]
 const HAIR := [Color("2a1a10"), Color("5a3a1a"), Color("a0602a"), Color("e0c060"), Color("202020"), Color("c04020")]
@@ -22,10 +23,14 @@ var colors := {}
 var sprite: Sprite2D
 var ice_cream: Sprite2D
 var facing := "down"
+var think_timer := 0.0
+var role := ""  # "" for a visitor; "keeper", "worker" or "ranger" for the staff of the park
 
 
-func setup(owner_park: Node2D, start: Vector2i) -> void:
+# outfit: the colours of the staff's uniform, over random ones.
+func setup(owner_park: Node2D, start: Vector2i, job := "", outfit := {}) -> void:
 	park = owner_park
+	role = job
 	cell = start
 	prev_cell = start
 	offset = Vector2(randf_range(-4, 4), randf_range(-3, 3))
@@ -35,6 +40,9 @@ func setup(owner_park: Node2D, start: Vector2i) -> void:
 		"shirt": Color.from_hsv(randf(), 0.65, 0.95), "pants": [Color("37474f"), Color("3a5a9a"), Color("6d5a3a")].pick_random()}
 	if randf() < 0.3:
 		colors.hat = Color.from_hsv(randf(), 0.7, 0.85)
+	colors.merge(outfit, true)
+	if role != "":
+		speed = 1.6
 	var shadow := Art.sprite(Art.shadow(11))
 	shadow.centered = true
 	shadow.offset = Vector2.ZERO
@@ -47,6 +55,7 @@ func setup(owner_park: Node2D, start: Vector2i) -> void:
 	add_child(ice_cream)
 	_choose_next()
 	position = park.cell_center(cell) + offset
+	think_timer = randf_range(3.0, 12.0)
 
 
 func buy(shop_id: String) -> void:
@@ -62,8 +71,12 @@ func _process(delta: float) -> void:
 		queue_free()
 		return
 
+	think_timer -= delta
+	if think_timer <= 0.0 and role == "":
+		think_timer = randf_range(8.0, 16.0)
+		_think()
 	danger_timer -= delta
-	if danger_timer <= 0.0:
+	if danger_timer <= 0.0 and role == "":
 		danger_timer = 0.5
 		if not scared and park.danger_near(position):
 			scared = true
@@ -75,8 +88,9 @@ func _process(delta: float) -> void:
 		progress = 0.0
 		prev_cell = cell
 		cell = next_cell
-		park.on_visitor_step(self)
-		steps_left -= 1
+		if role == "":
+			park.on_visitor_step(self)
+			steps_left -= 1
 		if steps_left <= 0:
 			leaving = true
 		if leaving and park.distance_to_entrance(cell) == 0:
@@ -118,3 +132,17 @@ func _choose_next() -> void:
 	if options.size() > 1:
 		options.erase(prev_cell)
 	next_cell = options.pick_random()
+
+
+# Now and then, a visitor says what they think in a bubble, a few at a time on the screen.
+func _think() -> void:
+	if scared or get_tree().get_nodes_in_group("thoughts").size() >= 3:
+		return
+	var text: String = park.visitor_thought(self)
+	if text == "":
+		return
+	var bubble := WorldText.make(self, Vector2(0, -26), text, "bubble")
+	bubble.add_to_group("thoughts")
+	var tween := bubble.create_tween()
+	tween.tween_interval(3.0)
+	tween.tween_callback(bubble.queue_free)

@@ -16,6 +16,9 @@ Jeu Godot 4.7 fait par Kevin avec ses enfants. Le CLAUDE.md global (Flutter) ne 
 - Les Terres sauvages (`scripts/wild.gd`) : une grille de zones autour du parc. `main.zone` est la
   zone où l'on est ; `main.travel()` vide le terrain et le refait (le parc depuis `base_land`, une
   zone sauvage depuis sa graine + `zone_states`). Les enclos ne se construisent que dans le parc.
+- Progression de l'aventure : des niveaux (`scripts/levels.gd`), chacun une liste d'objectifs vérifiés
+  dans `main.gd` (`_goal_done`) ; un objectif fait reste fait (`main.goals_done`). Le Carnet (HUD)
+  montre le niveau, les quêtes et la note du parc (`_rate_park`).
 - Publication : `main` = travail, `release` = en ligne (GitHub Actions → GitHub Pages).
 - **Avant chaque publication sur `release`**, ajouter une entrée en haut de `scripts/news.gd`
   (version suivante, titre, une phrase courte par nouveauté avec une image) : c'est ce que

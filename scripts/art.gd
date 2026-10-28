@@ -368,6 +368,18 @@ static func decor(style: String) -> Texture2D:
 				return _rock()
 			"volcano":
 				return _volcano()
+			"flowers":
+				return _flowers()
+			"bench":
+				return _bench()
+			"lamp":
+				return _lamp()
+			"statue":
+				return _statue()
+			"fountain":
+				return _fountain()
+			"bin":
+				return _bin()
 		return _round_tree(Color("4e9a34")))
 
 
@@ -512,6 +524,89 @@ static func _volcano() -> Texture2D:
 		l.part([l.limb(lava[0], lava[1], 1.4, 0.8)], Color("ff7020"), 1, 0)
 	l.part([l.ellipse(10, 42, 4, 2), l.ellipse(40, 42.5, 3, 1.6)], Color("5a8a3a"), 1, 1)
 	return _texture(l, 9)
+
+
+# --- Things that make the park pretty for the visitors ---------------------------------
+
+# A patch of flowers: green stems and round blooms of three colours.
+static func _flowers() -> Texture2D:
+	var l := Layers.new(Vector2i(18, 12))
+	l.part([l.ellipse(9, 9, 8, 2.6)], LEAVES[2], 1, 1)
+	var blooms := [[Vector2(4, 6), Color("e84a6a")], [Vector2(9, 4.5), Color("f0d040")], [Vector2(14, 6), Color("8a6ad8")],
+		[Vector2(6.5, 8.5), Color("f0f0f0")], [Vector2(12, 8.5), Color("e84a6a")]]
+	for bloom in blooms:
+		l.part([l.limb(bloom[0] + Vector2(0, 3), bloom[0], 0.5, 0.5)], LEAVES[1], 0, 0, false)
+	for bloom in blooms:
+		l.part([l.ellipse(bloom[0].x, bloom[0].y, 1.8, 1.6)], bloom[1], 1, 1)
+		l.dot(bloom[0].x, bloom[0].y, Color("f8e070") if bloom[1] != Color("f0d040") else Color("c07020"))
+	return _texture(l, 11)
+
+
+# A wooden bench on stone feet, where the visitors rest.
+static func _bench() -> Texture2D:
+	var l := Layers.new(Vector2i(22, 16))
+	for x in [4.0, 17.0]:
+		l.part([l.box(x - 1.5, 9, 3, 6)], STONES[2], 1, 1)
+	l.part([l.box(1, 2, 20, 3)], LOG[2], 1, 1)
+	l.part([l.box(1, 8, 20, 3.5)], LOG[1], 1, 1)
+	for x in [6, 11, 16]:
+		l.dot(x, 9, LOG[0])
+	return _texture(l, 12)
+
+
+# A lamppost: it lights the paths at night (see weather.gd).
+static func _lamp() -> Texture2D:
+	var l := Layers.new(Vector2i(12, 32))
+	var metal := Color("3a4048")
+	l.part([l.box(4, 28, 4, 3)], metal, 1, 1)
+	l.part([l.box(5, 8, 2, 21)], metal, 1, 1)
+	l.part([l.poly([Vector2(2, 8), Vector2(10, 8), Vector2(8, 3), Vector2(4, 3)])], metal.lightened(0.1), 1, 1)
+	l.part([l.box(4, 4, 4, 3.5)], Color("ffe890"), 1, 0, false)
+	l.part([l.ellipse(6, 2.5, 3, 1.4)], metal, 1, 1)
+	return _texture(l, 13)
+
+
+# A stone statue of a T-Rex on its pedestal.
+static func _statue() -> Texture2D:
+	var l := Layers.new(Vector2i(24, 32))
+	var stone := STONES[3]
+	l.part([l.box(3, 23, 18, 8)], STONES[2], 1, 2)
+	l.part([l.box(2, 21, 20, 3)], stone, 1, 1)
+	l.part([l.limb(Vector2(8, 13), Vector2(1, 17), 2.2, 0.8)], stone, 1, 1)
+	l.part([l.limb(Vector2(10, 21), Vector2(10, 15), 1.6, 1.8), l.limb(Vector2(15, 21), Vector2(14, 15), 1.6, 1.8)], stone.darkened(0.08), 1, 1)
+	l.part([l.ellipse(12, 13, 6, 4.5)], stone, 1, 2)
+	l.part([l.limb(Vector2(15, 10), Vector2(17, 6), 2.4, 2.2)], stone, 1, 1)
+	l.part([l.poly([Vector2(15, 2), Vector2(23, 4), Vector2(23, 8), Vector2(16, 8)])], stone, 1, 1)
+	l.part([l.limb(Vector2(16, 12), Vector2(18, 14), 0.6, 0.5)], stone, 0, 0)
+	l.dot(19, 4, STONES[0])
+	for x in [17, 19, 21]:
+		l.dot(x, 7, Color("f0f0f0"))
+	return _texture(l, 14)
+
+
+# A round fountain of stone with a jet of water. Two cells wide.
+static func _fountain() -> Texture2D:
+	var l := Layers.new(Vector2i(32, 26))
+	l.part([l.ellipse(16, 19, 15, 6)], STONES[2], 1, 2)
+	l.part([l.ellipse(16, 18, 12, 4)], Color("3a88c8"), 0, 0, false)
+	l.part([l.ellipse(16, 17, 9, 2.4)], Color("68b0e8"), 0, 0, false)
+	l.part([l.box(14, 9, 4, 8)], STONES[3], 1, 1)
+	l.part([l.ellipse(16, 9, 5, 1.8)], STONES[2], 1, 1)
+	l.part([l.limb(Vector2(16, 8), Vector2(16, 1), 1.2, 1.6)], Color("a8d8f8"), 0, 0, false)
+	for drop in [Vector2(11, 5), Vector2(21, 5), Vector2(9, 8), Vector2(23, 8), Vector2(13, 3), Vector2(19, 3)]:
+		l.dot(drop.x, drop.y, Color("c8e8ff"))
+	return _texture(l, 15)
+
+
+# A little green bin, so the park stays clean.
+static func _bin() -> Texture2D:
+	var l := Layers.new(Vector2i(12, 16))
+	var green := Color("3a7a4a")
+	l.part([l.poly([Vector2(2, 4), Vector2(10, 4), Vector2(9, 15), Vector2(3, 15)])], green, 1, 1)
+	l.part([l.box(1, 2, 10, 2.5)], green.darkened(0.15), 1, 1)
+	for x in [4.5, 7.5]:
+		l.part([l.box(x, 6, 0.8, 7)], green.darkened(0.3), 0, 0, false)
+	return _texture(l, 16)
 
 
 # The entrance of a mine, dug into a cliff: a dark hole held by a wooden frame, and rails coming
@@ -688,7 +783,7 @@ static func item(id: String) -> Texture2D:
 	match data.kind:
 		"decor":
 			return decor(data.style)
-		"shop":
+		"shop", "staff":
 			return shop(data)
 		"feeder":
 			return feeder(data.diet)
@@ -786,6 +881,20 @@ static func shop(data: Dictionary) -> Texture2D:
 				l.part([l.ellipse(11, 4.5, 6, 3)], Color("e8a040"), 1, 1)
 				for seed in [Vector2(9, 3), Vector2(12, 2.5), Vector2(14, 3.5)]:
 					l.dot(seed.x, seed.y, Color("fff3d8"))
+			"keeper":
+				# A green leaf on a white sign: the one who looks after the dinosaurs.
+				l.part([l.ellipse(11, 5, 5.5, 4)], Color("f4ead0"), 1, 1)
+				l.part([l.poly([Vector2(8, 7.5), Vector2(10, 3), Vector2(14, 2.5), Vector2(12.5, 6.5)])], Color("4a9a3a"), 1, 1)
+				l.part([l.limb(Vector2(8, 8), Vector2(12, 4), 0.4, 0.4)], Color("2a6a2a"), 0, 0, false)
+			"worker":
+				# A hammer over a plank.
+				l.part([l.box(5, 7, 12, 2)], LOG[2], 1, 1)
+				l.part([l.limb(Vector2(8, 7), Vector2(13, 2), 0.8, 0.8)], LOG[1], 0, 0)
+				l.part([l.poly([Vector2(11, 1), Vector2(15, 0), Vector2(16.5, 3.5), Vector2(13, 4)])], Color("8a9098"), 1, 1)
+			"ranger":
+				# A shield with a star.
+				l.part([l.poly([Vector2(7, 1), Vector2(15, 1), Vector2(15, 6), Vector2(11, 9), Vector2(7, 6)])], Color("4a6ab8"), 1, 1)
+				l.part([l.poly([Vector2(11, 2), Vector2(12, 4.5), Vector2(13.8, 4.5), Vector2(12.4, 5.8), Vector2(11, 7.2), Vector2(9.6, 5.8), Vector2(8.2, 4.5), Vector2(10, 4.5)])], Color("fdd835"), 0, 0, false)
 			"souvenir":
 				# A present with a ribbon and a bow.
 				l.part([l.box(6, 3.5, 10, 6.5)], color, 1, 1)
@@ -1807,6 +1916,8 @@ static func bag_icon(id: String) -> Texture2D:
 	var item: Dictionary = Items.ITEMS.get(id, {"kind": ""})
 	if item.kind == "build":
 		return icon(item.place)
+	if item.kind == "ground":
+		return icon("biome:" + item.biome)
 	if id == "dart":
 		return icon("dart")
 	if item.kind == "vehicle":

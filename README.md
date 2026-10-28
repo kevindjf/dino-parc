@@ -12,7 +12,7 @@ Le parc de dinosaures en 2D, vu de dessus, en pixel art façon console portable 
 
 L'écran titre affiche **Mes mondes**, comme dans Minecraft : on reprend un monde en le touchant, on le supprime (avec confirmation), ou on **crée un nouveau monde**. Un monde a un nom et un mode de jeu :
 
-- **Aventure** : on crée son personnage, un petit explorateur ou une petite exploratrice avec son chapeau de brousse (prénom, peau, cheveux courts ou queue de cheval, couleurs du chapeau, de la chemise et du short), puis on le dirige dans un parc sauvage. On frappe les arbres pour avoir du bois, on casse les rochers avec la pioche pour avoir de la pierre et on cueille des baies. Ensuite on fabrique ses outils et ses barrières dans le sac, et on les pose soi-même. Des objectifs guident les premiers pas.
+- **Aventure** : on crée son personnage, un petit explorateur ou une petite exploratrice avec son chapeau de brousse (prénom, peau, cheveux courts ou queue de cheval, couleurs du chapeau, de la chemise et du short), puis on le dirige dans un parc sauvage. On frappe les arbres pour avoir du bois, on casse les rochers avec la pioche pour avoir de la pierre et on cueille des baies. Ensuite on fabrique ses outils et ses barrières dans le sac, et on les pose soi-même. Des **niveaux** guident la partie, chacun avec sa liste d'objectifs.
 - **Bac à sable** : on construit librement son parc avec des pièces (l'ancien « mode créatif »).
 
 Chaque monde a sa propre sauvegarde, qui se fait toute seule (toutes les 20 secondes, en quittant et quand le jeu passe en arrière-plan). Le bouton « Menu » sauvegarde avant de revenir à l'écran titre. Les parties faites avant l'arrivée des mondes ont été reprises automatiquement comme deux mondes.
@@ -113,23 +113,47 @@ Le monde se règle dans `scripts/wild.gd` (taille, climat, noms des zones) et `s
 
 ## Aventure : les étoiles du parc
 
-Ton parc gagne des **étoiles**, de 1 à 5, affichées en haut à gauche à côté de ton nom. Elles montent avec les **espèces montrées aux visiteurs** (un dinosaure dans un enclos le long d'un chemin relié à l'entrée, ou dans une volière ou un lagon ouverts) et les **visiteurs accueillis** :
+Ton parc gagne des **étoiles**, de 1 à 5, affichées en haut à gauche à côté de ton nom. Elles montent avec les **espèces montrées aux visiteurs** (un dinosaure dans un enclos le long d'un chemin relié à l'entrée, ou dans une volière ou un lagon ouverts), les **visiteurs accueillis** et la **note du parc** (voir plus bas) :
 
-| Étoiles | Espèces montrées | Visiteurs | Cadeau | Nouveau à la boutique |
-|---|---|---|---|---|
-| ★ | 1 | 0 | 100 pièces | |
-| ★★ | 3 | 50 | 300 pièces | moto, laboratoire |
-| ★★★ | 6 | 300 | 600 pièces | voiture, capsule en or, fusil à lunette |
-| ★★★★ | 10 | 1000 | 1000 pièces | hélicoptère |
-| ★★★★★ | 15 | 3000 | 2000 pièces | |
+| Étoiles | Espèces montrées | Visiteurs | Note | Cadeau | Nouveau à la boutique |
+|---|---|---|---|---|---|
+| ★ | 1 | 0 | 0 | 100 pièces | souvenirs, statue, soigneur, ouvrier |
+| ★★ | 3 | 50 | 15 | 300 pièces | moto, laboratoire, fontaine, jeeps, gyrosphères, garde |
+| ★★★ | 6 | 300 | 35 | 600 pièces | voiture, capsule en or, fusil à lunette, volcan |
+| ★★★★ | 10 | 1000 | 55 | 1000 pièces | hélicoptère, héliport |
+| ★★★★★ | 15 | 3000 | 75 | 2000 pièces | |
 
 Une étoile gagnée reste pour toujours, et chacune augmente le **prix du billet** de 5 pièces (10 sans étoile). Tout se règle dans `scripts/main.gd` (`STARS`) et `scripts/market.gd` (colonne `stars`).
+
+## Aventure : les niveaux et le Carnet
+
+La partie avance par **niveaux** (11 en tout, de « Premiers pas » à « Légende des dinos »). Chaque niveau est une **liste d'objectifs** à faire dans l'ordre qu'on veut : récolter, apprivoiser son premier dino, construire son enclos, ouvrir un stand de glaces, attraper d'autres espèces, monter sur un dino, descendre à la mine, embaucher un employé, faire monter la note du parc… Quand toute la liste est cochée, on passe au niveau suivant et on reçoit un **cadeau** (pièces, stand de glaces, bancs, selle, fontaine, statue, volcan…).
+
+- En haut à gauche, la petite feuille montre le niveau, combien d'objectifs sont faits, et le prochain. **La toucher ouvre le Carnet.**
+- Une **flèche jaune** montre où aller quand c'est utile : l'arbre le plus proche, un buisson, un rocher, un dino à apprivoiser, une grotte.
+- Le bouton **Carnet** a trois onglets : **Niveau** (la liste à cocher, le cadeau, les niveaux suivants), **Quêtes** (ce que demandent les habitants du village) et **Mon parc** (la note du parc, partie par partie, et ce qu'il faut pour la prochaine étoile).
+
+Les niveaux se règlent dans `scripts/levels.gd` ; chaque objectif est vérifié dans `scripts/main.gd` (`_goal_done`). Les parties commencées avant les niveaux gardent les objectifs qu'elles avaient déjà faits.
+
+## Aventure : un vrai parc pour les visiteurs
+
+L'onglet **Parc** du sac (et de la boutique) rassemble tout ce qui plaît aux visiteurs. Tout se pose avec le bouton **Construire**, au bord d'un chemin relié à l'entrée :
+
+- **Boutiques** : stand de glaces, stand de burgers, boutique souvenirs. Les visiteurs qui passent devant achètent : ça rapporte des pièces en plus des billets.
+- **Attractions** : station de gyrosphères (collée contre la barrière d'un enclos), garage à jeeps (avec des **routes**), héliport.
+- **Décoration** : fleurs, bancs, poubelles, lampadaires (ils s'allument la nuit), statue de T-Rex, fontaine, volcan.
+- **Sols** : graines de prairie, graines de jungle, sacs de sable, de boue et de neige. On les trace avec le doigt dans un enclos pour donner à chaque dino **son sol préféré** (il le réclame dans sa bulle sinon).
+- **Employés** : la cabane du **soigneur** (il remplit les mangeoires vides et nourrit les dinos qui ont faim), l'atelier de l'**ouvrier** (il répare les barrières poussées et remet celles qui ont cassé), le poste du **garde** (il endort les dinos échappés pour qu'ils rentrent). Chacun se promène sur les chemins dans son uniforme.
+
+Les **visiteurs parlent** dans des bulles : « Waouh, un Tricératops ! », « J'ai faim… il n'y a pas de glaces ? », « Je suis fatigué… il n'y a pas de banc ? », « Quel beau parc ! ». Ça dit ce qui manque.
+
+La **note du parc** (sur 100, en haut à gauche) additionne : les espèces montrées (30), les dinos heureux (15), à manger (15), les souvenirs (5), la décoration (15) et les attractions (20). Chaque dino échappé enlève 10 points. Elle compte pour les étoiles. Tout se règle dans `scripts/main.gd` (`_rate_park`, `visitor_thought`, `_staff_work`).
 
 ## Aventure : le jour, la nuit et les orages
 
 - Une journée dure **10 minutes**. La nuit, tout devient bleu sombre (jamais trop noir) : ta lampe éclaire autour de toi et les **feux de camp** brillent.
-- De temps en temps, un **orage** éclate pendant une minute : pluie, éclairs, « BOUM ! ». Tes dinos ont peur et **poussent leurs barrières** : pendant l'orage, seule une barrière plus forte qu'eux les retient (ou une barrière électrique). Prépare tes enclos !
-- Quand un dinosaure s'échappe, une **flèche rouge** au bord de l'écran montre où il est. Endors-le avec ton lance-pierre ou tes fléchettes : il est ramené dans son enclos.
+- De temps en temps, un **orage** éclate pendant une minute : pluie, éclairs, « BOUM ! ». Tes dinos ont peur et **poussent plus souvent les barrières trop faibles**. Une barrière aussi forte qu'eux tient toujours, même pendant l'orage. Une barrière trop faible tient 3 coups (« BOUM ! ») avant de casser : le temps d'en poser une plus forte.
+- Quand un dinosaure s'échappe, une **flèche rouge** au bord de l'écran montre où il est. Endors-le avec ton lance-pierre ou tes fléchettes : il est ramené dans son enclos. Le **garde** du parc peut le faire pour toi (voir plus bas).
 
 Le temps se règle dans `scripts/weather.gd` (`DAY`, `STORM_TIME`).
 
@@ -171,7 +195,7 @@ Sors du parc par le **portail, à gauche** (le panneau « ← Village ») : la r
 - Quatre **maisons abandonnées** cachent chacune un **coffre** : des pièces et un objet rare. Un coffre ne s'ouvre qu'une fois.
 - Les **villageois sont des dinosaures habillés** (tricératops, raptors, ptéranodons, T-Rex), dessinés dans `scripts/art.gd` (`dino_folk`).
 - **On entre dans les huit maisons** : il suffit de marcher vers la porte (Action devant la maison marche aussi). Chacune a son habitant (Mamie Rose, Marcel le boucher, Léa l'exploratrice…). Mets-toi devant lui et appuie sur Action pour parler : à la première visite, il te fait un **cadeau** (baies, viande, flèches, pièces…), ensuite il donne des conseils. Pour ressortir, passe la porte en bas. En véhicule, il faut d'abord descendre. Les habitants et leurs cadeaux sont dans `scripts/house.gd` (`RESIDENTS`).
-- **Les quêtes** : après son cadeau, chaque habitant te demande quelque chose, trois fois de suite et de plus en plus dur. Par exemple, ramener des baies ou des fossiles, montrer un Parasaurolophus ou un T-Rex dans ton parc, explorer les Terres sauvages, monter sur un carnivore. Retourne le voir quand c'est fait pour ta récompense (pièces, capsules en or, seringues…). Le bouton **Quêtes** (en haut) rappelle tout ce qu'on te demande et où tu en es. Les quêtes sont dans `scripts/quests.gd`.
+- **Les quêtes** : après son cadeau, chaque habitant te demande quelque chose, trois fois de suite et de plus en plus dur. Par exemple, ramener des baies ou des fossiles, montrer un Parasaurolophus ou un T-Rex dans ton parc, explorer les Terres sauvages, monter sur un carnivore. Retourne le voir quand c'est fait pour ta récompense (pièces, capsules en or, seringues…). L'onglet **Quêtes** du **Carnet** (en haut) rappelle tout ce qu'on te demande et où tu en es. Les quêtes sont dans `scripts/quests.gd`.
 - Pour rentrer, suis la route vers la droite (le panneau « Parc → »). Le parc continue de vivre pendant ce temps : les visiteurs paient leur billet.
 
 ### Une carte en zones
@@ -295,7 +319,7 @@ Les règles sont celles de la version 3D (`~/dino-parc-3d`).
 | Envie | Où |
 |---|---|
 | Objets du sac, recettes, ce que donnent les arbres et rochers | `scripts/items.gd` |
-| Objectifs de l'aventure | `scripts/main.gd` (`ADVENTURE_GOALS`) |
+| Niveaux et objectifs de l'aventure | `scripts/levels.gd` (la vérification dans `scripts/main.gd`, `_goal_done`) |
 | Ce que vend et achète la boutique, et à quel prix | `scripts/market.gd` |
 | Vitesse des bottes et des véhicules | `scripts/items.gd` (`GEAR_SPEED`, `VEHICLES`) |
 | Plan du village, contenu des coffres | `scripts/village.gd` (`HOUSES`, `RUINS`, `CHESTS`…) |
