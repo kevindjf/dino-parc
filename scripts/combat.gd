@@ -217,7 +217,7 @@ func _land(kind: String, shot: Node2D) -> void:
 		return
 	if is_food(kind):
 		park.float_text(shot.position, "Miam !", Color("ff80ab"))
-		park.feed(shot)
+		park.feed(shot, kind)
 		return
 	var stats: Dictionary = Items.WEAPONS[kind]
 	if not shot.wild:

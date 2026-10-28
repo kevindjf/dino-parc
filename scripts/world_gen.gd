@@ -6,6 +6,7 @@ extends RefCounted
 # in the north-east, and the sea with its beach along the east coast.
 
 const Wild := preload("res://scripts/wild.gd")
+const Items := preload("res://scripts/items.gd")
 
 const NATURE := {
 	"prairie": [["tree", 4.0], ["bush", 2.0], ["rock", 1.5], ["fern", 1.0]],
@@ -130,6 +131,17 @@ static func generate_zone(park: Node2D, zone: Vector2i, world_seed: int) -> void
 				id = "pine" if park.biome_at(cell) == "neige" else ("cactus" if park.biome_at(cell) == "desert" else "tree")
 			if id != "":
 				park.add_natural(id, cell)
+
+	# One or two old campfires to find, out: light them to come back from the map.
+	var camps := 0
+	for attempt in 60:
+		if camps >= 1 + seed % 2:
+			break
+		var cell := Vector2i(_inside(park, rng, 12))
+		if park.is_water(cell) or park.biome_at(cell) == "" or (park.occupied.has(cell) and not Items.HARVEST.has(park.occupied[cell].id)):
+			continue
+		park.add_camp(cell)
+		camps += 1
 
 
 static func _inside(park: Node2D, rng: RandomNumberGenerator, margin: int) -> Vector2:

@@ -11,6 +11,11 @@ const Catalog := preload("res://scripts/catalog.gd")
 const TouchStick := preload("res://scripts/touch_stick.gd")
 const TouchButton := preload("res://scripts/touch_button.gd")
 const Market := preload("res://scripts/market.gd")
+const Wild := preload("res://scripts/wild.gd")
+const MAP_COLORS := {
+	"prairie": Color("7ab858"), "jungle": Color("3a8a3a"), "marais": Color("6a8a6a"),
+	"desert": Color("e0c078"), "neige": Color("eef2f6"),
+}
 
 var park: Node2D
 var inventory: RefCounted
@@ -53,6 +58,10 @@ var bag_tabs := {}  # tab id -> Button
 var shop_tab := "tools"
 var shop_kinds: HBoxContainer  # the row of tabs of the shop, hidden when selling
 var shop_kind_tabs := {}  # tab id -> Button
+var world_map: PanelContainer  # the map of the Wild Lands
+var map_grid: GridContainer
+var camp: PanelContainer  # the menu of a campfire
+var camp_buttons := {}  # "meat" / "pie" -> Button
 var dex_title: Label
 
 
@@ -72,6 +81,8 @@ func setup(owner_park: Node2D, player_inventory: RefCounted, player_name: String
 	_build_dex()
 	_build_pocket()
 	_build_shop()
+	_build_map()
+	_build_camp()
 	_build_message()
 	inventory.changed.connect(_refresh)
 	_refresh()
@@ -119,7 +130,7 @@ func _build_top(player_name: String) -> void:
 	buttons.offset_top = 8
 	buttons.add_theme_constant_override("separation", 6)
 	root.add_child(buttons)
-	for entry in [["Sac", 64, toggle_bag], ["Mes dinos", 104, toggle_pocket], ["Dinodex", 92, toggle_dex], ["Menu", 72, park.back_to_menu],
+	for entry in [["Sac", 64, toggle_bag], ["Mes dinos", 104, toggle_pocket], ["Carte", 72, toggle_map], ["Dinodex", 92, toggle_dex], ["Menu", 72, park.back_to_menu],
 			["−", 44, func() -> void: park.camera.zoom_step(-1)], ["+", 44, func() -> void: park.camera.zoom_step(1)]]:
 		var button := _button(buttons, entry[0], entry[1], entry[2])
 		button.custom_minimum_size.y = 44
@@ -330,6 +341,7 @@ func _fill_bag() -> void:
 
 
 func toggle_bag() -> void:
+	_hide_travel()
 	bag_open = not bag_open
 	bag.visible = bag_open
 	dex.visible = false
@@ -364,6 +376,7 @@ func _build_dex() -> void:
 
 
 func toggle_dex() -> void:
+	_hide_travel()
 	dex.visible = not dex.visible
 	pocket.visible = false
 	if bag_open:
@@ -520,6 +533,7 @@ func _build_pocket() -> void:
 
 
 func toggle_pocket() -> void:
+	_hide_travel()
 	pocket.visible = not pocket.visible
 	dex.visible = false
 	shop.visible = false
@@ -717,6 +731,145 @@ func _shop_card(id: String, text: String) -> VBoxContainer:
 	return card
 
 
+# --- The map of the Wild Lands and the campfires ------------------------------------
+
+func _hide_travel() -> void:
+	if world_map != null:
+		world_map.visible = false
+		camp.visible = false
+
+
+# A window in the middle of the screen, with a title and a "Fermer" button. Returns its column.
+func _window(title: String, close: Callable) -> VBoxContainer:
+	var panel := PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+	panel.visible = false
+	root.add_child(panel)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 10)
+	panel.add_child(column)
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 10)
+	column.add_child(header)
+	var label := _label(header, title, 24)
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_button(header, "Fermer", 110, close)
+	return column
+
+
+func _build_map() -> void:
+	var column := _window("Carte du monde", toggle_map)
+	world_map = column.get_parent()
+	var header: HBoxContainer = column.get_child(0)
+	var home := _button(header, "Rentrer au parc", 180, func() -> void: _travel_to(Wild.BASE))
+	header.move_child(home, 1)
+	var hint := _label(column, "Touche le parc pour rentrer, ou une zone avec un feu de camp allumé pour y aller.", 14)
+	hint.add_theme_color_override("font_color", Color("7a6248"))
+	map_grid = GridContainer.new()
+	map_grid.columns = Wild.SIZE.x
+	map_grid.add_theme_constant_override("h_separation", 3)
+	map_grid.add_theme_constant_override("v_separation", 3)
+	column.add_child(map_grid)
+
+
+func toggle_map() -> void:
+	var show := not world_map.visible
+	if bag_open:
+		toggle_bag()
+	dex.visible = false
+	pocket.visible = false
+	shop.visible = false
+	camp.visible = false
+	world_map.visible = show
+	if show:
+		_fill_map()
+
+
+func _fill_map() -> void:
+	for child in map_grid.get_children():
+		child.queue_free()
+	var fires: Dictionary = park.lit_fires()
+	for y in Wild.SIZE.y:
+		for x in Wild.SIZE.x:
+			var zone := Vector2i(x, y)
+			var known: bool = park.visited(zone)
+			var tile := Button.new()
+			tile.custom_minimum_size = Vector2(96, 58)
+			tile.focus_mode = Control.FOCUS_NONE
+			tile.add_theme_font_size_override("font_size", 13)
+			var box := StyleBoxFlat.new()
+			box.bg_color = MAP_COLORS[Wild.main_biome(zone)] if known else Color("5a5248")
+			box.border_color = Color("f0c040") if zone == park.zone else Color("2a1a0c")
+			box.set_border_width_all(4 if zone == park.zone else 2)
+			for state in ["normal", "hover", "pressed"]:
+				tile.add_theme_stylebox_override(state, box)
+			tile.add_theme_color_override("font_color", Color("2a1a0c") if known else Color("c8bca8"))
+			tile.add_theme_color_override("font_hover_color", Color("2a1a0c") if known else Color("c8bca8"))
+			var text := "?" if not known else ""
+			if zone == Wild.BASE:
+				text = "Parc"
+			if zone == park.zone:
+				text = "Toi"
+			tile.text = text
+			if fires.has(Wild.key(zone)):
+				tile.icon = Art.campfire(true, 0)
+			tile.pressed.connect(_travel_to.bind(zone))
+			map_grid.add_child(tile)
+
+
+func _travel_to(zone: Vector2i) -> void:
+	if zone == park.zone and zone != Wild.BASE:
+		flash("Tu es déjà ici !", 1.2)
+		return
+	var refused: String = park.travel_by_map(zone)
+	if refused != "":
+		flash(refused, 2.0)
+		return
+	world_map.visible = false
+
+
+func _build_camp() -> void:
+	var column := _window("Feu de camp", func() -> void: camp.visible = false)
+	camp = column.get_parent()
+	camp.custom_minimum_size = Vector2(520, 0)
+	var rest := _button(column, "Se reposer : tous tes cœurs reviennent", 480, func() -> void:
+		park.rest()
+		camp.visible = false)
+	rest.custom_minimum_size.y = 56
+	camp_buttons.meat = _button(column, "", 480, _cook.bind("meat_cooked"))
+	camp_buttons.pie = _button(column, "", 480, _cook.bind("pie"))
+	var map := _button(column, "Voyager avec la carte", 480, toggle_map)
+	map.custom_minimum_size.y = 56
+	for id in ["meat", "pie"]:
+		camp_buttons[id].custom_minimum_size.y = 56
+		camp_buttons[id].icon = Art.bag_icon("meat_cooked" if id == "meat" else "pie")
+
+
+func open_campfire() -> void:
+	if bag_open:
+		toggle_bag()
+	dex.visible = false
+	pocket.visible = false
+	world_map.visible = false
+	camp.visible = true
+	_fill_camp()
+
+
+func _fill_camp() -> void:
+	camp_buttons.meat.text = "Griller une viande (tu en as %d)" % inventory.count("meat")
+	camp_buttons.meat.disabled = inventory.count("meat") == 0
+	camp_buttons.pie.text = "Faire une tarte avec 2 baies (tu en as %d)" % inventory.count("berries")
+	camp_buttons.pie.disabled = inventory.count("berries") < 2
+
+
+func _cook(what: String) -> void:
+	if park.cook(what):
+		flash("Miam ! %s : les dinos l'aiment deux fois plus !" % Items.name_of(what), 2.0)
+	_fill_camp()
+
+
 # A row of tabs, one per Items.TABS, each with its picture. pick(id) is called on a touch.
 func _tab_row(parent: Control, pick: Callable) -> Dictionary:
 	var row := HBoxContainer.new()
@@ -737,7 +890,7 @@ func _tab_row(parent: Control, pick: Callable) -> Dictionary:
 
 # A window is open over the game: the character waits.
 func menu_open() -> bool:
-	return bag_open or dex.visible or pocket.visible or shop.visible
+	return bag_open or dex.visible or pocket.visible or shop.visible or world_map.visible or camp.visible
 
 
 # --- What the park expects from a HUD ----------------------------------------------

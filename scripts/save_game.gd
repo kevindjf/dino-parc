@@ -44,6 +44,8 @@ static func land(park: Node2D) -> Dictionary:
 
 static func save(park: Node2D) -> void:
 	var in_park: bool = park.mode != "adventure" or park.zone == park.Wild.BASE
+	if not in_park:
+		park.remember_zone()
 	var data: Dictionary = land(park) if in_park else park.base_land.duplicate()
 	data.merge({
 		"version": VERSION, "money": park.money, "total_visitors": park.total_visitors, "goal_index": park.goal_index,
@@ -61,6 +63,7 @@ static func save(park: Node2D) -> void:
 		data.zone = park.Wild.key(park.zone)
 		data.zones = park.zone_states
 		data.exits = park.base_exits
+		data.respawn = park.respawn
 	# Write to a temporary file first, keep the previous save as a backup, then swap:
 	# a crash in the middle of writing never loses the game.
 	var path := path_for(park.world_info.id)

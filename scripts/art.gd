@@ -702,6 +702,8 @@ static func item(id: String) -> Texture2D:
 			return garage()
 		"heliport":
 			return heliport()
+		"campfire":
+			return campfire(true, 0)
 		"fence":
 			return fence(data.style, [Vector2i.LEFT, Vector2i.RIGHT])
 	return null
@@ -829,6 +831,8 @@ static func gyro_station() -> Texture2D:
 			var shift := 3.0 if row % 2 == 1 else 0.0
 			for i in 6:
 				var x := 2.5 + shift + i * 5.5
+				if x >= 29.0:
+					continue
 				var tone: Color = [STONES[2], STONES[3].darkened(0.1), STONES[2].darkened(0.08)][(i + row * 2) % 3]
 				l.part([l.box(x, y, minf(4.5, 29.5 - x), 2.8)], tone, 1, 1, false)
 		l.part([l.box(2, 21, 28, 2.5)], LOG[2], 1, 0)
@@ -1618,6 +1622,19 @@ static func resource(id: String) -> Texture2D:
 				l.dot(6, 3, metal[1])
 				l.part([l.box(1.5, 8, 13, 1)], Color("4a3a2a"), 0, 0, false)
 				l.part([l.ellipse(8, 8.5, 2.2, 2.2)], Color("f09818"), 1, 0)
+			"meat_cooked":
+				l.part([l.limb(Vector2(3, 13), Vector2(7, 9), 1.2, 1.2)], Color("f4ecd8"), 1, 0)
+				l.part([l.ellipse(2.5, 12, 1.6, 1.6), l.ellipse(4, 13.8, 1.6, 1.6)], Color("f4ecd8"), 1, 0)
+				l.part([l.limb(Vector2(7.5, 8.5), Vector2(10.5, 5.5), 3.4, 4.2)], Color("8a4a24"), 1, 2)
+				for at in [Vector2(8, 7), Vector2(10, 9), Vector2(11, 5)]:
+					l.part([l.box(at.x - 1, at.y, 3, 1)], Color("4a2410"), 0, 0, false)
+			"pie":
+				l.part([l.ellipse(8, 10.5, 7, 4)], Color("d8a050"), 1, 2)
+				l.part([l.ellipse(8, 9, 5.5, 2.6)], Color("b02848"), 1, 0, false)
+				for x in [4, 8, 12]:
+					l.part([l.box(x - 0.5, 7, 1.2, 4)], Color("e8c070"), 0, 0, false)
+				l.dot(6, 8, Color("ff8098"))
+				l.dot(10, 8, Color("ff8098"))
 			"saddle":
 				l.part([l.ellipse(8, 9, 6.5, 3.8)], Color("8a4a24"), 1, 1)
 				l.part([l.ellipse(3.8, 6.2, 2.2, 2.8), l.ellipse(12, 6.8, 2, 2.2)], Color("a05a2c"), 1, 1)
@@ -1632,6 +1649,26 @@ static func resource(id: String) -> Texture2D:
 					l.part([l.poly([Vector2(10, 4), Vector2(15, 1.5), Vector2(13, 6)])], Color("fdd835"), 1, 0)
 				else:
 					l.part([l.box(4, 3, 6, 1)], leather.lightened(0.3), 0, 0, false)
+		return ImageTexture.create_from_image(l.image))
+
+
+# A campfire: a ring of stones around crossed logs, and when it is lit, flames that dance
+# (frame 0 to 2). 18 x 20 pixels, standing on its cell.
+static func campfire(lit: bool, frame: int) -> Texture2D:
+	return cached("campfire:%s:%d" % [lit, frame], func() -> Texture2D:
+		var l := Layers.new(Vector2i(18, 20))
+		l.part([l.ellipse(9, 15, 8, 4)], STONES[1], 1, 1)
+		l.part([l.ellipse(9, 14.5, 5.5, 2.5)], Color("2a1a10"), 0, 0, false)
+		for at in [Vector2(2.5, 14), Vector2(5, 17.5), Vector2(9, 18.3), Vector2(13, 17.5), Vector2(15.5, 14), Vector2(5.5, 11.8), Vector2(12.5, 11.8)]:
+			l.part([l.ellipse(at.x, at.y, 2, 1.5)], STONES[2], 1, 1)
+		l.part([l.limb(Vector2(4.5, 16), Vector2(13, 12.5), 1.2, 1.2)], LOG[1], 1, 1)
+		l.part([l.limb(Vector2(13.5, 16), Vector2(5, 12.5), 1.2, 1.2)], LOG[2], 1, 1)
+		if lit:
+			var sway: float = [0.0, 1.0, -1.0][frame % 3]
+			l.part([l.ellipse(9, 11, 4, 3.5), l.poly([Vector2(5.5, 11), Vector2(9 + sway, 1.5), Vector2(12.5, 11)])], Color("f07818"), 0, 0, false)
+			l.part([l.ellipse(9, 11.5, 2.5, 2.2), l.poly([Vector2(7, 11), Vector2(9 - sway, 5), Vector2(11, 11)])], Color("f8c030"), 0, 0, false)
+			l.part([l.ellipse(9, 12, 1.2, 1.2)], Color("fff4c0"), 0, 0, false)
+			l.dot(6 + frame, 3 + frame, Color("f8c030"))
 		return ImageTexture.create_from_image(l.image))
 
 

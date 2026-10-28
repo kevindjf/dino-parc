@@ -41,8 +41,10 @@ const DIRS := [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
 const NONE := Vector2i(-1, -1)
 const NOT_CONNECTED := 99999
 # Land dinosaurs cannot walk through these.
-const DINO_BLOCKERS := ["aviary", "lagoon", "shop", "gyro_station", "garage", "heliport"]
-const VEHICLE_BLOCKERS := ["aviary", "lagoon", "shop", "gyro_station", "garage", "feeder", "heliport"]
+const DINO_BLOCKERS := ["aviary", "lagoon", "shop", "gyro_station", "garage", "heliport", "campfire"]
+const VEHICLE_BLOCKERS := ["aviary", "lagoon", "shop", "gyro_station", "garage", "feeder", "heliport", "campfire"]
+# What can be built in the Wild Lands: enclosures are made in the park.
+const WILD_BUILDS := ["campfire", "bridge", "path", "sapling", "bush"]
 const MAX_MOUNTAIN_LEVEL := 5
 const BORDER := 3  # rows of forest drawn around the park
 const BERRY_REGROW := 25.0
@@ -155,6 +157,7 @@ var left_base_at := 0.0  # when the player left the park, to pay the visitors wh
 var zone_states := {}  # zone key -> what the player changed there, saved with the game
 var base_exits := {}  # "up" / "down" -> the column of the trail out of the park
 var border_nodes: Array[Node] = []  # the forest around the zone and the signs of its trails
+var respawn := {}  # {"zone", "x", "y"}: the last campfire the player rested by, where they wake up
 
 
 func _ready() -> void:
@@ -226,6 +229,7 @@ func start_adventure(data: Dictionary) -> void:
 	var start := cell_center(ENTRANCE + Vector2i(3, 0))
 	world_seed = int(data.get("seed", randi() % 1000000000))
 	zone_states = data.get("zones", {})
+	respawn = data.get("respawn", {})
 	base_exits = data.get("exits", {})
 	if data.is_empty():
 		loading = true
@@ -588,6 +592,9 @@ func _add_building(id: String, origin: Vector2i, fixed := false) -> Dictionary:
 			building.root = Art.sprite(Art.mine_entrance())
 			building.root.position = foot
 			world.add_child(building.root)
+		"campfire":
+			building.lit = true
+			_draw_fire(building)
 		"heliport":
 			building.root = Art.sprite(Art.heliport(), Vector2.ZERO)
 			building.root.position = Vector2(origin * T)
@@ -1372,6 +1379,9 @@ func player_action(cell: Vector2i) -> void:
 		enter_mine(entrance)
 		return
 	var holding: String = inventory.current()
+	if entrance != null and entrance.kind == "campfire" and not (holding in ["axe", "pickaxe", "pickaxe_iron"] and not entrance.get("found", false)):
+		use_campfire(entrance)
+		return
 	var kind := Items.kind_of(holding)
 	if kind == "vehicle":
 		board_vehicle(holding)
@@ -1769,7 +1779,7 @@ func _befriend(dino: Node2D, holding: String) -> void:
 # take this food now, or "" if it would.
 func food_refused(dino: Node2D, food: String) -> String:
 	if dino.species.diet != Items.WEAPONS[food].feed:
-		return "Il ne mange pas de baies !" if food == "berries" else "Il ne mange pas de viande !"
+		return "Il ne mange pas de baies !" if Items.WEAPONS[food].feed == "herb" else "Il ne mange pas de viande !"
 	if dino.wild:
 		return "Il te suit déjà !" if dino.following != null else ""
 	if clock < dino.next_treat:
@@ -1779,16 +1789,17 @@ func food_refused(dino: Node2D, food: String) -> String:
 
 # The food reached the dinosaur: a wild one trusts us a bit more (3 times and it follows us,
 # 5 for a carnivore, which also stops charging for a while), one of the park becomes a better friend.
-func feed(dino: Node2D) -> void:
+func feed(dino: Node2D, food := "") -> void:
+	var worth: int = Items.WEAPONS.get(food, {}).get("worth", 1)
 	dino.roar_time = 0.0
 	dino.chase_cool = 12.0
 	dino.angry_time = 0.0
 	if not dino.wild:
 		dino.next_treat = clock + 20.0
 		dino.hunger = 100.0
-		_gain_friendship(dino, 20)
+		_gain_friendship(dino, 20 * worth)
 		return
-	dino.trust += 1
+	dino.trust += worth
 	dino.set_mood("", Color.WHITE)
 	if dino.trust < dino.trust_needed():
 		return
@@ -1933,10 +1944,10 @@ func float_text(at: Vector2, text: String, color: Color) -> void:
 
 
 func player_scared(dino: Node2D) -> void:
-	if zone != Wild.BASE:
-		# Far from home, the player runs back to the park.
-		hud.flash("%s t'a fait très peur !\nTu rentres en courant au parc." % dino.species.name, 3.0)
-		call_deferred("travel", Wild.BASE, cell_center(ENTRANCE + Vector2i(2, 0)))
+	if not respawn.is_empty() or zone != Wild.BASE:
+		# The player runs back to the last campfire they rested by, or to the park.
+		hud.flash("%s t'a fait très peur !\nTu cours te réfugier %s." % [dino.species.name, "près de ton feu de camp" if not respawn.is_empty() else "au parc"], 3.0)
+		call_deferred("go_to_respawn")
 		return
 	player.position = cell_center(ENTRANCE + Vector2i(2, 0))
 	player.velocity = Vector2.ZERO
@@ -2023,6 +2034,8 @@ func _can_place(cell: Vector2i, item := "") -> bool:
 func build_refused(cell: Vector2i, id: String) -> String:
 	if not in_grid(cell):
 		return "Hors de la carte"
+	if zone != Wild.BASE and not Items.ITEMS[id].get("place", "") in WILD_BUILDS:
+		return "Ici, seulement des feux de camp, des ponts et des chemins. Les enclos, c'est dans ton parc !"
 	var building = occupied.get(cell)
 	if building != null:
 		match building.id:
@@ -2077,6 +2090,10 @@ func shake(node: Node2D) -> void:
 
 func place_item(id: String, cell: Vector2i) -> void:
 	if not _can_place(cell, id):
+		return
+	var refused := build_refused(cell, id)
+	if refused != "":
+		_float_text(player.position, refused, Color("ffab91"))
 		return
 	if inventory.count(id) <= 0:
 		_float_text(player.position, "Plus de %s !" % Items.name_of(id), Color("ffab91"))
@@ -2276,10 +2293,13 @@ func _cross_edge(dir: Vector2i) -> void:
 func travel(to: Vector2i, at: Vector2) -> void:
 	if to == zone:
 		player.position = at
+		camera.position = at
 		return
 	if zone == Wild.BASE:
 		base_land = SaveGame.land(self)
 		left_base_at = clock
+	else:
+		remember_zone()
 	_clear_land()
 	zone = to
 	loading = true
@@ -2289,6 +2309,7 @@ func travel(to: Vector2i, at: Vector2) -> void:
 		base_land = {}
 	else:
 		WorldGen.generate_zone(self, zone, world_seed)
+		_rebuild_zone()
 		_finish_loading()
 	_build_border()
 	natural_target = _count_nature()
@@ -2335,6 +2356,149 @@ func _arrival_cell(wanted: Vector2i) -> Vector2i:
 					remove_natural(cell)
 					return cell
 	return wanted
+
+
+# What the player changed in the wild zone they are in: what they built there and the fires
+# they lit. Kept in zone_states, saved with the game. A zone is in it once visited.
+func remember_zone() -> void:
+	if zone == Wild.BASE:
+		return
+	var built := []
+	var fires := []
+	for building in buildings:
+		if building.get("found", false):
+			if building.lit:
+				fires.append([building.origin.x, building.origin.y])
+		elif Items.item_for_building(building.id) != "" and not Items.HARVEST.has(building.id):
+			built.append([building.id, building.origin.x, building.origin.y])
+	zone_states[Wild.key(zone)] = {"built": built, "fires": fires}
+
+
+# Puts back what the player built in this zone and lights again the fires they lit.
+func _rebuild_zone() -> void:
+	var state: Dictionary = zone_states.get(Wild.key(zone), {})
+	zone_states[Wild.key(zone)] = state
+	for entry in state.get("built", []):
+		var cell := Vector2i(int(entry[1]), int(entry[2]))
+		if not Catalog.ITEMS.has(entry[0]) or not in_grid(cell):
+			continue
+		remove_natural(cell)
+		if entry[0] == "bridge":
+			set_water(cell, true)
+		elif entry[0] != "path":
+			set_water(cell, false)
+		_add_building(entry[0], cell)
+	var lit: Array = state.get("fires", []).map(func(at: Array) -> Vector2i: return Vector2i(int(at[0]), int(at[1])))
+	for building in buildings:
+		if building.get("found", false):
+			_set_fire(building, building.origin in lit)
+
+
+# A campfire found in the wild, out until the player lights it.
+func add_camp(cell: Vector2i) -> void:
+	remove_natural(cell)
+	set_water(cell, false)
+	var building := _add_building("campfire", cell)
+	building.found = true
+	_set_fire(building, false)
+
+
+func _set_fire(building: Dictionary, lit: bool) -> void:
+	building.lit = lit
+	_draw_fire(building)
+
+
+func _draw_fire(building: Dictionary) -> void:
+	if building.root != null:
+		building.root.queue_free()
+	var foot := Vector2((building.origin.x + 0.5) * T, (building.origin.y + 1) * T - 1)
+	if building.lit:
+		var flames := FlipBook.new()
+		var frames: Array[Texture2D] = [Art.campfire(true, 0), Art.campfire(true, 1), Art.campfire(true, 2)]
+		flames.setup(frames, 6.0)
+		flames.position = foot - Vector2(9, 20)
+		building.root = flames
+	else:
+		building.root = Art.sprite(Art.campfire(false, 0))
+		building.root.position = foot
+	world.add_child(building.root)
+
+
+# Action in front of a campfire: lights it, or opens its menu (rest, cook, travel).
+func use_campfire(building: Dictionary) -> void:
+	if not building.lit:
+		_set_fire(building, true)
+		remember_zone()
+		_set_respawn(building)
+		hud.flash("Tu as allumé le feu de camp !\nTu pourras y revenir depuis la carte.", 3.0)
+		return
+	_set_respawn(building)
+	hud.open_campfire()
+
+
+func _set_respawn(building: Dictionary) -> void:
+	respawn = {"zone": Wild.key(zone), "x": building.origin.x, "y": building.origin.y + 1}
+
+
+func rest() -> void:
+	hearts = MAX_HEARTS
+	hud.set_hearts(hearts, MAX_HEARTS)
+	hud.flash("Tu te reposes près du feu…\nTu es en pleine forme !", 2.5)
+
+
+# Grills one meat, or bakes a pie with 2 berries. Returns false if there is not enough.
+func cook(what: String) -> bool:
+	var needs := {"meat": 1} if what == "meat_cooked" else {"berries": 2}
+	if not inventory.has_all(needs):
+		return false
+	for id in needs:
+		inventory.remove(id, needs[id])
+	inventory.add(what)
+	return true
+
+
+# The fires lit in each zone, for the map: zone key -> cells.
+func lit_fires() -> Dictionary:
+	if zone != Wild.BASE:
+		remember_zone()
+	var fires := {}
+	for key in zone_states:
+		var cells: Array = zone_states[key].get("fires", [])
+		cells = cells + zone_states[key].get("built", []).filter(func(entry: Array) -> bool: return entry[0] == "campfire").map(func(entry: Array) -> Array: return [entry[1], entry[2]])
+		if not cells.is_empty():
+			fires[key] = cells
+	return fires
+
+
+func visited(target: Vector2i) -> bool:
+	return target == Wild.BASE or zone_states.has(Wild.key(target))
+
+
+# From the map: to the park, or next to a lit campfire of a zone. Not from a mine or the village.
+func travel_by_map(target: Vector2i) -> String:
+	if away != null:
+		return "Sors d'abord de la mine ou du village !"
+	if player.mount != null:
+		return "Descends de ton dinosaure pour voyager"
+	if player.vehicle != "":
+		player_leave_vehicle()
+	if target == Wild.BASE:
+		travel(Wild.BASE, cell_center(ENTRANCE + Vector2i(3, 0)))
+		return ""
+	var fires: Array = lit_fires().get(Wild.key(target), [])
+	if fires.is_empty():
+		return "Allume d'abord un feu de camp dans cette zone"
+	travel(target, cell_center(Vector2i(int(fires[0][0]), int(fires[0][1]) + 1)))
+	return ""
+
+
+func go_to_respawn() -> void:
+	if respawn.is_empty():
+		travel(Wild.BASE, cell_center(ENTRANCE + Vector2i(2, 0)))
+		return
+	travel(Wild.from_key(respawn.zone), cell_center(Vector2i(int(respawn.x), int(respawn.y))))
+	hearts = MAX_HEARTS
+	hud.set_hearts(hearts, MAX_HEARTS)
 
 
 # Empties the land: every building, dinosaur and visitor goes, the ground is blank again.

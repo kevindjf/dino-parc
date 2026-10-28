@@ -54,6 +54,7 @@ const ITEMS := {
 	"icecream": {"name": "Glaces", "kind": "shop", "style": "icecream", "cost": 150, "price": 5, "attraction": 5, "color": Color("f48fb1")},
 	"burger": {"name": "Burgers", "kind": "shop", "style": "burger", "cost": 250, "price": 8, "attraction": 5, "color": Color("ff8f00")},
 	"souvenir": {"name": "Souvenirs", "kind": "shop", "style": "souvenir", "cost": 400, "price": 12, "attraction": 8, "color": Color("7e57c2")},
+	"campfire": {"name": "Feu de camp", "kind": "campfire", "cost": 30, "color": Color("f07818")},
 	"tree": {"name": "Arbre", "kind": "decor", "style": "tree", "cost": 20, "attraction": 1, "color": Color("388e3c")},
 	"pine": {"name": "Sapin", "kind": "decor", "style": "pine", "cost": 20, "attraction": 1, "color": Color("1b5e20")},
 	"palm": {"name": "Palmier", "kind": "decor", "style": "palm", "cost": 30, "attraction": 1, "color": Color("7cb342")},

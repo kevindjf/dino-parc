@@ -38,5 +38,5 @@ const BUY := [
 # What the merchant gives for one of each thing.
 const SELL := {
 	"wood": 1, "stone": 1, "berries": 1, "copper": 3, "iron": 5,
-	"crystal": 15, "gold": 20, "amber": 25, "fossil": 30,
+	"crystal": 15, "gold": 20, "amber": 25, "fossil": 30, "meat_cooked": 8, "pie": 4,
 }

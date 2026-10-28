@@ -18,6 +18,8 @@ const ITEMS := {
 	"fossil": {"name": "Fossile", "kind": "resource"},
 	"berries": {"name": "Baies", "kind": "food"},
 	"meat": {"name": "Viande", "kind": "food"},
+	"meat_cooked": {"name": "Viande grillée", "kind": "food"},
+	"pie": {"name": "Tarte aux baies", "kind": "food"},
 	"axe": {"name": "Hache", "kind": "tool"},
 	"pickaxe": {"name": "Pioche", "kind": "tool"},
 	"pickaxe_iron": {"name": "Pioche en fer", "kind": "tool"},
@@ -30,6 +32,7 @@ const ITEMS := {
 	"gate_wood": {"name": "Portail", "kind": "build", "place": "gate_wood"},
 	"fence_electric": {"name": "Barrière électrique", "kind": "build", "place": "fence_electric"},
 	"bridge": {"name": "Pont", "kind": "build", "place": "bridge"},
+	"campfire": {"name": "Feu de camp", "kind": "build", "place": "campfire"},
 	"feeder_plants": {"name": "Mangeoire à plantes", "kind": "build", "place": "feeder_plants"},
 	"feeder_meat": {"name": "Mangeoire à viande", "kind": "build", "place": "feeder_meat"},
 	"slingshot": {"name": "Lance-pierre", "kind": "weapon"},
@@ -93,7 +96,7 @@ const VEHICLES := {
 #   biggest: the strongest dinosaur it works on
 #   flight: how it flies (straight, arc or spin), capture: biggest strength a capsule can hold,
 #   feed: thrown to make friends with the dinosaurs of that diet (berries for herbivores,
-#   meat for carnivores)
+#   meat for carnivores); worth: how many times plain food it counts (cooked food counts double)
 const WEAPONS := {
 	"slingshot": {"ammo": "stone", "tire": 10, "power": [1.5, 1.0, 0.5, 0.25, 0.1], "range": 6.0, "every": 0.45, "flight": "arc", "speed": 220.0},
 	"bow": {"ammo": "arrow", "tire": 16, "power": [1.0, 1.0, 1.0, 0.75, 0.5], "range": 8.0, "every": 0.6, "flight": "straight", "speed": 300.0},
@@ -105,6 +108,8 @@ const WEAPONS := {
 	"net": {"ammo": "net", "tire": 0, "stun": 7.0, "biggest": 3, "range": 4.0, "every": 1.0, "flight": "spin", "speed": 160.0},
 	"berries": {"ammo": "berries", "feed": "herb", "range": 5.0, "every": 0.6, "flight": "arc", "speed": 160.0},
 	"meat": {"ammo": "meat", "feed": "carn", "range": 5.0, "every": 0.6, "flight": "arc", "speed": 160.0},
+	"pie": {"ammo": "pie", "feed": "herb", "worth": 2, "range": 5.0, "every": 0.6, "flight": "arc", "speed": 160.0},
+	"meat_cooked": {"ammo": "meat_cooked", "feed": "carn", "worth": 2, "range": 5.0, "every": 0.6, "flight": "arc", "speed": 160.0},
 	"capsule_copper": {"ammo": "capsule_copper", "capture": 3, "range": 5.0, "every": 1.0, "flight": "arc", "speed": 170.0},
 	"capsule_iron": {"ammo": "capsule_iron", "capture": 4, "range": 5.0, "every": 1.0, "flight": "arc", "speed": 170.0},
 	"capsule_gold": {"ammo": "capsule_gold", "capture": 5, "range": 5.0, "every": 1.0, "flight": "arc", "speed": 170.0},
@@ -122,6 +127,7 @@ const RECIPES := [
 	{"make": "gate_wood", "count": 1, "needs": {"wood": 3}},
 	{"make": "fence_electric", "count": 2, "needs": {"iron": 2, "copper": 1}},
 	{"make": "bridge", "count": 2, "needs": {"wood": 3}},
+	{"make": "campfire", "count": 1, "needs": {"wood": 3, "stone": 3}},
 	{"make": "path", "count": 4, "needs": {"stone": 1}},
 	{"make": "feeder_plants", "count": 1, "needs": {"wood": 4, "berries": 3}},
 	{"make": "feeder_meat", "count": 1, "needs": {"wood": 4, "meat": 3}},
