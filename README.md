@@ -69,7 +69,7 @@ Une partie commencée sur l'ancienne petite carte est replacée telle quelle pr�
 
 ## Aventure : les Terres sauvages
 
-Ton parc n'est que le début : il est au milieu d'un monde de **7 × 7 zones**, chacune aussi grande que le parc. Sors par les sentiers **en haut** et **en bas** du parc (panneaux « Terres sauvages ») ; dans les zones sauvages, il suffit de marcher jusqu'au bord pour passer à la suivante. L'hélicoptère passe d'une zone à l'autre en volant.
+Ton parc n'est que le début : il est au milieu d'un monde de **7 × 7 zones**, chacune aussi grande que le parc. Sors par les **sentiers tout autour du parc** (panneaux « Terres sauvages ») : 3 en haut, 3 en bas, 2 à gauche à côté de la route du village, et à droite une digue de sable qui traverse la mer ; dans les zones sauvages, il suffit de marcher jusqu'au bord pour passer à la suivante. L'hélicoptère passe d'une zone à l'autre en volant.
 
 - Plus on va **au nord**, plus il fait froid (neige, sapins) ; **au sud**, la jungle ; **à l'ouest**, les marais ; **à l'est**, le désert. Les zones se raccordent entre elles.
 - Les **étoiles** à côté du nom de la zone disent si elle est loin du parc : plus il y en a, plus les **gros dinosaures et les espèces rares** sont fréquents.
@@ -188,7 +188,7 @@ Chaque dinosaure du parc a de l'**amitié pour toi, de 0 à 5 cœurs**. Elle dé
 - Chaque soin ne marche qu'une fois toutes les 20 secondes : il faut revenir le voir. Les carnivores sont méfiants et demandent deux fois plus de soins.
 - Toucher un dinosaure avec un autre objet en main affiche ses cœurs.
 
-**La selle** se pose sur un dinosaure d'au moins 3 cœurs (selle en main, Action). À **5 cœurs**, Action à mains nues le monte. Il faut un dinosaure d'au moins 6 m : à partir du Gallimimus, du Tricératops ou du Dilophosaure. Sa vitesse dépend de l'espèce. Action fait descendre. Si tu descends hors de son enclos, il te suit jusqu'à ce que tu le ramènes. Sur un dinosaure au moins aussi fort qu'eux, les carnivores sauvages n'osent plus te foncer dessus.
+**La selle** : dès qu'un dinosaure de ton parc a **3 cœurs**, prends la selle en main et appuie sur Action devant lui : la selle est posée et tu montes tout de suite. Ensuite, Action devant lui (mains vides ou selle en main) pour remonter. Quand on prend la selle en main dans le sac, le jeu explique ces étapes. Il faut un dinosaure d'au moins 6 m : à partir du Gallimimus, du Tricératops ou du Dilophosaure. Sa vitesse dépend de l'espèce. Action fait descendre. Si tu descends hors de son enclos, il te suit jusqu'à ce que tu le ramènes. Sur un dinosaure au moins aussi fort qu'eux, les carnivores sauvages n'osent plus te foncer dessus.
 
 Le **Dinodex** (bouton en haut) montre les 21 espèces : les ombres noires sont celles qu'il reste à attraper. Les volants et les reptiles marins arriveront plus tard.
 

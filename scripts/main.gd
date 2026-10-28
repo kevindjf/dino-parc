@@ -44,6 +44,7 @@ const NOT_CONNECTED := 99999
 const DINO_BLOCKERS := ["aviary", "lagoon", "shop", "gyro_station", "garage", "heliport", "campfire"]
 const VEHICLE_BLOCKERS := ["aviary", "lagoon", "shop", "gyro_station", "garage", "feeder", "heliport", "campfire"]
 # What can be built in the Wild Lands: enclosures are made in the park.
+const RIDE_HEARTS := 3  # friendship needed to put a saddle on a dinosaur and ride it
 const WILD_BUILDS := ["campfire", "bridge", "path", "sapling", "bush"]
 const MAX_MOUNTAIN_LEVEL := 5
 const BORDER := 3  # rows of forest drawn around the park
@@ -67,8 +68,8 @@ const ADVENTURE_GOALS := [
 	{"id": "cage", "text": "Fabrique un lance-pierre et une cage. Fatigue un petit dinosaure de loin, puis mets-le en cage"},
 	{"id": "release", "text": "Relâche le dinosaure attrapé dans un enclos"},
 	{"id": "brush", "text": "Fabrique une brosse et brosse un dinosaure de ton parc"},
-	{"id": "friend", "text": "Gagne les 5 cœurs d'amitié d'un dinosaure (brosse-le, donne-lui à manger)"},
-	{"id": "ride", "text": "Pose-lui une selle et monte sur son dos !"},
+	{"id": "friend", "text": "Gagne 3 cœurs d'amitié d'un gros dino de ton parc, comme un Tricératops (brosse-le, donne-lui à manger)"},
+	{"id": "ride", "text": "Fabrique une selle, prends-la en main et appuie sur Action devant lui : tu montes sur son dos !"},
 	{"id": "mine", "text": "Trouve une grotte dans les montagnes et descends dans la mine"},
 	{"id": "ore", "text": "Creuse les murs de la mine pour trouver du fer et du cuivre"},
 	{"id": "electric", "text": "Fabrique une barrière électrique : la seule qui retient un T-Rex !"},
@@ -155,7 +156,7 @@ var world_seed := 0  # makes the same wild zones every time in this world
 var base_land := {}  # the park, saved while the player is in a wild zone
 var left_base_at := 0.0  # when the player left the park, to pay the visitors who came meanwhile
 var zone_states := {}  # zone key -> what the player changed there, saved with the game
-var base_exits := {}  # "up" / "down" -> the column of the trail out of the park
+var base_exits := {}  # "up" / "down" / "left" / "right" -> where the trails out of the park are
 var border_nodes: Array[Node] = []  # the forest around the zone and the signs of its trails
 var respawn := {}  # {"zone", "x", "y"}: the last campfire the player rested by, where they wake up
 
@@ -1208,7 +1209,7 @@ func _goal_done(id: String) -> bool:
 			"brush":
 				return inventory.count("brush") > 0 and dinos.any(func(d) -> bool: return not d.wild and d.friendship >= 40)
 			"friend":
-				return dinos.any(func(d) -> bool: return not d.wild and d.hearts() >= 5)
+				return dinos.any(func(d) -> bool: return not d.wild and d.hearts() >= RIDE_HEARTS and d.can_be_ridden())
 			"ride":
 				return player.mount != null
 			"mine":
@@ -1303,7 +1304,7 @@ func _process_adventure(delta: float) -> void:
 			save_game()
 		return
 	# The road out of the park gate leads to the village.
-	if zone == Wild.BASE and player.position.x < -1.5 * T:
+	if zone == Wild.BASE and player.position.x < -1.5 * T and absi(player.cell().y - ENTRANCE.y) <= 1:
 		enter_village()
 		return
 	# Off the edge of the zone: the next zone of the Wild Lands.
@@ -1736,6 +1737,9 @@ func _touch_dino(dino: Node2D, holding: String) -> void:
 		_float_text(at, "%s est dans la cage !" % dino.species.name, Color("fff59d"))
 		catch_dino(dino)
 		return
+	if dino.wild and holding == "saddle":
+		_float_text(at, "La selle, c'est pour les dinos de ton parc : apprivoise-le ou attrape-le d'abord !", Color("ffab91"))
+		return
 	if dino.wild:
 		var hint := "Donne-lui des baies, ou fatigue-le et lance une capsule !" if dino.species.diet == "herb" \
 			else "Attention, il mord ! Fatigue-le de loin, puis lance une capsule."
@@ -1760,15 +1764,15 @@ func _befriend(dino: Node2D, holding: String) -> void:
 			_gain_friendship(dino, 10 if shy else 20)
 		"saddle":
 			if not dino.can_be_ridden():
-				_float_text(at, "Il est trop petit pour porter une selle", Color("ffab91"))
+				_float_text(at, "Trop petit pour une selle ! Essaie un %s" % _rideable_names(), Color("ffab91"))
 			elif dino.saddled:
-				_float_text(at, "Il a déjà une selle", Color("e0e0e0"))
-			elif dino.hearts() < 3:
-				_float_text(at, "Il ne se laisse pas encore seller (%s)" % dino.hearts_text(), Color("ffab91"))
+				_try_mount(dino)
+			elif dino.hearts() < RIDE_HEARTS:
+				_float_text(at, "Il doit d'abord t'aimer : %d cœurs (il a %s).\nBrosse-le et donne-lui à manger !" % [RIDE_HEARTS, dino.hearts_text()], Color("ffab91"))
 			else:
 				inventory.remove("saddle")
 				dino.set_saddled(true)
-				_float_text(at, "Selle posée !", Color("fff59d"))
+				_try_mount(dino)
 		"":
 			_try_mount(dino)
 		_:
@@ -1828,14 +1832,17 @@ func _try_mount(dino: Node2D) -> void:
 	var at: Vector2 = dino.position + Vector2(0, -12)
 	if not dino.can_be_ridden():
 		_float_text(at, "Trop petit pour être monté. Amitié : %s" % dino.hearts_text(), Color("ff80ab"))
-	elif dino.hearts() < 5:
-		_float_text(at, "Il n'a pas encore assez confiance : %s" % dino.hearts_text(), Color("ff80ab"))
 	elif not dino.saddled:
-		_float_text(at, "Il lui faut une selle !", Color("ffab91"))
+		_float_text(at, "Il lui faut une selle ! Prends-la en main et appuie sur Action devant lui.", Color("ffab91"))
 	else:
 		player.mount_on(dino)
 		hud.set_riding(true)
-		hud.flash("En selle sur %s !\nBouton Action pour descendre." % dino.species.name, 2.5)
+		hud.flash("En selle sur %s !\nUtilise le joystick pour avancer.\nBouton Action pour descendre." % dino.species.name, 3.0)
+
+
+# Some of the dinosaurs big enough to carry a saddle, to tell which ones.
+func _rideable_names() -> String:
+	return "Tricératops, un Gallimimus ou un Diplodocus."
 
 
 # Gets on the bike, the moto, the car or the helicopter held in hand.
@@ -2203,44 +2210,93 @@ func _grow_nature() -> void:
 
 # --- The Wild Lands -------------------------------------------------------
 
-func _exit_column(dir: Vector2i) -> int:
-	return int(base_exits.get("up" if dir == Vector2i.UP else "down", GRID.x / 2))
+const TRAIL_NAMES := {Vector2i.UP: "up", Vector2i.DOWN: "down", Vector2i.LEFT: "left", Vector2i.RIGHT: "right"}
+
+
+# The cell `along` the side `dir` of the zone, `depth` cells in from its edge.
+func _edge_cell(dir: Vector2i, along: int, depth: int) -> Vector2i:
+	match dir:
+		Vector2i.UP:
+			return Vector2i(along, depth)
+		Vector2i.DOWN:
+			return Vector2i(along, GRID.y - 1 - depth)
+		Vector2i.LEFT:
+			return Vector2i(depth, along)
+	return Vector2i(GRID.x - 1 - depth, along)
+
+
+func _along(dir: Vector2i, cell: Vector2i) -> int:
+	return cell.x if dir.y != 0 else cell.y
+
+
+# Where the trails out of the park are on this side.
+func _trails(dir: Vector2i) -> Array:
+	var saved = base_exits.get(TRAIL_NAMES[dir], [])
+	return (saved if saved is Array else [saved]).map(func(at) -> int: return int(at))
+
+
+func _on_trail(dir: Vector2i, along: int) -> bool:
+	return _trails(dir).any(func(at: int) -> bool: return absi(along - at) <= 1)
+
+
+func _nearest_trail(dir: Vector2i, along: int) -> int:
+	var best := along
+	var best_distance := 1000000
+	for at: int in _trails(dir):
+		if absi(at - along) < best_distance:
+			best_distance = absi(at - along)
+			best = at
+	return best
 
 
 # Opens the trails out of the park, where they cross the least: a park made before the Wild
-# Lands may have trees, rocks or water there, never what the player built.
+# Lands may have trees, rocks or water there, never what the player built. On the right, the
+# trail is a causeway of sand across the sea.
 func _carve_base_exits() -> void:
-	for dir: Vector2i in Wild.BASE_EXITS:
-		var name := "up" if dir == Vector2i.UP else "down"
-		var rows := range(0, 5) if dir == Vector2i.UP else range(GRID.y - 5, GRID.y)
-		if not base_exits.has(name):
-			var best := GRID.x / 2
+	for dir: Vector2i in Wild.BASE_TRAILS:
+		var trails := _trails(dir)
+		var count: int = Wild.BASE_TRAILS[dir]
+		var length := GRID.x if dir.y != 0 else GRID.y
+		var depth := 16 if dir == Vector2i.RIGHT else 5
+		for i in count:
+			var from := length * i / count + 6
+			var to := length * (i + 1) / count - 6
+			if trails.any(func(at: int) -> bool: return at >= from and at < to):
+				continue
+			var best := (from + to) / 2
 			var best_cost := INF
-			for x in range(16, GRID.x - 16):
-				var cost := absf(x - GRID.x / 2) * 0.05
-				for y in rows:
-					for dx in range(-1, 2):
-						var cell := Vector2i(x + dx, y)
+			for along in range(from, to):
+				if dir == Vector2i.LEFT and absi(along - ENTRANCE.y) <= 8:
+					continue
+				var cost := absf(along - (from + to) / 2.0) * 0.05
+				for d in depth:
+					for side in range(-1, 2):
+						var cell := _edge_cell(dir, along + side, d)
 						var building = occupied.get(cell)
-						if is_water(cell) or (building != null and not Items.HARVEST.has(building.id)):
+						if building != null and not Items.HARVEST.has(building.id):
 							cost += 20.0
 						elif building != null:
 							cost += 1.0
+						elif is_water(cell) and dir != Vector2i.RIGHT:
+							cost += 20.0
 				if cost < best_cost:
 					best_cost = cost
-					best = x
-			base_exits[name] = best
-		var column := int(base_exits[name])
-		for y in rows:
-			for dx in range(-1, 2):
-				var cell := Vector2i(column + dx, y)
-				var building = occupied.get(cell)
-				if building != null and Items.HARVEST.has(building.id):
-					remove_natural(cell)
-				if building == null or Items.HARVEST.has(building.id):
-					set_water(cell, false)
-	ground.refresh(Vector2i(GRID.x / 2, 0), GRID.x)
-	ground.refresh(Vector2i(GRID.x / 2, GRID.y - 1), GRID.x)
+					best = along
+			trails.append(best)
+		base_exits[TRAIL_NAMES[dir]] = trails
+		for at: int in trails:
+			for d in depth:
+				for side in range(-1, 2):
+					var cell := _edge_cell(dir, at + side, d)
+					if not in_grid(cell):
+						continue
+					var building = occupied.get(cell)
+					if building != null and Items.HARVEST.has(building.id):
+						remove_natural(cell)
+					if (building == null or Items.HARVEST.has(building.id)) and is_water(cell):
+						set_water(cell, false)
+						biomes[_index(cell)] = "desert"
+	ground.refresh(GRID / 2, maxi(GRID.x, GRID.y))
 
 
 # The side of the zone a cell outside of it is on, or ZERO.
@@ -2262,14 +2318,14 @@ func _edge_open(dir: Vector2i, cell: Vector2i) -> bool:
 	if not Wild.open_edge(zone, dir):
 		return false
 	if zone == Wild.BASE and player.vehicle != "heli":
-		return absi(cell.x - _exit_column(dir)) <= 1
+		return _on_trail(dir, _along(dir, cell))
 	return true
 
 
 func _edge_crossed() -> Vector2i:
 	var cell := Vector2i((player.position / T).floor())
 	var dir := _edge_of(cell)
-	if dir == Vector2i.ZERO or not Wild.open_edge(zone, dir):
+	if dir == Vector2i.ZERO or not _edge_open(dir, cell):
 		return Vector2i.ZERO
 	return dir
 
@@ -2284,7 +2340,13 @@ func _cross_edge(dir: Vector2i) -> void:
 		at.y = 0.5 * T if dir.y > 0 else size.y - 0.5 * T
 	var next := zone + dir
 	if next == Wild.BASE and player.vehicle != "heli":
-		at.x = cell_center(Vector2i(_exit_column(-dir), 0)).x
+		# Into the park by the nearest trail.
+		var cell := Vector2i((at / T).floor())
+		var trail := _nearest_trail(-dir, _along(-dir, cell))
+		if dir.y != 0:
+			at.x = (trail + 0.5) * T
+		else:
+			at.y = (trail + 0.5) * T
 	travel(next, at)
 
 
@@ -2834,8 +2896,7 @@ func _build_world() -> void:
 
 
 # A thick forest all around the zone, like in the old handheld games. The park has its gate on
-# the left and a trail at the top and at the bottom; a wild zone is open on its sides that lead to
-# another zone.
+# the left and trails out on every side; a wild zone is open on its sides that lead to another zone.
 func _build_border() -> void:
 	for node in border_nodes:
 		node.queue_free()
@@ -2843,15 +2904,15 @@ func _build_border() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 42 + zone.x * 13 + zone.y * 7
 	var base := zone == Wild.BASE
+	var trails := base and mode == "adventure"
 	for ring in BORDER:
 		for dir: Vector2i in [Vector2i.UP, Vector2i.DOWN]:
 			if not base and Wild.open_edge(zone, dir):
 				continue
 			var y := -1 - ring if dir == Vector2i.UP else GRID.y + ring
 			for x in range(-BORDER, GRID.x + BORDER):
-				if base and mode == "adventure" and Wild.open_edge(zone, dir) and absi(x - _exit_column(dir)) <= 1:
-					continue
-				_border_tree(Vector2i(x, y), rng)
+				if not (trails and _on_trail(dir, x)):
+					_border_tree(Vector2i(x, y), rng)
 		for dir: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT]:
 			if not base and Wild.open_edge(zone, dir):
 				continue
@@ -2859,7 +2920,8 @@ func _build_border() -> void:
 			for y in range(-BORDER + ring, GRID.y + BORDER - ring):
 				if base and x < 0 and absi(y - ENTRANCE.y) <= 2:
 					continue
-				_border_tree(Vector2i(x, y), rng)
+				if not (trails and _on_trail(dir, y)):
+					_border_tree(Vector2i(x, y), rng)
 	if not base:
 		return
 	if mode == "adventure":
@@ -2871,29 +2933,40 @@ func _build_border() -> void:
 	var gate := Art.sprite(Art.gate())
 	gate.position = Vector2(-0.5 * T, (ENTRANCE.y + 3) * T)
 	_add_border(gate)
-	var entry := ColorRect.new()
-	entry.color = Color("e8d4a0")
-	entry.position = Vector2(-BORDER * T, ENTRANCE.y * T)
-	entry.size = Vector2(BORDER * T, T)
-	entry.z_index = -9
-	add_child(entry)
-	border_nodes.append(entry)
-	if mode != "adventure":
+	_add_trail(Rect2(-BORDER * T, ENTRANCE.y * T, BORDER * T, T))
+	if not trails:
 		return
-	for dir: Vector2i in Wild.BASE_EXITS:
-		# A dirt trail through the forest, and a sign by it.
-		var x := _exit_column(dir)
-		var trail := ColorRect.new()
-		trail.color = Color("e8d4a0")
-		trail.position = Vector2((x - 1) * T, -BORDER * T if dir == Vector2i.UP else GRID.y * T)
-		trail.size = Vector2(3 * T, BORDER * T)
-		trail.z_index = -9
-		add_child(trail)
-		border_nodes.append(trail)
-		var sign := Art.sprite(Art.signpost())
-		sign.position = Vector2((x + 2.5) * T, (1 if dir == Vector2i.UP else GRID.y - 1) * T - 1)
-		_add_border(sign)
-		WorldText.make(sign, Vector2(0, -24), "↑ Terres sauvages" if dir == Vector2i.UP else "↓ Terres sauvages", "sign")
+	var arrows := {Vector2i.UP: "↑", Vector2i.DOWN: "↓", Vector2i.LEFT: "←", Vector2i.RIGHT: "→"}
+	for dir: Vector2i in Wild.BASE_TRAILS:
+		for at: int in _trails(dir):
+			# A dirt trail through the forest, and a sign by it.
+			var sign := Art.sprite(Art.signpost())
+			match dir:
+				Vector2i.UP:
+					_add_trail(Rect2((at - 1) * T, -BORDER * T, 3 * T, BORDER * T))
+					sign.position = Vector2((at + 2.5) * T, T - 1)
+				Vector2i.DOWN:
+					_add_trail(Rect2((at - 1) * T, GRID.y * T, 3 * T, BORDER * T))
+					sign.position = Vector2((at + 2.5) * T, (GRID.y - 1) * T - 1)
+				Vector2i.LEFT:
+					_add_trail(Rect2(-BORDER * T, (at - 1) * T, BORDER * T, 3 * T))
+					sign.position = Vector2(1.5 * T, (at - 1) * T - 1)
+				Vector2i.RIGHT:
+					_add_trail(Rect2(GRID.x * T, (at - 1) * T, BORDER * T, 3 * T))
+					sign.position = Vector2((GRID.x - 1.5) * T, (at - 1) * T - 1)
+			_add_border(sign)
+			WorldText.make(sign, Vector2(0, -24), "%s Terres sauvages" % arrows[dir], "sign")
+
+
+# A strip of dirt under the forest, for a road or a trail.
+func _add_trail(rect: Rect2) -> void:
+	var trail := ColorRect.new()
+	trail.color = Color("e8d4a0")
+	trail.position = rect.position
+	trail.size = rect.size
+	trail.z_index = -9
+	add_child(trail)
+	border_nodes.append(trail)
 
 
 func _add_border(node: Node2D) -> void:

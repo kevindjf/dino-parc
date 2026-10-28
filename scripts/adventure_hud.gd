@@ -313,7 +313,10 @@ func _fill_bag() -> void:
 		button.add_theme_font_size_override("font_size", 12)
 		button.pressed.connect(func() -> void:
 			inventory.assign(id)
-			flash("%s dans la case %d" % [Items.name_of(id), inventory.selected + 1], 1.0))
+			if Items.TIPS.has(id):
+				flash(Items.TIPS[id], 7.0)
+			else:
+				flash("%s dans la case %d" % [Items.name_of(id), inventory.selected + 1], 1.0))
 		bag_grid.add_child(button)
 
 	for child in recipe_list.get_children():
@@ -336,7 +339,7 @@ func _fill_bag() -> void:
 		var ok: bool = inventory.has_all(recipe.needs)
 		var make := _button(row, "Fabriquer", 110, func() -> void:
 			if inventory.craft(recipe):
-				flash("Tu as fabriqué : %s !" % Items.name_of(recipe.make), 1.5))
+				flash(Items.TIPS.get(recipe.make, "Tu as fabriqué : %s !" % Items.name_of(recipe.make)), 7.0 if Items.TIPS.has(recipe.make) else 1.5))
 		make.disabled = not ok
 
 
@@ -686,7 +689,7 @@ func _buy_card(entry: Dictionary) -> void:
 	var card := _shop_card(entry.id, "%s%s" % [Items.name_of(entry.id), " ×%d" % entry.count if entry.count > 1 else ""])
 	var price := _button(card, "%d pièces" % entry.price, 150, func() -> void:
 		if park.buy(entry):
-			flash("Tu as acheté : %s !" % Items.name_of(entry.id), 1.5)
+			flash(Items.TIPS.get(entry.id, "Tu as acheté : %s !" % Items.name_of(entry.id)), 7.0 if Items.TIPS.has(entry.id) else 1.5)
 		else:
 			flash("Pas assez de pièces !", 1.5)
 		_fill_shop())

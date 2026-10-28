@@ -73,6 +73,14 @@ const TAB_OF_KIND := {
 	"build": "build", "resource": "treasure", "gear": "travel", "vehicle": "travel",
 }
 
+# What to do with a thing, told when the player takes it in hand from the bag.
+const TIPS := {
+	"saddle": "La selle : 1. Fais-toi aimer d'un gros dino de ton parc (3 cœurs) : brosse-le, donne-lui à manger.\n2. Selle en main, Action devant lui : hop, tu montes !\n3. Ensuite, Action devant lui (mains vides ou selle en main) pour remonter.",
+	"brush": "La brosse : Action devant un dino de ton parc pour gagner son amitié. Une fois toutes les 20 secondes.",
+	"sniper": "Le fusil à lunette tire de très loin. Parfait pour les gros dinos !",
+	"campfire": "Pose le feu de camp où tu veux : tu pourras y revenir depuis la carte.",
+}
+
 # Boots make the character walk faster (the best pair in the bag counts).
 const GEAR_SPEED := {"boots": 1.25, "boots_fast": 1.5}
 # What the character can drive, in cells per second (walking is 4). The helicopter flies over

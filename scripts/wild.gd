@@ -10,9 +10,9 @@ extends RefCounted
 const SIZE := Vector2i(7, 7)
 const BASE := Vector2i(3, 3)
 const DIRS := [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
-# The park opens on the wild lands by a trail at the top and one at the bottom; the gate on the
-# left leads to the village, and the sea closes the right.
-const BASE_EXITS := [Vector2i.UP, Vector2i.DOWN]
+# The park opens on the wild lands by trails through its forest: how many on each side. The gate
+# on the left leads to the village; on the right, a sandy causeway crosses the sea.
+const BASE_TRAILS := {Vector2i.UP: 3, Vector2i.DOWN: 3, Vector2i.LEFT: 2, Vector2i.RIGHT: 1}
 
 
 static func key(zone: Vector2i) -> String:
@@ -40,9 +40,9 @@ static func open_edge(zone: Vector2i, dir: Vector2i) -> bool:
 	if not in_world(next):
 		return false
 	if zone == BASE:
-		return dir in BASE_EXITS
+		return BASE_TRAILS.has(dir)
 	if next == BASE:
-		return -dir in BASE_EXITS
+		return BASE_TRAILS.has(-dir)
 	return true
 
 
