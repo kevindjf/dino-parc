@@ -1004,135 +1004,162 @@ static func person(direction: String, frame: int, colors: Dictionary) -> Texture
 
 
 # --- The dinosaurs of the village ----------------------------------------------------------
-# Villagers are dinosaurs in clothes, drawn like the hero: 16 x 25 pixels, feet at the bottom
-# center, shaded by hand. A head of their kind ("trike", "raptor", "ptero" or "rex"), a tunic,
-# scaly legs with claws and a tail.
+# Villagers are dinosaurs in clothes, drawn in parts like the dinosaurs of the park: 16 x 25
+# pixels, feet at the bottom center. A big round head of their kind ("trike", "raptor", "ptero"
+# or "rex"), a tunic with sleeves, scaly legs with claws and a tail. Seen from the side, they
+# face right.
 # colors: skin, shirt, optionally crest; apron: true for craftsmen (seen from the front).
-# Letters: o outline, l/s/S skin light/base/shade, R/r crest or frill base/shade, L horns, beak,
-# claws, e eye, w white or teeth, m mouth, T/c/C tunic light/base/shade, a apron.
 const FOLK_KINDS := ["trike", "raptor", "ptero", "rex"]
-const FOLK_HEADS := {
-	"trike": {
-		"side": [
-			"..ooo...........",
-			".oRRRo....oo....",
-			"oRrRRRo..oLo....",
-			"oRrRRRRooLLo....",
-			"oRrRRoolllsoooo.",
-			"oRrRolsssssssLLo",
-			"oRrRosswessssLo.",
-			".oRRosseesssssoo",
-			"..oRoSsssssssoLo",
-			"...ooSSsssssoLLo",
-			".....ooSSSSoooo.",
-			".......oooo.....",
-		],
-		"down": ["..oo.ooo", ".oRRoRRR", "oRrRoLoR", "oRrRoLoR", "oRrolLll", "oRrossss", "oRoswess", "oRoSsess", ".ooSsssL", "..oSsssL", "..oSSoLL", "...ooooo"],
-		"up": ["..oo.ooo", ".oRRoRRR", "oRrRRRRR", "oRrRRRRR", "oRrRRRRR", "oRrRRRRR", "oRrrrrrr", "oRoSSSSS", ".ooSSSSS", "..oSSSSS", "..oSSSSS", "...ooooo"],
-	},
-	"raptor": {
-		"side": [
-			"................",
-			"....oooo........",
-			"...oRRRRo.......",
-			"..oRrooRRoooo...",
-			"..oRolllssssoo..",
-			"..oRlssswessssoo",
-			"..oosssseessssso",
-			"...oSsssssssssso",
-			"...oSssmmmmmmmo.",
-			"...oSSswLwLwLo..",
-			"....ooSSSSoooo..",
-			"......oooo......",
-		],
-		"down": ["........", "....oooo", "...oRRRR", "..oRrRRo", "..oRolll", "..oolsss", "..oswess", "..oSsess", "..oSssss", "...oSsss", "....oSwL", ".....ooo"],
-		"up": ["........", "....oooo", "...oRRRR", "..oRrRRR", "..oRrRRR", "..oRrrrr", "..oSSSSS", "..oSSSSS", "..oSSSSS", "...oSSSS", "....oSSS", ".....ooo"],
-	},
-	"ptero": {
-		"side": [
-			"oooo............",
-			"oRRRoo..........",
-			".oRrRRoooo......",
-			"..ooRRllsso.....",
-			"....olsssssoo...",
-			"....osswessLLoo.",
-			"....osseessLLLLo",
-			"....oSsssssoLLLo",
-			"....oSSsssoooooo",
-			".....oSSSso.....",
-			"......oooo......",
-			"................",
-		],
-		"down": ["......oo", ".....oRR", "....oRrR", "....oRrR", "...oolll", "..olssss", "..oswess", "..oSsesL", "..oSsssL", "...oSsLL", "....oSoL", ".....ooo"],
-		"up": ["......oo", ".....oRR", "....oRrR", "....oRrR", "...ooRrR", "..oSSSSS", "..oSSSSS", "..oSSSSS", "..oSSSSS", "...oSSSS", "....oSSS", ".....ooo"],
-	},
-	"rex": {
-		"side": [
-			"................",
-			"....oooooo......",
-			"...olllllsoo....",
-			"..olssssssssoo..",
-			"..osssswesssssoo",
-			"..osssseesssssso",
-			"..oSsssssssssso.",
-			"..oSssmmmmmmmmo.",
-			"..oSSswwwwwwwo..",
-			"...oSSssssssso..",
-			"....ooSSSSoooo..",
-			"......oooo......",
-		],
-		"down": ["........", "...ooooo", "..olllll", ".olsssss", ".osswess", ".osSsess", ".oSsssss", ".oSsssss", ".oSsssss", ".oSswwww", "..oSmmmm", "...ooooo"],
-		"up": ["........", "...ooooo", "..oSSSSS", ".oSSSSSS", ".oSSSSSS", ".oSSSSSS", ".oSSSSSS", ".oSSSSSS", ".oSSSSSS", ".oSSSSSS", "..oSSSSS", "...ooooo"],
-	},
-}
-const FOLK_SIDE_BODY := {
-	"hang": ["......occco.....", ".....oTccccco...", ".....occcCcco...", ".....occcCcco...", ".....occcssco...", ".....occcssco...", "......oCCCCo...."],
-	"front": ["......occco.....", ".....oTcccccoo..", ".....occcccoCso.", ".....occcccoSso.", ".....occcccooo..", ".....occcccco...", "......oCCCCo...."],
-	"back": ["......occco.....", "....ooTccccco...", "...osCcccccco...", "...osSoccccco...", "....oooccccco...", ".....occcccco...", "......oCCCCo...."],
-}
-const FOLK_SIDE_LEGS := {
-	"together": ["......osSSo.....", "......ossSo.....", "......osSSo.....", ".....osssSoo....", ".....osssssLo...", ".....oooooooo..."],
-	"apart": ["......osSSso....", ".....osSooSso...", "....osSo..oSso..", "...osSo....oSso.", "..ossLo....osssL", "..ooooo....ooooo"],
-}
-const FOLK_SIDE_TAIL := ["...ooo..........", ".oossSo.........", "osssSSo.........", "oSSoo...........", "oo.............."]
-const FOLK_BODY := ["...ooccc", "..ocTccc", ".ocCcccc", ".ocCcccc", ".ocCcccc", ".osCcccc", ".ossoCCC"]
-const FOLK_LEGS := ["...ossSo", "...ossSo", "...osSSo", "..osssSo", "..oLsLSo", "..oooooo"]
-const FOLK_BACK_TAIL := ["......oSSo......", "......osSo......", ".....osSSSo.....", ".....osSSSo.....", "....osSSSSSo....", "....oooooooo...."]
-const FOLK_APRON := ["....oaaaaaao....", "....oaaaaaao....", "....oaaaaaao....", "....oaaaaaao....", ".....oooooo....."]
+const IVORY := Color("f0e4c8")
+const INK := Color("281a14")
 
 
 static func dino_folk(kind: String, direction: String, frame: int, colors: Dictionary) -> Texture2D:
 	frame = frame % 4
 	var key := "folk:%s:%s:%d:%s" % [kind, direction, frame, colors.values()]
 	return cached(key, func() -> Texture2D:
-		var head: Dictionary = FOLK_HEADS[kind]
-		var rows: Array
-		if direction == "side":
-			rows = head.side + FOLK_SIDE_BODY[["hang", "front", "hang", "back"][frame]] \
-				+ FOLK_SIDE_LEGS["together" if frame % 2 == 0 else "apart"]
-			rows = _over(rows, 17, FOLK_SIDE_TAIL)
-		else:
-			var legs := _mirror(FOLK_LEGS)
-			if frame == 1:
-				legs = _lift(legs, 0)
-			elif frame == 3:
-				legs = _lift(legs, 8)
-			rows = _mirror(head[direction]) + _mirror(FOLK_BODY) + legs
-			if direction == "up":
-				rows = _over(rows, 18, FOLK_BACK_TAIL)
-			elif colors.get("apron", false):
-				rows = _over(rows, 14, FOLK_APRON)
 		var skin: Color = colors.skin
 		var crest: Color = colors.get("crest", skin.darkened(0.3))
-		var shirt: Color = colors.shirt
-		var palette := {
-			"o": Color("281e1e"), "l": skin.lightened(0.2), "s": skin, "S": skin.darkened(0.22),
-			"R": crest, "r": crest.darkened(0.25), "L": Color("f0e4c8"), "e": Color("281a14"), "w": Color.WHITE,
-			"m": Color("963232"), "T": shirt.lightened(0.15), "c": shirt, "C": shirt.darkened(0.22), "a": Color("e6dcc8"),
-		}
-		var image := Image.create(16, 25, false, Image.FORMAT_RGBA8)
-		_stamp(image, Vector2i.ZERO, rows, palette)
-		return ImageTexture.create_from_image(image))
+		var l := Layers.new(Vector2i(16, 25))
+		if direction == "side":
+			_folk_side(l, kind, frame, skin, crest, colors.shirt)
+		else:
+			_folk_front(l, kind, direction == "down", frame, skin, crest, colors.shirt, colors.get("apron", false))
+		return ImageTexture.create_from_image(l.image))
+
+
+# A round eye of 2 x 2 pixels with a glint, its top left corner at (x, y).
+static func _folk_eye(l: Layers, x: float, y: float) -> void:
+	l.dot(x, y, Color.WHITE)
+	l.dot(x + 1, y, INK)
+	l.dot(x, y + 1, INK)
+	l.dot(x + 1, y + 1, INK)
+
+
+# Seen from the front (front: true) or from the back.
+static func _folk_front(l: Layers, kind: String, front: bool, frame: int, skin: Color, crest: Color, shirt: Color, apron: bool) -> void:
+	# The legs, one foot up on frames 1 and 3.
+	for side: int in [-1, 1]:
+		var lift := 1 if (frame == 1 and side == -1) or (frame == 3 and side == 1) else 0
+		var x := 8 + side * 2.5
+		l.part([l.limb(Vector2(x, 18), Vector2(x, 22 - lift), 1.7, 1.4), l.ellipse(x + side * 0.3, 22.6 - lift, 2, 1.1)], skin.darkened(0.08), 1, 1)
+		if front:
+			l.dot(x - 1, 23 - lift, IVORY)
+			l.dot(x + 1, 23 - lift, IVORY)
+	# Arms at the sides, behind the tunic: short ones for the rex.
+	var hand := 15.5 if kind == "rex" else 17.0
+	for side: int in [-1, 1]:
+		var x := 8 + side * 4.3
+		l.part([l.limb(Vector2(x, 12.5), Vector2(x + side * 0.6, hand - 1.5), 1.4, 1.2)], shirt.darkened(0.12), 0, 1)
+		l.part([l.ellipse(x + side * 0.6, hand, 1.2, 1.2)], skin, 1, 1)
+	l.part([l.poly([Vector2(5, 11), Vector2(11, 11), Vector2(12, 19), Vector2(4, 19)]), l.ellipse(8, 12.5, 3.5, 2)], shirt, 1, 1)
+	if front and apron:
+		l.part([l.box(5.5, 14, 5, 5)], Color("e6dcc8"), 0, 1)
+	if not front:
+		# The tail hangs between the feet.
+		l.part([l.limb(Vector2(8, 16.5), Vector2(8, 22), 1.8, 0.8)], skin.darkened(0.04), 1, 1)
+	match kind:
+		"trike":
+			l.part([l.ellipse(8, 5, 7, 5)], crest, 1, 2)
+			for x in [2.5, 5, 8, 11, 13.5]:
+				l.dot(x, 1.5 if x == 8 else 2.5, crest.lightened(0.3))
+			if front:
+				l.part([l.ellipse(8, 7.5, 4.5, 3.8)], skin, 1, 1)
+				l.part([l.limb(Vector2(5.2, 4), Vector2(4.2, 1), 0.9, 0.4), l.limb(Vector2(10.8, 4), Vector2(11.8, 1), 0.9, 0.4)], IVORY, 0, 1)
+				l.part([l.limb(Vector2(8, 9.5), Vector2(8, 7.8), 0.9, 0.4)], IVORY, 0, 1)
+				_folk_eye(l, 5, 6.5)
+				_folk_eye(l, 10, 6.5)
+				l.dot(8, 10.5, Color("963232"))
+			else:
+				l.part([l.ellipse(8, 10, 3, 1.5)], skin, 1, 1)
+		"raptor":
+			l.part([l.limb(Vector2(7, 3), Vector2(5.2, 0.8), 1.1, 0.4), l.limb(Vector2(9, 3), Vector2(10.8, 0.8), 1.1, 0.4)], crest, 1, 0)
+			l.part([l.ellipse(8, 6, 4.5, 4)], skin, 1, 1)
+			if front:
+				l.part([l.ellipse(8, 8.8, 3, 2)], skin.lightened(0.1), 1, 1)
+				_folk_eye(l, 4.5, 5)
+				_folk_eye(l, 10.5, 5)
+				l.shade(7, 8, 0.3)
+				l.shade(9, 8, 0.3)
+				for x in range(6, 11):
+					l.dot(x, 10, INK if x % 2 == 0 else IVORY)
+			else:
+				for y in [4, 6, 8]:
+					l.dot(8, y, crest)
+		"ptero":
+			l.part([l.limb(Vector2(8, 4), Vector2(8, 0.8), 1.7, 0.6)], crest, 1, 1)
+			l.part([l.ellipse(8, 6.5, 4, 3.8)], skin, 1, 1)
+			if front:
+				l.part([l.limb(Vector2(8, 8), Vector2(8, 11.2), 1.6, 0.5)], IVORY, 1, 1)
+				_folk_eye(l, 4.5, 5.5)
+				_folk_eye(l, 10.5, 5.5)
+		"rex":
+			l.part([l.ellipse(8, 6, 5.5, 4.8)], skin, 1, 2)
+			if front:
+				for x in [5, 11]:
+					l.shade(x, 3, 0.3)
+					l.shade(x + 1, 3, 0.3)
+				_folk_eye(l, 4.5, 4)
+				_folk_eye(l, 10.5, 4)
+				for x in range(4, 13):
+					l.dot(x, 8, INK)
+					if x % 2 == 0 and x > 4:
+						l.dot(x, 9, IVORY)
+			else:
+				for at in [Vector2(6, 3), Vector2(10, 4), Vector2(8, 7), Vector2(5, 8), Vector2(11, 8)]:
+					l.shade(at.x, at.y, 0.25)
+
+
+# Seen from the side, facing right. Frames: arm and legs swing on 1 and 3.
+static func _folk_side(l: Layers, kind: String, frame: int, skin: Color, crest: Color, shirt: Color) -> void:
+	l.part([l.limb(Vector2(6, 16.5), Vector2(1.5, 21), 2, 0.7)], skin, 1, 1)
+	if frame % 2 == 1:
+		# Walking: the far leg behind, the near one ahead, and the other way round.
+		var ahead := 11.0 if frame == 1 else 5.0
+		var behind := 16.0 - ahead
+		l.part([l.limb(Vector2(8, 18), Vector2(behind, 22), 1.6, 1.3), l.ellipse(behind + 1, 22.8, 2, 1.1)], skin.darkened(0.2), 1, 1)
+		l.part([l.limb(Vector2(8, 18), Vector2(ahead, 22), 1.7, 1.4), l.ellipse(ahead + 1, 22.8, 2.1, 1.1)], skin.darkened(0.06), 1, 1)
+		l.dot(ahead + 3, 23, IVORY)
+	else:
+		l.part([l.limb(Vector2(8, 18), Vector2(8, 22), 1.7, 1.4), l.ellipse(9, 22.8, 2.2, 1.1)], skin.darkened(0.06), 1, 1)
+		l.dot(11, 23, IVORY)
+	l.part([l.poly([Vector2(5.5, 11), Vector2(10.5, 11), Vector2(11.5, 19), Vector2(4.5, 19)]), l.ellipse(8, 12.5, 3, 2)], shirt, 1, 1)
+	var hand: Vector2 = [Vector2(8.5, 16.5), Vector2(11, 15.5), Vector2(8.5, 16.5), Vector2(5.5, 15.5)][frame]
+	if kind == "rex":
+		hand = Vector2(10.5, 14.5)
+	l.part([l.limb(Vector2(8, 13), hand, 1.1, 1.1), l.ellipse(hand.x, hand.y, 1.2, 1.2)], skin, 1, 1)
+	l.part([l.ellipse(8, 12.8, 1.8, 1.8)], shirt.darkened(0.06), 1, 1)
+	match kind:
+		"trike":
+			l.part([l.ellipse(4.5, 5, 3.8, 4.8)], crest, 1, 2)
+			l.dot(2, 2, crest.lightened(0.3))
+			l.dot(1.5, 5, crest.lightened(0.3))
+			l.part([l.ellipse(9.5, 7, 4.5, 3.5)], skin, 1, 1)
+			l.part([l.poly([Vector2(12.5, 7), Vector2(15.4, 8.5), Vector2(13, 10.4)])], IVORY, 1, 1)
+			l.part([l.limb(Vector2(10, 4.5), Vector2(13.5, 1), 1, 0.35), l.limb(Vector2(13, 6), Vector2(14.3, 4.2), 0.8, 0.3)], IVORY, 1, 1)
+			_folk_eye(l, 9, 6)
+		"raptor":
+			l.part([l.limb(Vector2(5, 3.5), Vector2(1.5, 1.5), 1.3, 0.4)], crest, 1, 0)
+			l.part([l.ellipse(7.5, 6, 4, 3.5), l.ellipse(11.5, 7.5, 3.7, 2.2)], skin, 1, 1)
+			_folk_eye(l, 8, 4.5)
+			for x in range(10, 15):
+				l.dot(x, 8.5, INK)
+			l.dot(11, 9.5, IVORY)
+			l.dot(13, 9.5, IVORY)
+		"ptero":
+			l.part([l.limb(Vector2(6, 4.5), Vector2(1, 1.5), 1.8, 0.5)], crest, 1, 1)
+			l.part([l.ellipse(8, 6, 3.6, 3.5)], skin, 1, 1)
+			l.part([l.limb(Vector2(10.5, 7.2), Vector2(15.2, 8.5), 1.6, 0.4)], IVORY, 1, 1)
+			_folk_eye(l, 8.5, 4.5)
+		"rex":
+			l.part([l.ellipse(8, 6, 4.5, 4.3), l.ellipse(11, 7, 4, 3)], skin, 1, 2)
+			l.shade(9, 2.5, 0.3)
+			l.shade(10, 2.5, 0.3)
+			_folk_eye(l, 9, 3.5)
+			for x in range(8, 15):
+				l.dot(x, 8, INK)
+				if x % 2 == 1:
+					l.dot(x, 9, IVORY)
 
 
 # --- The hero: a little explorer with a bush hat ------------------------------------------
@@ -2176,6 +2203,8 @@ static func well() -> Texture2D:
 			var shift := 3.0 if row % 2 == 1 else 0.0
 			for i in 6:
 				var x := 2.0 + shift + i * 6.0
+				if x >= 29.5:
+					continue
 				var tone: Color = [STONES[2], STONES[3].darkened(0.1), STONES[2].darkened(0.08)][(i + row * 2) % 3]
 				l.part([l.box(maxf(x, 2.5), y, minf(x + 5, 29.5) - maxf(x, 2.5), 2.4)], tone, 1, 1, false)
 		l.part([l.ellipse(16, 30, 14, 5)], STONES[3], 1, 1)
