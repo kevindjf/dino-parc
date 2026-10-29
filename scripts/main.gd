@@ -31,6 +31,7 @@ const Market := preload("res://scripts/market.gd")
 const Wild := preload("res://scripts/wild.gd")
 const Quests := preload("res://scripts/quests.gd")
 const Weather := preload("res://scripts/weather.gd")
+const ParkEvents := preload("res://scripts/park_events.gd")
 
 const T := 16
 const GRID := Vector2i(128, 96)
@@ -166,6 +167,7 @@ var border_nodes: Array[Node] = []  # the forest around the zone and the signs o
 var stars := 0  # the stars of the park, kept for good (see STARS)
 var hatched := 0  # babies born in the laboratory
 var weather: Node2D = null  # day, night and storms of the adventure
+var events: Node2D = null  # babies, the journalist, the lost plush, parties (see park_events.gd)
 var rode := {}  # species id -> true: the dinosaurs the player has ridden
 var lab_state := {}  # {"egg": species, "ready": unix time}: the egg in the laboratory
 var ground_before := {}  # cell -> its biome before a bag of ground changed it, to undo in the building mode
@@ -182,6 +184,9 @@ func _ready() -> void:
 	add_child(text_layer)
 	WorldText.layer = text_layer
 	_build_world()
+	events = ParkEvents.new()
+	add_child(events)
+	events.setup(self)
 	_add_building("path", ENTRANCE, true)
 	_refresh()
 	if "--demo" in OS.get_cmdline_user_args():
@@ -227,7 +232,9 @@ func start_creative(demo: bool) -> void:
 		_build_demo()
 		mode = "demo"
 	elif SaveGame.exists(world_info.id):
-		_load_park(SaveGame.load_data(world_info.id))
+		var data := SaveGame.load_data(world_info.id)
+		_load_park(data)
+		events.from_dict(data.get("events", {}))
 	_refresh()
 	_on_tool_selected("path")
 	hud.flash("Molette : zoomer   Flèches ou ZQSD : se déplacer", 4.0)
@@ -268,6 +275,7 @@ func start_adventure(data: Dictionary) -> void:
 		start = Vector2(saved.get("x", start.x), saved.get("y", start.y)) + Vector2(offset * T)
 		mine_states = data.get("mines", {})
 		village_state = data.get("village", {})
+	events.from_dict(data.get("events", {}))
 	_carve_base_exits()
 	_build_border()
 	natural_target = _count_nature()
@@ -422,7 +430,7 @@ func _process(delta: float) -> void:
 	if attraction > 0 and on_site < MAX_VISITORS:
 		spawn_timer -= delta
 		if spawn_timer <= 0.0:
-			spawn_timer = clamp(60.0 / attraction, 0.3, 5.0)
+			spawn_timer = clamp(60.0 / attraction, 0.3, 5.0) * events.visitor_boost()
 			_spawn_visitor()
 	attraction_timer -= delta
 	if attraction_timer <= 0.0:
@@ -1271,7 +1279,9 @@ func visitor_thought(visitor: Node2D) -> String:
 			break
 	var ideas: Array[String] = []
 	if near != null:
-		if near.need != "":
+		if near.age < 1.0:
+			ideas.append("Oh, un bébé %s ! Trop mignon !" % near.species.name)
+		elif near.need != "":
 			ideas.append("Ce %s a l'air triste…" % near.species.name)
 		else:
 			ideas.append("Waouh, un %s !" % near.species.name)
@@ -1447,6 +1457,9 @@ func goals_left() -> Array:
 # Where the yellow arrow points for the next goal of the level, or null when there is nothing
 # to find on the land (see combat.gd).
 func goal_target():
+	var lost = events.arrow_target()
+	if lost != null:
+		return lost
 	var left := goals_left()
 	if left.is_empty():
 		return null
@@ -1526,6 +1539,12 @@ func _goal_done(id: String) -> bool:
 				return buildings.filter(func(b) -> bool: return b.open and b.id in PARK_DECOR).size() >= 3
 			"visitors10":
 				return total_visitors >= 10
+			"doudou":
+				return events.doudous > 0
+			"vip":
+				return events.vip_visits > 0
+			"baby_park":
+				return events.born > 0
 			"dex3":
 				return caught.size() >= 3
 			"dex25":

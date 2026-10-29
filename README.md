@@ -149,6 +149,17 @@ Les **visiteurs parlent** dans des bulles : « Waouh, un Tricératops ! », « J
 
 La **note du parc** (sur 100, en haut à gauche) additionne : les espèces montrées (30), les dinos heureux (15), à manger (15), les souvenirs (5), la décoration (15) et les attractions (20). Chaque dino échappé enlève 10 points. Elle compte pour les étoiles. Tout se règle dans `scripts/main.gd` (`_rate_park`, `visitor_thought`, `_staff_work`).
 
+## Les événements du parc
+
+De temps en temps, quand tu es dans ton parc, il se passe quelque chose (en Aventure et en Bac à sable) :
+
+- **Des bébés** : deux dinos de la même espèce, **heureux** (bon sol, place, mangeoire) et adultes, dans un enclos assez grand, peuvent avoir un bébé. Il est tout petit et grandit en 4 minutes. Les visiteurs le trouvent « trop mignon ».
+- **Le journaliste du Dino Journal** (chapeau rouge, panneau au-dessus de la tête) se promène dans le parc. Quand il repart, il donne des étoiles à ton parc dans son article, selon la note du parc, et dit ce qui manque le plus. Ça rapporte des pièces et attire deux fois plus de visiteurs pendant un moment. Attention : un dino échappé lui fait peur !
+- **Le doudou perdu** (Aventure seulement) : un petit visiteur a perdu son doudou tricératops rose. La flèche jaune montre où il est : marche dessus pour le ramasser et gagner des pièces. Après 5 minutes, quelqu'un d'autre le retrouve.
+- **La fête du parc** : à 100, 250, 500, 1000… visiteurs, feu d'artifice ! Tu gagnes autant de pièces que de visiteurs fêtés, et il en vient deux fois plus pendant un moment.
+
+Trois objectifs des niveaux en dépendent : retrouver le doudou (niveau 3), recevoir le journaliste (niveau 7) et faire naître un bébé dans un enclos (niveau 8). Tout se règle dans `scripts/park_events.gd`.
+
 ## Aventure : le jour, la nuit et les orages
 
 - Une journée dure **10 minutes**. La nuit, tout devient bleu sombre (jamais trop noir) : ta lampe éclaire autour de toi et les **feux de camp** brillent.

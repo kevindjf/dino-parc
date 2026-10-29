@@ -52,7 +52,7 @@ static func save(park: Node2D) -> void:
 	var data: Dictionary = land(park) if in_park else park.base_land.duplicate()
 	data.merge({
 		"version": VERSION, "money": park.money, "total_visitors": park.total_visitors, "goal_index": park.goal_index,
-		"caught": park.caught.keys(),
+		"caught": park.caught.keys(), "events": park.events.to_dict(),
 	}, true)
 	if park.player != null:
 		var look := {}

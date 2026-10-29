@@ -26,6 +26,7 @@ const LEVELS := [
 		["food_shop", "Pose ton stand de glaces au bord du chemin (Sac, onglet Parc)"],
 		["decor3", "Décore le long du chemin : 3 fleurs, bancs ou poubelles"],
 		["visitors10", "Accueille 10 visiteurs"],
+		["doudou", "Un petit visiteur a perdu son doudou : retrouve-le (suis la flèche jaune)"],
 	]},
 	{"title": "Chasseur de dinos", "reward": {"coins": 300, "saddle": 1}, "goals": [
 		["cage", "Fabrique un lance-pierre et une cage. Fatigue un petit dino, puis mets-le en cage"],
@@ -51,12 +52,14 @@ const LEVELS := [
 		["dex5", "Attrape 5 espèces différentes"],
 		["souvenir", "Ouvre une boutique souvenirs au bord d'un chemin"],
 		["staff", "Embauche un employé : pose la cabane du soigneur, l'atelier de l'ouvrier ou le poste du garde"],
+		["vip", "Reçois le journaliste du Dino Journal et lis son article sur ton parc"],
 	]},
 	{"title": "Grand explorateur", "reward": {"coins": 1000, "statue": 1}, "goals": [
 		["dex10", "Attrape 10 espèces différentes"],
 		["far", "Explore une zone à 3 étoiles, tout au bord du monde"],
 		["sea", "Va jusqu'à la mer, tout à l'est du monde"],
 		["lab", "Construis un laboratoire et fais naître un bébé dino"],
+		["baby_park", "Mets 2 dinos de la même espèce, heureux, dans un grand enclos : un bébé va naître !"],
 	]},
 	{"title": "Le parc de rêve", "reward": {"coins": 1500, "capsule_gold": 2}, "goals": [
 		["stars3", "Fais monter ton parc à 3 étoiles"],

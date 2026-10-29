@@ -24,7 +24,7 @@ var sprite: Sprite2D
 var ice_cream: Sprite2D
 var facing := "down"
 var think_timer := 0.0
-var role := ""  # "" for a visitor; "keeper", "worker" or "ranger" for the staff of the park
+var role := ""  # "" for a visitor, "vip" for the journalist; "keeper", "worker" or "ranger" for the staff of the park
 
 
 # outfit: the colours of the staff's uniform, over random ones.
@@ -42,7 +42,7 @@ func setup(owner_park: Node2D, start: Vector2i, job := "", outfit := {}) -> void
 		colors.hat = Color.from_hsv(randf(), 0.7, 0.85)
 	colors.merge(outfit, true)
 	if role != "":
-		speed = 1.6
+		speed = 1.3 if role == "vip" else 1.6
 	var shadow := Art.sprite(Art.shadow(11))
 	shadow.centered = true
 	shadow.offset = Vector2.ZERO
@@ -56,6 +56,11 @@ func setup(owner_park: Node2D, start: Vector2i, job := "", outfit := {}) -> void
 	_choose_next()
 	position = park.cell_center(cell) + offset
 	think_timer = randf_range(3.0, 12.0)
+
+
+# Visitors and the journalist walk around, buy and think; the staff works.
+func is_guest() -> bool:
+	return role == "" or role == "vip"
 
 
 func buy(shop_id: String) -> void:
@@ -72,11 +77,11 @@ func _process(delta: float) -> void:
 		return
 
 	think_timer -= delta
-	if think_timer <= 0.0 and role == "":
-		think_timer = randf_range(8.0, 16.0)
+	if think_timer <= 0.0 and is_guest():
+		think_timer = randf_range(5.0, 9.0) if role == "vip" else randf_range(8.0, 16.0)
 		_think()
 	danger_timer -= delta
-	if danger_timer <= 0.0 and role == "":
+	if danger_timer <= 0.0 and is_guest():
 		danger_timer = 0.5
 		if not scared and park.danger_near(position):
 			scared = true
@@ -88,7 +93,7 @@ func _process(delta: float) -> void:
 		progress = 0.0
 		prev_cell = cell
 		cell = next_cell
-		if role == "":
+		if is_guest():
 			park.on_visitor_step(self)
 			steps_left -= 1
 		if steps_left <= 0:
@@ -136,9 +141,9 @@ func _choose_next() -> void:
 
 # Now and then, a visitor says what they think in a bubble, a few at a time on the screen.
 func _think() -> void:
-	if scared or get_tree().get_nodes_in_group("thoughts").size() >= 3:
+	if scared or (role == "" and get_tree().get_nodes_in_group("thoughts").size() >= 3):
 		return
-	var text: String = park.visitor_thought(self)
+	var text: String = park.events.vip_thought(self) if role == "vip" else park.visitor_thought(self)
 	if text == "":
 		return
 	var bubble := WorldText.make(self, Vector2(0, -26), text, "bubble")
