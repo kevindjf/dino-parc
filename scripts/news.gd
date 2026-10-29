@@ -8,6 +8,16 @@ extends RefCounted
 
 const ENTRIES := [
 	{
+		"version": 9,
+		"title": "Il se passe des choses dans ton parc !",
+		"items": [
+			["dino:triceratops", "Deux dinos de la même espèce, heureux dans un grand enclos, peuvent avoir un bébé !"],
+			["souvenir", "Le journaliste du Dino Journal visite ton parc. Il lui donne des étoiles dans son article !"],
+			["berries", "Un petit visiteur a perdu son doudou : suis la flèche jaune pour le retrouver."],
+			["capsule_gold", "À 100, 250, 500 visiteurs… c'est la fête, avec un feu d'artifice !"],
+		],
+	},
+	{
 		"version": 8,
 		"title": "Un vrai parc, et des niveaux !",
 		"items": [
