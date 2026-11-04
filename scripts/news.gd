@@ -8,6 +8,18 @@ extends RefCounted
 
 const ENTRIES := [
 	{
+		"version": 10,
+		"title": "Des dinos rares, des courses et Noël !",
+		"items": [
+			["dino:triceratops:dore", "Ouvre l'œil : certains dinos sauvages sont dorés, bleus ou blancs, et brillent. Ils sont très rares !"],
+			["dino:trex", "Loin du parc, des chefs géants avec une couronne rôdent. Ils sont très forts : prépare beaucoup de flèches !"],
+			["race_flag", "Achète le drapeau de course à la boutique. Sur ton dino, devant le drapeau, appuie sur Action : 3, 2, 1, partez !"],
+			["capsule_gold", "Gagne la médaille d'or ! Un dino qui a beaucoup de cœurs d'amitié court plus vite."],
+			["xmas_tree", "Du 1er décembre au 6 janvier, c'est Noël : il neige, et le T-Rex de Noël te fait un cadeau chaque jour !"],
+			["snowman", "À Noël, un cadeau est caché chaque jour dans chaque zone sauvage. Trouve-les tous !"],
+		],
+	},
+	{
 		"version": 9,
 		"title": "Il se passe des choses dans ton parc !",
 		"items": [
