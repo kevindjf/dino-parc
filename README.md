@@ -160,6 +160,29 @@ De temps en temps, quand tu es dans ton parc, il se passe quelque chose (en Aven
 
 Trois objectifs des niveaux en dépendent : retrouver le doudou (niveau 3), recevoir le journaliste (niveau 7) et faire naître un bébé dans un enclos (niveau 8). Tout se règle dans `scripts/park_events.gd`.
 
+## Aventure : les dinos rares et les chefs
+
+- De temps en temps (1 dino sauvage sur 60), un dino a une **couleur rare** : **doré**, **bleu** ou **blanc**. Il brille de petites étoiles. On l'attrape comme les autres, et il garde sa couleur dans « Mes dinos » et dans le parc. Les visiteurs l'adorent : il compte double pour l'attractivité.
+- Dans les zones à **2 étoiles ou plus**, un **chef** rôde souvent : un dino géant avec une **couronne**. Il est trois fois plus dur à fatiguer et demande une meilleure capsule. Quand tu arrives dans sa zone, un message te prévient.
+- Le **Dinodex** compte les dinos rares attrapés et les montre sous chaque espèce (✦ doré, ✦ bleu, ✦ blanc, ♛ chef).
+
+Tout se règle dans `scripts/catalog.gd` (`VARIANTS`) et `scripts/main.gd` (`RARE_CHANCE`, `CHIEF_CHANCE`, `_spawn_chief`).
+
+## Aventure : les courses de dinos
+
+Achète un **drapeau de course** à la boutique (onglet Parc) et pose-le dans un grand espace libre du parc. Monte sur ton dino, mets-toi devant le drapeau et appuie sur **Action** : 3, 2, 1, partez ! Passe par tous les drapeaux (la flèche jaune montre le prochain) et reviens au départ avant les trois autres cavaliers. Il y a des médailles d'or, d'argent et de bronze, et des pièces à gagner. **Un dino ami court plus vite** : chaque cœur d'amitié lui donne un peu de vitesse. Descendre du dino abandonne la course. Tout se règle dans `scripts/race.gd`.
+
+## Aventure : Noël
+
+Du **1er décembre au 6 janvier** (selon la date de la tablette) :
+
+- il **neige** ;
+- le **T-Rex de Noël**, avec son bonnet rouge, se promène sur les chemins du parc. Va le voir **chaque jour** : il te donne le cadeau du jour, comme un calendrier de l'Avent. **Le 25 décembre**, c'est un T-Rex doré !
+- dans chaque zone des Terres sauvages, un **cadeau** est caché chaque jour ;
+- la boutique vend un **sapin de Noël** (il s'illumine la nuit) et un **bonhomme de neige**.
+
+Les cadeaux se règlent dans `scripts/christmas.gd` (`ADVENT`, `GIFTS`).
+
 ## Aventure : le jour, la nuit et les orages
 
 - Une journée dure **10 minutes**. La nuit, tout devient bleu sombre (jamais trop noir) : ta lampe éclaire autour de toi et les **feux de camp** brillent.

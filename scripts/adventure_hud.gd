@@ -735,7 +735,7 @@ func _fill_shop() -> void:
 			_label(shop_grid, "Tu n'as rien à vendre.\nLe marchand achète le bois, les pierres, les baies,\nles minerais et les fossiles.", 16)
 		return
 	for entry in Market.BUY:
-		if Items.tab_of(entry.id) == shop_tab:
+		if Items.tab_of(entry.id) == shop_tab and (not entry.has("season") or park.christmas.active()):
 			_buy_card(entry)
 
 

@@ -33,6 +33,7 @@ const Quests := preload("res://scripts/quests.gd")
 const Weather := preload("res://scripts/weather.gd")
 const ParkEvents := preload("res://scripts/park_events.gd")
 const Race := preload("res://scripts/race.gd")
+const Christmas := preload("res://scripts/christmas.gd")
 
 const T := 16
 const GRID := Vector2i(128, 96)
@@ -52,7 +53,7 @@ const STARS := [
 	{"species": 15, "visitors": 3000, "rating": 75, "gift": 2000},
 ]
 # Decorations that the visitors enjoy along the paths, for the mark of the park.
-const PARK_DECOR := ["flowers", "bench", "lamp", "bin", "statue", "fountain", "volcano"]
+const PARK_DECOR := ["flowers", "bench", "lamp", "bin", "statue", "fountain", "volcano", "xmas_tree", "snowman"]
 const MAX_VISITORS := 120
 const DART_PRICE := 50
 const FISH_PRICE := 10
@@ -170,6 +171,7 @@ var hatched := 0  # babies born in the laboratory
 var weather: Node2D = null  # day, night and storms of the adventure
 var events: Node2D = null  # babies, the journalist, the lost plush, parties (see park_events.gd)
 var race: Node2D = null  # the dinosaur races (see race.gd)
+var christmas: Node2D = null  # snow, the T-Rex of Christmas and hidden presents in December (see christmas.gd)
 var rode := {}  # species id -> true: the dinosaurs the player has ridden
 var lab_state := {}  # {"egg": species, "ready": unix time}: the egg in the laboratory
 var ground_before := {}  # cell -> its biome before a bag of ground changed it, to undo in the building mode
@@ -195,6 +197,9 @@ func _ready() -> void:
 	race = Race.new()
 	add_child(race)
 	race.setup(self)
+	christmas = Christmas.new()
+	add_child(christmas)
+	christmas.setup(self)
 	_add_building("path", ENTRANCE, true)
 	_refresh()
 	if "--demo" in OS.get_cmdline_user_args():
@@ -288,6 +293,7 @@ func start_adventure(data: Dictionary) -> void:
 		village_state = data.get("village", {})
 	events.from_dict(data.get("events", {}))
 	race.from_dict(data.get("races", {}))
+	christmas.from_dict(data.get("christmas", {}))
 	_carve_base_exits()
 	_build_border()
 	natural_target = _count_nature()
@@ -638,7 +644,7 @@ func _add_building(id: String, origin: Vector2i, fixed := false) -> Dictionary:
 				building.root.texture = Art.lab(true)
 			if item.get("style", "") == "volcano":
 				_add_smoke(building.root)
-			if item.get("style", "") == "lamp":
+			if item.get("style", "") in ["lamp", "xmas_tree"]:
 				# It lights the paths at night (see weather.gd).
 				var glow := PointLight2D.new()
 				glow.texture = Weather.glow(256)
@@ -3170,14 +3176,18 @@ func travel(to: Vector2i, at: Vector2) -> void:
 	_refresh()
 	hud.refresh_build()
 	if zone == Wild.BASE:
+		christmas.on_zone()
 		_pay_visitors_while_away()
 	else:
 		var stars := "★".repeat(Wild.level(zone))
+		var lines := PackedStringArray(["%s  %s" % [Wild.name_of(zone), stars]])
 		var chief := _spawn_chief()
 		if chief != null:
-			hud.flash("%s  %s\nUn chef rôde ici : un %s géant avec une couronne !" % [Wild.name_of(zone), stars, chief.species.name], 4.0)
-		else:
-			hud.flash("%s  %s" % [Wild.name_of(zone), stars], 2.5)
+			lines.append("Un chef rôde ici : un %s géant avec une couronne !" % chief.species.name)
+		var present: String = christmas.on_zone()
+		if present != "":
+			lines.append(present)
+		hud.flash("\n".join(lines), 2.5 if lines.size() == 1 else 4.0)
 
 
 # The park kept living while the player was away: the visitors paid their ticket.

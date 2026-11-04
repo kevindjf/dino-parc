@@ -3,7 +3,8 @@ extends RefCounted
 # The shop of the village: what the merchant sells for coins, and what he buys back.
 # Coins come from the park visitors, from the chests of the abandoned houses and from selling here.
 # To add something to the shop, add a line to BUY: any id of items.gd, how many, the price, and
-# optionally the stars the park needs before the merchant sells it.
+# optionally the stars the park needs before the merchant sells it, or "season": "noel" for what
+# is only sold at Christmas (see christmas.gd).
 
 const BUY := [
 	{"id": "boots", "count": 1, "price": 80},
@@ -52,6 +53,8 @@ const BUY := [
 	{"id": "lamp", "count": 2, "price": 60},
 	{"id": "statue", "count": 1, "price": 150, "stars": 1},
 	{"id": "race_flag", "count": 1, "price": 200},
+	{"id": "xmas_tree", "count": 1, "price": 80, "season": "noel"},
+	{"id": "snowman", "count": 1, "price": 40, "season": "noel"},
 	{"id": "fountain", "count": 1, "price": 300, "stars": 2},
 	{"id": "road", "count": 10, "price": 40},
 	{"id": "jeep_garage", "count": 1, "price": 600, "stars": 2},

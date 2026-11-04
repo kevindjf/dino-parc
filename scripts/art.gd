@@ -374,6 +374,12 @@ static func decor(style: String) -> Texture2D:
 				return _bench()
 			"race_flag":
 				return _race_flag()
+			"xmas_tree":
+				return _xmas_tree()
+			"snowman":
+				return _snowman()
+			"gift":
+				return _gift()
 			"lamp":
 				return _lamp()
 			"statue":
@@ -554,6 +560,51 @@ static func _bench() -> Texture2D:
 	for x in [6, 11, 16]:
 		l.dot(x, 9, LOG[0])
 	return _texture(l, 12)
+
+
+# A Christmas tree: a pine with red, gold and blue balls and a star on top.
+static func _xmas_tree() -> Texture2D:
+	var l := Layers.new(Vector2i((Vector2(22, 38) * TREE_SCALE).ceil()), TREE_SCALE)
+	var green := Color("2e6a40")
+	l.part([l.box(9, 30, 4, 7)], LOG[1], 0, 1)
+	for i in 4:
+		var y := 33.0 - i * 6.5
+		var w := 10.0 - i * 2.2
+		l.part([l.poly([Vector2(11 - w, y), Vector2(11, y - 11), Vector2(11 + w, y), Vector2(11, y - 1.5)])], green.lightened(i * 0.07), 1, 2)
+	var balls := [[Vector2(6, 31), Color("e53935")], [Vector2(15, 30), Color("ffd740")], [Vector2(9, 25), Color("42a5f5")],
+		[Vector2(14, 23), Color("e53935")], [Vector2(8, 18), Color("ffd740")], [Vector2(13, 16), Color("42a5f5")], [Vector2(10, 11), Color("e53935")]]
+	for ball in balls:
+		l.part([l.ellipse(ball[0].x, ball[0].y, 1.3, 1.3)], ball[1], 1, 0)
+	l.part([l.poly([Vector2(11, 1), Vector2(12.2, 4), Vector2(15, 4.3), Vector2(12.8, 6), Vector2(13.6, 9), Vector2(11, 7.2),
+		Vector2(8.4, 9), Vector2(9.2, 6), Vector2(7, 4.3), Vector2(9.8, 4)])], Color("ffd740"), 1, 0)
+	return _texture(l, 15)
+
+
+# A snowman with a carrot nose, a scarf and a hat.
+static func _snowman() -> Texture2D:
+	var l := Layers.new(Vector2i(18, 28))
+	var snow := Color("f4f8fc")
+	l.part([l.ellipse(9, 21, 7, 6)], snow, 1, 2)
+	l.part([l.ellipse(9, 12, 5, 4.5)], snow, 1, 2)
+	l.part([l.box(4, 14.5, 10, 2)], Color("e53935"), 1, 0)
+	l.part([l.box(10.5, 15, 2, 5)], Color("e53935"), 1, 0)
+	l.part([l.box(5, 6.5, 8, 1.5), l.box(6.5, 1.5, 5, 5.5)], Color("303038"), 1, 0)
+	l.dot(7.5, 10.5, Color("202020"))
+	l.dot(10.5, 10.5, Color("202020"))
+	l.part([l.poly([Vector2(9, 11.6), Vector2(13, 12.4), Vector2(9, 13)])], Color("ff8a30"), 0, 0, false)
+	for y in [19.0, 22.0]:
+		l.dot(9, y, Color("303038"))
+	return _texture(l, 16)
+
+
+# A present hidden in the Wild Lands at Christmas.
+static func _gift() -> Texture2D:
+	var l := Layers.new(Vector2i(14, 13))
+	l.part([l.box(1.5, 4, 11, 8)], Color("e53935"), 1, 2)
+	l.part([l.box(1, 3, 12, 2.5)], Color("ef5350"), 1, 1)
+	l.part([l.box(6, 3, 2, 9)], Color("ffd740"), 0, 0, false)
+	l.part([l.ellipse(5, 2, 2, 1.4), l.ellipse(9, 2, 2, 1.4)], Color("ffd740"), 1, 0)
+	return _texture(l, 17)
 
 
 # The start of the dinosaur races: a wooden post with a black and white flag.

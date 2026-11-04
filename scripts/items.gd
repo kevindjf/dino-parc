@@ -56,6 +56,8 @@ const ITEMS := {
 	"flowers": {"name": "Fleurs", "kind": "build", "place": "flowers"},
 	"bench": {"name": "Banc", "kind": "build", "place": "bench"},
 	"race_flag": {"name": "Drapeau de course", "kind": "build", "place": "race_flag"},
+	"xmas_tree": {"name": "Sapin de Noël", "kind": "build", "place": "xmas_tree"},
+	"snowman": {"name": "Bonhomme de neige", "kind": "build", "place": "snowman"},
 	"lamp": {"name": "Lampadaire", "kind": "build", "place": "lamp"},
 	"bin": {"name": "Poubelle", "kind": "build", "place": "bin"},
 	"statue": {"name": "Statue de T-Rex", "kind": "build", "place": "statue"},
@@ -110,7 +112,7 @@ const TAB_OF_KIND := {
 }
 # Built things that go in the "Parc" tab: what the visitors enjoy.
 const PARK_ITEMS := ["icecream", "burger", "souvenir", "keeper_hut", "worker_hut", "ranger_hut", "gyro_station", "jeep_garage", "road", "heliport", "flowers", "bench",
-	"lamp", "bin", "statue", "fountain", "volcano", "bush", "sapling", "race_flag"]
+	"lamp", "bin", "statue", "fountain", "volcano", "bush", "sapling", "race_flag", "xmas_tree", "snowman"]
 
 # What to do with a thing, told when the player takes it in hand from the bag.
 const TIPS := {
