@@ -51,6 +51,7 @@ const BUY := [
 	{"id": "bin", "count": 2, "price": 20},
 	{"id": "lamp", "count": 2, "price": 60},
 	{"id": "statue", "count": 1, "price": 150, "stars": 1},
+	{"id": "race_flag", "count": 1, "price": 200},
 	{"id": "fountain", "count": 1, "price": 300, "stars": 2},
 	{"id": "road", "count": 10, "price": 40},
 	{"id": "jeep_garage", "count": 1, "price": 600, "stars": 2},

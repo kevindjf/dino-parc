@@ -154,9 +154,9 @@ func _process(delta: float) -> void:
 
 
 # Moves along x then y, so we slide along fences instead of sticking to them.
-# A quick raptor runs, a giant sauropod walks slowly.
+# A quick raptor runs, a giant sauropod walks slowly. A friend dinosaur runs a little faster.
 func ride_speed() -> float:
-	return mount.species.speed * T * 3.0 + 30.0
+	return mount.species.speed * T * 3.0 + 30.0 + 5.0 * mount.hearts()
 
 
 func mount_on(dino: Node2D) -> void:

@@ -32,6 +32,7 @@ const Wild := preload("res://scripts/wild.gd")
 const Quests := preload("res://scripts/quests.gd")
 const Weather := preload("res://scripts/weather.gd")
 const ParkEvents := preload("res://scripts/park_events.gd")
+const Race := preload("res://scripts/race.gd")
 
 const T := 16
 const GRID := Vector2i(128, 96)
@@ -168,6 +169,7 @@ var stars := 0  # the stars of the park, kept for good (see STARS)
 var hatched := 0  # babies born in the laboratory
 var weather: Node2D = null  # day, night and storms of the adventure
 var events: Node2D = null  # babies, the journalist, the lost plush, parties (see park_events.gd)
+var race: Node2D = null  # the dinosaur races (see race.gd)
 var rode := {}  # species id -> true: the dinosaurs the player has ridden
 var lab_state := {}  # {"egg": species, "ready": unix time}: the egg in the laboratory
 var ground_before := {}  # cell -> its biome before a bag of ground changed it, to undo in the building mode
@@ -190,6 +192,9 @@ func _ready() -> void:
 	events = ParkEvents.new()
 	add_child(events)
 	events.setup(self)
+	race = Race.new()
+	add_child(race)
+	race.setup(self)
 	_add_building("path", ENTRANCE, true)
 	_refresh()
 	if "--demo" in OS.get_cmdline_user_args():
@@ -282,6 +287,7 @@ func start_adventure(data: Dictionary) -> void:
 		mine_states = data.get("mines", {})
 		village_state = data.get("village", {})
 	events.from_dict(data.get("events", {}))
+	race.from_dict(data.get("races", {}))
 	_carve_base_exits()
 	_build_border()
 	natural_target = _count_nature()
@@ -1471,6 +1477,9 @@ func goal_target():
 	var lost = events.arrow_target()
 	if lost != null:
 		return lost
+	var flag = race.arrow_target()
+	if flag != null:
+		return flag
 	var left := goals_left()
 	if left.is_empty():
 		return null
@@ -1552,6 +1561,10 @@ func _goal_done(id: String) -> bool:
 				return total_visitors >= 10
 			"doudou":
 				return events.doudous > 0
+			"race1":
+				return race.races > 0
+			"race_gold":
+				return race.medals["or"] > 0
 			"rare1":
 				return rares.keys().any(func(k: String) -> bool: return not k.ends_with(":chef"))
 			"chef1":
@@ -2467,6 +2480,12 @@ func fish_at(cell: Vector2i) -> void:
 
 
 func player_dismount() -> void:
+	# Action in front of the race flag starts a race instead.
+	if not race.running:
+		var flag = race.flag_near()
+		if flag != null:
+			race.start(flag)
+			return
 	var dino: Node2D = player.mount
 	# Get off on a free cell next to the dinosaur.
 	var spot: Vector2 = player.position

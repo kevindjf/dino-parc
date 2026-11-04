@@ -39,6 +39,7 @@ const LEVELS := [
 		["friend", "Gagne 3 cœurs d'amitié d'un gros dino de ton parc (brosse-le, nourris-le)"],
 		["ride", "Fabrique une selle, prends-la en main et appuie sur Action devant lui : tu montes !"],
 		["happy", "Rends un dino heureux : le bon sol (Sac, onglet Parc), de la place et à manger"],
+		["race1", "Achète un drapeau de course (boutique), pose-le dans le parc, et fais une course sur ton dino"],
 	]},
 	{"title": "Le mineur", "reward": {"coins": 500, "capsule_gold": 1}, "goals": [
 		["mine", "Trouve une grotte dans les montagnes et descends dans la mine"],
@@ -75,6 +76,7 @@ const LEVELS := [
 		["rating70", "Atteins une note de parc de 70 / 100"],
 		["dex25", "Attrape 25 espèces différentes"],
 		["fires5", "Allume 5 feux de camp dans les Terres sauvages"],
+		["race_gold", "Gagne une médaille d'or à la course de dinos"],
 	]},
 	{"title": "Légende des dinos", "reward": {"coins": 5000}, "goals": [
 		["stars5", "Fais de ton parc un parc 5 étoiles !"],

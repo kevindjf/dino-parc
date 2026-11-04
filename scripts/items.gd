@@ -55,6 +55,7 @@ const ITEMS := {
 	"ranger_hut": {"name": "Poste du garde", "kind": "build", "place": "ranger_hut"},
 	"flowers": {"name": "Fleurs", "kind": "build", "place": "flowers"},
 	"bench": {"name": "Banc", "kind": "build", "place": "bench"},
+	"race_flag": {"name": "Drapeau de course", "kind": "build", "place": "race_flag"},
 	"lamp": {"name": "Lampadaire", "kind": "build", "place": "lamp"},
 	"bin": {"name": "Poubelle", "kind": "build", "place": "bin"},
 	"statue": {"name": "Statue de T-Rex", "kind": "build", "place": "statue"},
@@ -109,7 +110,7 @@ const TAB_OF_KIND := {
 }
 # Built things that go in the "Parc" tab: what the visitors enjoy.
 const PARK_ITEMS := ["icecream", "burger", "souvenir", "keeper_hut", "worker_hut", "ranger_hut", "gyro_station", "jeep_garage", "road", "heliport", "flowers", "bench",
-	"lamp", "bin", "statue", "fountain", "volcano", "bush", "sapling"]
+	"lamp", "bin", "statue", "fountain", "volcano", "bush", "sapling", "race_flag"]
 
 # What to do with a thing, told when the player takes it in hand from the bag.
 const TIPS := {
@@ -135,6 +136,7 @@ const TIPS := {
 	"ranger_hut": "Pose le poste au bord d'un chemin : le garde endort les dinos échappés et les ramène dans leur enclos.",
 	"lamp": "Pose les lampadaires le long des chemins : ils s'allument la nuit.",
 	"bench": "Pose des bancs le long des chemins : les visiteurs aiment s'asseoir.",
+	"race_flag": "Pose le drapeau dans un grand espace libre du parc. Sur ton dino, devant le drapeau, Action : la course commence !",
 	"ground_prairie": "Trace avec ton doigt dans un enclos pour changer le sol. Chaque dino veut son sol préféré : regarde le Dinodex !",
 	"ground_jungle": "Trace avec ton doigt dans un enclos pour changer le sol. Chaque dino veut son sol préféré : regarde le Dinodex !",
 	"ground_desert": "Trace avec ton doigt dans un enclos pour changer le sol. Chaque dino veut son sol préféré : regarde le Dinodex !",

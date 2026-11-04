@@ -372,6 +372,8 @@ static func decor(style: String) -> Texture2D:
 				return _flowers()
 			"bench":
 				return _bench()
+			"race_flag":
+				return _race_flag()
 			"lamp":
 				return _lamp()
 			"statue":
@@ -552,6 +554,22 @@ static func _bench() -> Texture2D:
 	for x in [6, 11, 16]:
 		l.dot(x, 9, LOG[0])
 	return _texture(l, 12)
+
+
+# The start of the dinosaur races: a wooden post with a black and white flag.
+static func _race_flag() -> Texture2D:
+	var l := Layers.new(Vector2i(20, 34))
+	l.part([l.ellipse(5, 31, 4, 2)], STONES[2], 1, 1)
+	l.part([l.box(4, 3, 2.5, 28)], LOG[2], 1, 1)
+	l.part([l.box(6.5, 4, 12, 9)], Color("f4f0e8"), 1, 1)
+	for y in 3:
+		for x in 4:
+			if (x + y) % 2 == 0:
+				for py in 3:
+					for px in 3:
+						l.dot(6.5 + x * 3 + px, 4 + y * 3 + py, Color("262626"))
+	l.part([l.ellipse(5.2, 2.5, 1.8, 1.6)], Color("ffd740"), 1, 0)
+	return _texture(l, 14)
 
 
 # A lamppost: it lights the paths at night (see weather.gd).

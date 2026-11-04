@@ -78,6 +78,8 @@ const ITEMS := {
 		"info": "Un banc au bord d'un chemin : les visiteurs fatigués s'y reposent."},
 	"lamp": {"name": "Lampadaire", "kind": "decor", "style": "lamp", "cost": 40, "attraction": 1, "color": Color("ffe890"),
 		"info": "Il éclaire les chemins la nuit."},
+	"race_flag": {"name": "Drapeau de course", "kind": "decor", "style": "race_flag", "cost": 200, "attraction": 3, "color": Color("f4f0e8"),
+		"info": "Sur ton dino, mets-toi devant et appuie sur Action : c'est parti pour une course !"},
 	"statue": {"name": "Statue de T-Rex", "kind": "decor", "style": "statue", "cost": 150, "attraction": 6, "color": Color("b4b0a8"),
 		"info": "Une belle statue : les visiteurs se prennent en photo devant."},
 	"fountain": {"name": "Fontaine", "kind": "decor", "style": "fountain", "cost": 300, "size": Vector2i(2, 2), "attraction": 8,

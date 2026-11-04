@@ -74,6 +74,7 @@ static func save(park: Node2D) -> void:
 		data.hatched = park.hatched
 		data.rode = park.rode
 		data.rares = park.rares.keys()
+		data.races = park.race.to_dict()
 		data.goals_done = park.goals_done.keys()
 		data.level = park.level
 	# Write to a temporary file first, keep the previous save as a backup, then swap:
