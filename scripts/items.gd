@@ -269,9 +269,23 @@ const HARVEST := {
 }
 
 
+# A caught dinosaur in the bag: "dino:<species>", or "dino:<species>:<variant>" for a rare one.
+static func dino_species(id: String) -> String:
+	return id.substr(5).get_slice(":", 0)
+
+
+static func dino_variant(id: String) -> String:
+	var parts := id.substr(5).split(":")
+	return parts[1] if parts.size() > 1 else ""
+
+
+static func dino_item(species_id: String, variant := "") -> String:
+	return "dino:" + species_id + (":" + variant if variant != "" else "")
+
+
 static func name_of(id: String) -> String:
 	if id.begins_with("dino:"):
-		return "Capturé : " + Catalog.DINOS[id.substr(5)].name
+		return "Capturé : " + Catalog.dino_name(dino_species(id), dino_variant(id))
 	return ITEMS[id].name if ITEMS.has(id) else "Mains"
 
 
@@ -297,7 +311,7 @@ static func sails(id: String) -> bool:
 
 
 static func exists(id: String) -> bool:
-	return ITEMS.has(id) or (id.begins_with("dino:") and Catalog.DINOS.has(id.substr(5)))
+	return ITEMS.has(id) or (id.begins_with("dino:") and Catalog.DINOS.has(dino_species(id)))
 
 
 # The bag item that builds this park building, or "" if it cannot be carried.

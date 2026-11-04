@@ -1943,7 +1943,8 @@ static func _icon_image(id: String) -> Image:
 		paint_biome(image, Vector2i.ZERO, id.substr(6), 7)
 		return image
 	if id.begins_with("dino:"):
-		return DinoArt.frames(id.substr(5)).walk[0].get_image()
+		var parts := id.substr(5).split(":")
+		return DinoArt.frames(parts[0], parts[1] if parts.size() > 1 else "").walk[0].get_image()
 	match id:
 		"path":
 			var image := Image.create(T, T, false, Image.FORMAT_RGBA8)

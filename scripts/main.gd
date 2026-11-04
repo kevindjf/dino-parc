@@ -172,6 +172,9 @@ var rode := {}  # species id -> true: the dinosaurs the player has ridden
 var lab_state := {}  # {"egg": species, "ready": unix time}: the egg in the laboratory
 var ground_before := {}  # cell -> its biome before a bag of ground changed it, to undo in the building mode
 var respawn := {}  # {"zone", "x", "y"}: the last campfire the player rested by, where they wake up
+var rares := {}  # "species:variant" -> true: the rare dinosaurs caught (see Catalog.VARIANTS)
+const RARE_CHANCE := 1.0 / 60.0  # a wild dinosaur with a rare colour
+const CHIEF_CHANCE := 0.6  # a chief in a zone of 2 stars or more, each time the player comes
 
 
 func _ready() -> void:
@@ -253,6 +256,9 @@ func start_adventure(data: Dictionary) -> void:
 	stars = int(data.get("stars", 0))
 	hatched = int(data.get("hatched", 0))
 	rode = data.get("rode", {})
+	rares = {}
+	for id in data.get("rares", []):
+		rares[id] = true
 	base_exits = data.get("exits", {})
 	level = int(data.get("level", 0))
 	goals_done = {}
@@ -378,11 +384,11 @@ func _load_park(data: Dictionary) -> Vector2i:
 		var cell := Vector2i(int(entry.x), int(entry.y)) + offset
 		if entry.get("wild", false):
 			if in_grid(cell) and region_map[_index(cell)] >= 0:
-				_spawn_wild(entry.id, cell, int(entry.get("trust", 0)))
+				_spawn_wild(entry.id, cell, int(entry.get("trust", 0)), 5, str(entry.get("variant", "")))
 			continue
 		if entry.has("home"):
 			cell = Vector2i(int(entry.home[0]), int(entry.home[1])) + offset
-		var dino := _place_dino(entry.id, cell, true)
+		var dino := _place_dino(entry.id, cell, true, str(entry.get("variant", "")))
 		if dino:
 			dino.friendship = int(entry.get("friendship", 0))
 			dino.set_saddled(entry.get("saddled", false))
@@ -771,7 +777,7 @@ func _set_biome(cell: Vector2i, biome: String) -> void:
 
 # --- Dinosaurs ---------------------------------------------------------
 
-func _place_dino(id: String, cell: Vector2i, free := false) -> Node2D:
+func _place_dino(id: String, cell: Vector2i, free := false, variant := "") -> Node2D:
 	var species: Dictionary = Catalog.DINOS[id]
 	var home = _dino_home_at(species, cell)
 	if home is String:
@@ -782,7 +788,7 @@ func _place_dino(id: String, cell: Vector2i, free := false) -> Node2D:
 		return null
 	var dino := Dino.new()
 	world.add_child(dino)
-	dino.setup(self, id, cell, home)
+	dino.setup(self, id, cell, home, variant)
 	dinos.append(dino)
 	if home != null:
 		home.dinos.append(dino)
@@ -1196,10 +1202,12 @@ func _update_attraction() -> void:
 		if dino.wild or dino.ridden or dino.following != null:
 			dino.set_mood("", Color.WHITE)
 			continue
+		# Rare dinosaurs are worth twice as much to the visitors.
+		var worth: int = species.attraction * (2 if dino.variant != "" else 1)
 		if dino.habitat != "land":
 			dino.set_mood("", Color.WHITE)
 			if dino.home_building.open:
-				total += species.attraction
+				total += worth
 			continue
 		if dino.escaped or dino.region < 0 or dino.region >= regions.size():
 			dino.set_mood("ÉCHAPPÉ !", Color("d03030"))
@@ -1215,7 +1223,7 @@ func _update_attraction() -> void:
 			needs.append("Trop serré !")
 		dino.set_mood(needs[0] if not needs.is_empty() else "", Color("a05010"))
 		if region.visible:
-			total += int(species.attraction * (1.0 - 0.2 * needs.size()))
+			total += int(worth * (1.0 - 0.2 * needs.size()))
 	for building in buildings:
 		if building.open:
 			total += Catalog.ITEMS[building.id].get("attraction", 0)
@@ -1283,6 +1291,9 @@ func visitor_thought(visitor: Node2D) -> String:
 			ideas.append("Oh, un bébé %s ! Trop mignon !" % near.species.name)
 		elif near.need != "":
 			ideas.append("Ce %s a l'air triste…" % near.species.name)
+		elif near.variant != "":
+			ideas.append("Waouh, un %s ! Il est rare !" % near.display_name())
+			ideas.append("Incroyable, un %s !" % near.display_name())
 		else:
 			ideas.append("Waouh, un %s !" % near.species.name)
 			ideas.append("Regarde le %s !" % near.species.name)
@@ -1541,6 +1552,10 @@ func _goal_done(id: String) -> bool:
 				return total_visitors >= 10
 			"doudou":
 				return events.doudous > 0
+			"rare1":
+				return rares.keys().any(func(k: String) -> bool: return not k.ends_with(":chef"))
+			"chef1":
+				return rares.keys().any(func(k: String) -> bool: return k.ends_with(":chef"))
 			"vip":
 				return events.vip_visits > 0
 			"baby_park":
@@ -2251,7 +2266,7 @@ func sell(id: String, amount: int) -> int:
 func _touch_dino(dino: Node2D, holding: String) -> void:
 	var at: Vector2 = dino.position + Vector2(0, -12)
 	if holding == "cage" and dino.wild:
-		if dino.species.strength > Items.CAGE_STRENGTH:
+		if dino.strength() > Items.CAGE_STRENGTH:
 			_float_text(at, "Trop gros pour la cage ! Il faut une capsule.", Color("ffab91"))
 			return
 		if dino.state != "sleep":
@@ -2474,22 +2489,25 @@ func player_dismount() -> void:
 
 # A wild dinosaur caught in a cage or a capsule goes in the bag.
 func catch_dino(dino: Node2D) -> void:
-	inventory.add("dino:" + dino.species_id)
+	inventory.add(Items.dino_item(dino.species_id, dino.variant))
 	_mark_caught(dino.species_id)
-	hud.flash("%s est dans « Mes dinos » !\nRelâche-le dans un enclos quand tu veux." % dino.species.name, 3.0)
+	if dino.variant != "":
+		_mark_rare(dino)
+	else:
+		hud.flash("%s est dans « Mes dinos » !\nRelâche-le dans un enclos quand tu veux." % dino.species.name, 3.0)
 	_remove_dino(dino)
 	_check_goal()
 
 
 func _release(item: String, cell: Vector2i) -> void:
-	var id := item.substr(5)
+	var id := Items.dino_species(item)
 	var home = _dino_home_at(Catalog.DINOS[id], cell)
 	if home is String:
 		_float_text(cell_center(cell), home, Color("ffab91"))
 		return
 	inventory.remove(item)
-	_place_dino(id, cell, true)
-	_float_text(cell_center(cell), Catalog.DINOS[id].name + " !", Color("a5f0a8"))
+	_place_dino(id, cell, true, Items.dino_variant(item))
+	_float_text(cell_center(cell), Catalog.dino_name(id, Items.dino_variant(item)) + " !", Color("a5f0a8"))
 	_refresh()
 
 
@@ -2504,13 +2522,28 @@ func adopt(dino: Node2D) -> void:
 	dino.trust = 0
 	dino.home_cell = dino.cell
 	_mark_caught(dino.species_id)
-	if was_wild:
+	if was_wild and dino.variant != "":
+		_mark_rare(dino)
+	elif was_wild:
 		hud.flash("Bravo ! %s habite maintenant dans ton enclos." % dino.species.name, 3.0)
 	else:
 		hud.flash("%s est rentré dans son enclos." % dino.species.name, 2.0)
 	var region := region_map[_index(dino.cell)]
 	dino.set_region(region, region >= 0 and regions[region].enclosed)
 	_update_attraction()
+
+
+# A rare dinosaur caught or tamed: it goes in the rare page of the Dinodex.
+func _mark_rare(dino: Node2D) -> void:
+	var key: String = dino.species_id + ":" + dino.variant
+	var first := not rares.has(key)
+	rares[key] = true
+	var text := "Incroyable ! Tu as attrapé un %s !" % dino.display_name()
+	if dino.variant == "chef":
+		text = "Tu as attrapé le %s !\nC'est un trophée !" % dino.display_name()
+	if first:
+		text += "\nNouveau dans les dinos rares du Dinodex !"
+	hud.flash(text, 4.5)
 
 
 func _mark_caught(species_id: String) -> void:
@@ -2551,7 +2584,10 @@ func player_scared(dino: Node2D) -> void:
 	hud.flash("%s t'a fait très peur !\nTu cours te réfugier à l'entrée." % dino.species.name, 3.0)
 
 
-func _spawn_wild(id: String, cell: Vector2i, trust := 0, room := 5) -> Node2D:
+# rare: the rare kind of the dinosaur (see Catalog.VARIANTS), or "roll" for a rare colour now and then.
+func _spawn_wild(id: String, cell: Vector2i, trust := 0, room := 5, rare := "roll") -> Node2D:
+	if rare == "roll":
+		rare = Catalog.RARE_COLORS.pick_random() if mode == "adventure" and randf() < RARE_CHANCE else ""
 	var dino := Dino.new()
 	world.add_child(dino)
 	var habitat: String = Catalog.DINOS[id].habitat
@@ -2560,7 +2596,7 @@ func _spawn_wild(id: String, cell: Vector2i, trust := 0, room := 5) -> Node2D:
 	if habitat != "land":
 		home = {"id": "", "kind": "wild_home", "origin": cell - Vector2i.ONE * room, "size": Vector2i.ONE * room * 2,
 			"dinos": [], "open": false}
-	dino.setup(self, id, cell, home)
+	dino.setup(self, id, cell, home, rare)
 	dino.wild = true
 	dino.trust = trust
 	dinos.append(dino)
@@ -2654,6 +2690,25 @@ func _spawn_wild_dinos(limit: int) -> void:
 		_spawn_wild(id, cell)
 		wild_count += 1
 		limit -= 1
+
+
+# Far from the park, a zone often has a chief: a giant of its species with a crown, three times
+# harder to tire out and needing a better capsule. It is a trophy of the Dinodex.
+func _spawn_chief() -> Node2D:
+	if Wild.level(zone) < 2 or randf() > CHIEF_CHANCE:
+		return null
+	for attempt in 40:
+		var cell := Vector2i(randi_range(4, GRID.x - 5), randi_range(4, GRID.y - 5))
+		if player != null and Vector2(cell - player.cell()).length() < 16.0:
+			continue
+		var region := region_map[_index(cell)]
+		if region < 0 or regions[region].enclosed or not is_walkable_for_dino(cell, region):
+			continue
+		var id := _wild_species(biome_at(cell))
+		if id == "" or Catalog.DINOS[id].strength < 2:
+			continue
+		return _spawn_wild(id, cell, 0, 5, "chef")
+	return null
 
 
 # Small and common species come more often than giants.
@@ -3099,7 +3154,11 @@ func travel(to: Vector2i, at: Vector2) -> void:
 		_pay_visitors_while_away()
 	else:
 		var stars := "★".repeat(Wild.level(zone))
-		hud.flash("%s  %s" % [Wild.name_of(zone), stars], 2.5)
+		var chief := _spawn_chief()
+		if chief != null:
+			hud.flash("%s  %s\nUn chef rôde ici : un %s géant avec une couronne !" % [Wild.name_of(zone), stars, chief.species.name], 4.0)
+		else:
+			hud.flash("%s  %s" % [Wild.name_of(zone), stars], 2.5)
 
 
 # The park kept living while the player was away: the visitors paid their ticket.

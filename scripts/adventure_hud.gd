@@ -426,7 +426,7 @@ func toggle_dex() -> void:
 		return
 	for child in dex_grid.get_children():
 		child.queue_free()
-	dex_title.text = "Dinodex : %d / %d espèces" % [park.caught.size(), Catalog.DINOS.size()]
+	dex_title.text = "Dinodex : %d / %d espèces   ·   %d dinos rares" % [park.caught.size(), Catalog.DINOS.size(), park.rares.size()]
 	for id in Catalog.DINOS:
 		var known: bool = park.caught.has(id)
 		var cell := VBoxContainer.new()
@@ -453,6 +453,15 @@ func toggle_dex() -> void:
 		var hint := _label(cell, where, 11)
 		hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		hint.add_theme_color_override("font_color", Color("8a7258"))
+		# The rare ones of this species already caught.
+		var found := PackedStringArray()
+		for variant in Catalog.VARIANTS:
+			if park.rares.has(id + ":" + variant):
+				found.append("♛ chef" if variant == "chef" else "✦ " + Catalog.VARIANTS[variant].name)
+		if not found.is_empty():
+			var rare := _label(cell, " ".join(found), 11)
+			rare.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			rare.add_theme_color_override("font_color", Color("b8860b"))
 
 
 # --- The building mode ------------------------------------------------------------
@@ -598,22 +607,24 @@ func _fill_pocket() -> void:
 	if dinos.is_empty():
 		_label(pocket_grid, "Tu n'as pas encore de dino.\nLance 3 baies à un herbivore, ou attrape un dino avec une capsule !", 16)
 		return
-	for id in dinos:
+	for item in dinos:
+		var id := Items.dino_species(item)
+		var dino_name := Catalog.dino_name(id, Items.dino_variant(item))
 		var cell := VBoxContainer.new()
 		cell.custom_minimum_size = Vector2(136, 0)
 		pocket_grid.add_child(cell)
 		var picture := TextureRect.new()
-		picture.texture = Art.icon("dino:" + id)
+		picture.texture = Art.icon(item)
 		picture.custom_minimum_size = Vector2(120, 80)
 		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		cell.add_child(picture)
-		var name := _label(cell, "%s%s" % [Catalog.DINOS[id].name, " ×%d" % dinos[id] if dinos[id] > 1 else ""], 14)
+		var name := _label(cell, "%s%s" % [dino_name, " ×%d" % dinos[item] if dinos[item] > 1 else ""], 14)
 		name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		var release := _button(cell, "Relâcher", 136, func() -> void:
-			inventory.hold("dino:" + id)
+			inventory.hold(item)
 			toggle_pocket()
-			flash("%s est dans ta main !\nVise une case libre dans un enclos et appuie sur Action." % Catalog.DINOS[id].name, 3.0))
+			flash("%s est dans ta main !\nVise une case libre dans un enclos et appuie sur Action." % dino_name, 3.0))
 		release.custom_minimum_size.y = 48
 
 

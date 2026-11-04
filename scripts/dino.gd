@@ -87,13 +87,20 @@ var roar_text: Node2D
 var mood_text: Node2D
 var mood := ""
 
+# Rare dinosaurs (see Catalog.VARIANTS): "" for a common one, a rare colour, or "chef".
+var variant := ""
+var base_scale := 1.0  # a chief is bigger
+var rare_fx: Node2D  # draws the sparkles and the crown over the sprite
 
-func setup(owner_park: Node2D, id: String, start: Vector2i, building) -> void:
+
+func setup(owner_park: Node2D, id: String, start: Vector2i, building, rare := "") -> void:
 	park = owner_park
 	species_id = id
 	species = Catalog.DINOS[id]
 	habitat = species.habitat
-	frames = DinoArt.frames(id)
+	variant = rare
+	base_scale = Catalog.VARIANTS.get(variant, {}).get("scale", 1.0)
+	frames = DinoArt.frames(id, variant)
 	cell = start
 	home_cell = start
 	home_building = building
@@ -110,7 +117,13 @@ func setup(owner_park: Node2D, id: String, start: Vector2i, building) -> void:
 	shadow.z_index = -1
 	add_child(shadow)
 	sprite = Art.sprite(frames.walk[0], frames.origin)
+	sprite.scale = Vector2.ONE * base_scale
+	shadow.scale = sprite.scale
 	add_child(sprite)
+	if variant != "":
+		rare_fx = Node2D.new()
+		add_child(rare_fx)
+		rare_fx.draw.connect(_draw_rare)
 
 	if habitat == "land":
 		position = park.cell_center(start) + offset
@@ -132,14 +145,23 @@ func setup(owner_park: Node2D, id: String, start: Vector2i, building) -> void:
 	saddle_sprite.position = Vector2(0, -seat_height() + 5)
 	saddle_sprite.visible = false
 	sprite.add_child(saddle_sprite)
-	var top: float = frames.height + altitude
+	var top: float = frames.height * base_scale + altitude
 	mood_text = WorldText.make(self, Vector2(0, -top - 2), "", "bubble")
 	roar_text = WorldText.make(self, Vector2(0, -top - 16), species.sound, "shout")
 	roar_text.set_shown(false)
 
 
 func max_energy() -> float:
-	return 20.0 + 20.0 * species.strength
+	return (20.0 + 20.0 * species.strength) * (3.0 if variant == "chef" else 1.0)
+
+
+# A chief needs a better capsule than the others of its species.
+func strength() -> int:
+	return mini(species.strength + (1 if variant == "chef" else 0), 5)
+
+
+func display_name() -> String:
+	return Catalog.dino_name(species_id, variant)
 
 
 # "fierce" charges back, "shy" runs away.
@@ -186,7 +208,7 @@ func can_be_ridden() -> bool:
 
 # Height of the saddle above the ground, in pixels.
 func seat_height() -> float:
-	return frames.height * SEAT.get(species.plan, 0.6)
+	return frames.height * base_scale * SEAT.get(species.plan, 0.6)
 
 
 func set_saddled(value: bool) -> void:
@@ -274,7 +296,7 @@ func _process(delta: float) -> void:
 		return
 	if age < 1.0:
 		age = minf(age + delta / GROW_TIME, 1.0)
-		sprite.scale = Vector2.ONE * (0.5 + 0.5 * age)
+		sprite.scale = Vector2.ONE * (0.5 + 0.5 * age) * base_scale
 		shadow.scale = sprite.scale
 		if age >= 1.0:
 			park.float_text(position + Vector2(0, -frames.height), "%s a grandi !" % species.name, Color("a5f0a8"))
@@ -295,6 +317,34 @@ func _process(delta: float) -> void:
 		"sea":
 			moving = _process_sea(delta)
 	_animate(delta, moving)
+	if rare_fx != null:
+		rare_fx.queue_redraw()
+
+
+# Rare colours sparkle; a chief wears a crown.
+func _draw_rare() -> void:
+	if captured:
+		return
+	var fx := rare_fx
+	var height: float = frames.height * sprite.scale.y - sprite.position.y
+	var settings: Dictionary = Catalog.VARIANTS.get(variant, {})
+	if variant == "chef":
+		var top := Vector2(0, -height - 4)
+		var crown := PackedVector2Array([top + Vector2(-6, 0), top + Vector2(-6, -5), top + Vector2(-3, -2), top + Vector2(0, -7),
+			top + Vector2(3, -2), top + Vector2(6, -5), top + Vector2(6, 0)])
+		fx.draw_colored_polygon(crown, Color("ffd740"))
+		fx.draw_polyline(crown + PackedVector2Array([crown[0]]), Color("8a5a00"), 1.0)
+		fx.draw_circle(top + Vector2(0, -2), 1.2, Color("e53935"))
+		return
+	var color: Color = settings.get("sparkle", Color.WHITE)
+	var width: float = frames.size.x * sprite.scale.x
+	for i in 3:
+		var phase := fmod(time * 0.9 + i / 3.0, 1.0)
+		var spot := Vector2((fmod(i * 0.37 + floorf(time * 0.9 + i / 3.0) * 0.61, 1.0) - 0.5) * width, -height * (0.2 + 0.7 * fmod(i * 0.53, 1.0)))
+		var size := 3.0 * sin(phase * PI)
+		var c := Color(color, sin(phase * PI))
+		fx.draw_line(spot - Vector2(size, 0), spot + Vector2(size, 0), c, 1.0)
+		fx.draw_line(spot - Vector2(0, size), spot + Vector2(0, size), c, 1.0)
 
 
 func _animate(delta: float, moving: bool) -> void:

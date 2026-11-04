@@ -13,7 +13,12 @@ static var _cache := {}
 # Returns {walk: [4 Texture2D], roar, sleep, origin: where the dinosaur stands (or the middle of
 # its body for flyers and swimmers), size, height}. Land dinosaurs also have "down" and "up"
 # (4 frames each, seen from the front and the back) and front_origin.
-static func frames(id: String) -> Dictionary:
+static func frames(id: String, variant := "") -> Dictionary:
+	if variant != "" and Catalog.VARIANTS.has(variant) and Catalog.VARIANTS[variant].has("hue"):
+		var key := id + "@" + variant
+		if not _cache.has(key):
+			_cache[key] = _recolor(frames(id), Catalog.VARIANTS[variant])
+		return _cache[key]
 	if _cache.has(id):
 		return _cache[id]
 	var sp: Dictionary = Catalog.DINOS[id]
@@ -34,6 +39,28 @@ static func frames(id: String) -> Dictionary:
 		for direction in directions:
 			result["walk" if direction == "side" else direction].append(tex.call(direction, frame))
 	_cache[id] = result
+	return result
+
+
+# The frames of a rare dinosaur: the same drawing, with its skin painted in the rare colour.
+# The outline, the eyes and the teeth are kept.
+static func _recolor(base: Dictionary, variant: Dictionary) -> Dictionary:
+	var paint := func(texture: Texture2D) -> Texture2D:
+		var image := texture.get_image()
+		for y in image.get_height():
+			for x in image.get_width():
+				var c := image.get_pixel(x, y)
+				if c.a < 0.5 or c.get_luminance() < 0.15:
+					continue
+				var value: float = lerpf(variant.low, variant.high, c.v)
+				image.set_pixel(x, y, Color.from_hsv(variant.hue + (c.h - 0.25) * 0.08, variant.sat * (0.6 + 0.4 * c.s), value, c.a))
+		return ImageTexture.create_from_image(image)
+	var result := base.duplicate()
+	for key in ["walk", "down", "up"]:
+		if base.has(key):
+			result[key] = base[key].map(paint)
+	result.roar = paint.call(base.roar)
+	result.sleep = paint.call(base.sleep)
 	return result
 
 

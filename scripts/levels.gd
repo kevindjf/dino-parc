@@ -45,6 +45,7 @@ const LEVELS := [
 		["ore", "Creuse les murs de la mine pour trouver du fer et du cuivre"],
 		["electric", "Fabrique une barrière électrique : la seule qui retient un T-Rex !"],
 		["quest1", "Aide un habitant du village : finis une quête (bouton Carnet)"],
+		["rare1", "Attrape un dino rare : doré, bleu ou blanc, il brille ! (dans les Terres sauvages)"],
 	]},
 	{"title": "Un parc étoilé", "reward": {"coins": 800, "fountain": 1}, "goals": [
 		["stars2", "Fais monter ton parc à 2 étoiles"],
@@ -65,6 +66,7 @@ const LEVELS := [
 		["stars3", "Fais monter ton parc à 3 étoiles"],
 		["rating50", "Atteins une note de parc de 50 / 100"],
 		["ride_attraction", "Ouvre une attraction : gyrosphères, jeeps ou héliport"],
+		["chef1", "Attrape un chef : un dino géant avec une couronne, dans une zone à 2 étoiles ou plus"],
 		["dex15", "Attrape 15 espèces différentes"],
 		["quest5", "Finis 5 quêtes du village"],
 	]},

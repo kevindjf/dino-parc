@@ -96,7 +96,7 @@ static func is_food(id: String) -> bool:
 static func catch_chance(dino: Node2D, capsule: String) -> float:
 	var weak: float = 1.0 if dino.state == "sleep" else 1.0 - dino.energy / dino.max_energy()
 	var chance := 0.1 + 0.85 * weak
-	if dino.species.strength > Items.WEAPONS[capsule].capture:
+	if dino.strength() > Items.WEAPONS[capsule].capture:
 		chance *= 0.15
 	return chance
 
@@ -234,7 +234,7 @@ func _land(kind: String, shot: Node2D) -> void:
 		shot.sleep(6.0)
 		park.float_text(shot.position, "Zzz…", Color("b3e5fc"))
 		return
-	if shot.species.strength > stats.get("biggest", 5):
+	if shot.strength() > stats.get("biggest", 5):
 		park.float_text(shot.position, "Trop gros pour ça !", Color("ffab91"))
 		return
 	var power := shot_power(kind, shot)

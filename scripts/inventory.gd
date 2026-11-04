@@ -104,12 +104,12 @@ func walk_bonus() -> float:
 	return bonus
 
 
-# The caught dinosaurs, species id -> how many.
+# The caught dinosaurs, bag id ("dino:<species>" or "dino:<species>:<variant>") -> how many.
 func dinos() -> Dictionary:
 	var found := {}
 	for id in counts:
 		if id.begins_with("dino:"):
-			found[id.substr(5)] = counts[id]
+			found[id] = counts[id]
 	return found
 
 

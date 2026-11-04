@@ -273,6 +273,28 @@ static func size_of(item: Dictionary) -> Vector2i:
 	return item.get("size", Vector2i.ONE)
 
 
+# Rare dinosaurs of the adventure: now and then a wild dinosaur has a rare colour and sparkles,
+# and the far zones have a chief, a giant with a crown. hue/sat/low/high: how the skin is painted
+# (see dino_art.gd).
+const VARIANTS := {
+	"dore": {"name": "doré", "hue": 0.135, "sat": 0.9, "low": 0.58, "high": 1.0, "sparkle": Color("fff176")},
+	"bleu": {"name": "bleu", "hue": 0.57, "sat": 0.75, "low": 0.35, "high": 0.95, "sparkle": Color("80d8ff")},
+	"blanc": {"name": "blanc", "hue": 0.1, "sat": 0.06, "low": 0.6, "high": 1.0, "sparkle": Color("ffffff")},
+	"chef": {"name": "chef", "scale": 1.4},
+}
+const RARE_COLORS := ["dore", "bleu", "blanc"]
+
+
+# "Tricératops doré", "Chef Tricératops".
+static func dino_name(species_id: String, variant: String) -> String:
+	var name: String = DINOS[species_id].name
+	if variant == "chef":
+		return "Chef " + name
+	if VARIANTS.has(variant):
+		return "%s %s" % [name, VARIANTS[variant].name]
+	return name
+
+
 static func tool_info(id: String) -> Dictionary:
 	if id.begins_with("biome:"):
 		var biome: Dictionary = BIOMES[id.substr(6)]
